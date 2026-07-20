@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Administration — AEM-CONSEIL</title>
+<meta name="description" content="Espace d'administration — Espace AEM-CONSEIL.">
+<meta name="theme-color" content="#04050b">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --noir:#04050b; --noir2:#070912; --noir3:#0b0e1a;
+    --outremer:#2b45ff; --azur:#6d86ff; --peri:#a9b8ff;
+    --line:rgba(150,168,255,.11); --line-2:rgba(150,168,255,.18);
+    --glass:rgba(255,255,255,.035); --glass-2:rgba(255,255,255,.06);
+    --txt:#f2f4ff; --txt2:#8b98bd; --pos:#3ee9a4; --warn:#ffcf6d; --neg:#ff6b6b;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);background:var(--noir);-webkit-font-smoothing:antialiased;line-height:1.5;
+    display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  button{font-family:inherit}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px clamp(14px,3vw,26px);border-bottom:1px solid var(--line);flex:none;
+    background:linear-gradient(180deg,rgba(12,16,30,.9),rgba(7,9,18,.7))}
+  .topbar .brand{display:flex;align-items:center;gap:12px}
+  .topbar .brand img{height:30px;filter:brightness(1.14) drop-shadow(0 0 8px rgba(169,184,255,.4))}
+  .topbar .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
+  .topbar .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
+  body.embed .topbar{display:none}
+
+  .wrap{flex:1;min-height:0;overflow-y:auto;padding:22px clamp(14px,3vw,30px) 40px}
+  .head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+  .head h1{font-family:'Inter Tight';font-weight:700;font-size:22px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+  .head h1 .adm{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--peri);background:rgba(109,134,255,.14);border:1px solid var(--line-2);padding:3px 9px;border-radius:999px}
+  .head p{font-size:13px;color:var(--txt2);margin-top:3px}
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:10px;font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;
+    background:var(--glass);border:1px solid var(--line-2);color:var(--txt);transition:.15s}
+  .btn:hover{background:var(--glass-2)}
+  .btn svg{width:15px;height:15px}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .stat{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+  .stat .sv{font-family:'Inter Tight';font-weight:700;font-size:24px;letter-spacing:-.01em}
+  .stat .sl{font-size:12px;color:var(--txt2);margin-top:2px}
+  .stat.pos .sv{color:var(--pos)} .stat.warn .sv{color:var(--warn)}
+
+  .search{position:relative;max-width:340px;margin-bottom:14px}
+  .search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--txt2)}
+  .search input{width:100%;padding:10px 12px 10px 36px;background:var(--noir2);border:1px solid var(--line-2);border-radius:11px;color:var(--txt);font-size:13.5px}
+  .search input:focus{outline:none;border-color:var(--azur);box-shadow:0 0 0 3px rgba(109,134,255,.16)}
+
+  .tablewrap{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--noir2)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  thead th{text-align:left;font-family:'Inter Tight';font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--txt2);
+    padding:12px 16px;background:rgba(9,12,22,.6);border-bottom:1px solid var(--line);white-space:nowrap}
+  tbody td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--glass)}
+  .u-cell{display:flex;align-items:center;gap:11px;min-width:0}
+  .u-av{width:34px;height:34px;flex:none;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(109,134,255,.24),rgba(43,69,255,.2));border:1px solid var(--line-2);color:#fff;font-family:'Inter Tight';font-weight:700;font-size:14px;text-transform:uppercase}
+  .u-mail{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+  .u-you{font-size:10px;font-weight:600;color:var(--peri);background:rgba(109,134,255,.14);border:1px solid var(--line-2);padding:1px 7px;border-radius:999px;margin-left:6px}
+  .muted{color:var(--txt2)}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 9px;border-radius:999px}
+  .badge.ok{background:rgba(62,233,164,.12);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+  .badge.wait{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
+  .badge.never{background:var(--glass);border:1px solid var(--line);color:var(--txt2)}
+  .del{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;
+    background:rgba(255,92,92,.09);border:1px solid rgba(255,92,92,.24);color:#ff9a9a;transition:.15s}
+  .del:hover{background:rgba(255,92,92,.16);color:#ffb3b3}
+  .del svg{width:14px;height:14px}
+  .del[disabled]{opacity:.4;cursor:not-allowed}
+
+  .state{margin:40px auto;text-align:center;max-width:400px;padding:26px}
+  .state .sic{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line-2);color:var(--peri)}
+  .state .sic svg{width:28px;height:28px}
+  .state.deny .sic{background:rgba(255,92,92,.1);border-color:rgba(255,92,92,.28);color:var(--neg)}
+  .state h2{font-family:'Inter Tight';font-weight:600;font-size:19px;margin-bottom:8px}
+  .state p{color:var(--txt2);font-size:14px;line-height:1.55}
+  .sp{width:34px;height:34px;border-radius:50%;border:3px solid var(--line-2);border-top-color:var(--azur);animation:spin .8s linear infinite;margin:60px auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.62);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:.24s;display:grid;place-items:center;padding:20px}
+  .ov.open{opacity:1;visibility:visible}
+  .modal{width:100%;max-width:400px;background:var(--noir3);border:1px solid var(--line-2);border-radius:16px;padding:22px;transform:scale(.96);transition:.24s}
+  .ov.open .modal{transform:none}
+  .modal .mic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;background:rgba(255,92,92,.1);border:1px solid rgba(255,92,92,.28);color:var(--neg);margin-bottom:14px}
+  .modal .mic svg{width:23px;height:23px}
+  .modal h3{font-family:'Inter Tight';font-weight:700;font-size:17px;margin-bottom:7px}
+  .modal p{font-size:13.5px;color:var(--txt2);line-height:1.55}
+  .modal p b{color:var(--txt)}
+  .modal .acts{display:flex;gap:10px;margin-top:20px}
+  .modal .acts button{flex:1;padding:11px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13.5px;cursor:pointer;border:1px solid var(--line-2);background:var(--glass);color:var(--txt)}
+  .modal .acts .confirm{border:none;background:linear-gradient(135deg,#e5484d,#ff6b6b);color:#fff}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);z-index:200;background:var(--noir3);border:1px solid var(--line-2);color:var(--txt);
+    padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.24s;display:flex;align-items:center;gap:9px}
+  .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  .toast .d{width:7px;height:7px;border-radius:50%;background:var(--pos)}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <img src="../assets/logo-full.png" alt="AEM CONSEIL">
+      <span class="t">Administration<small>AEM CONSEIL</small></span>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="loading"><div class="sp"></div></div>
+
+    <div id="deny" class="state deny" hidden>
+      <div class="sic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <h2 id="denyTitle">Accès réservé</h2>
+      <p id="denyMsg">Cet espace est réservé aux administrateurs.</p>
+    </div>
+
+    <div id="content" hidden>
+      <div class="head">
+        <div>
+          <h1>Utilisateurs <span class="adm">Admin</span></h1>
+          <p>Comptes ayant accès à l'espace. Vous pouvez supprimer un compte.</p>
+        </div>
+        <button class="btn" id="refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg> Actualiser</button>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" type="search" placeholder="Rechercher un e-mail…" autocomplete="off">
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Utilisateur</th><th>Inscrit le</th><th>Dernière connexion</th><th>Statut</th><th></th></tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="ov" id="ov">
+    <div class="modal">
+      <div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg></div>
+      <h3>Supprimer ce compte ?</h3>
+      <p>Le compte <b id="mEmail"></b> sera <b>définitivement supprimé</b> ainsi que ses accès. Cette action est irréversible.</p>
+      <div class="acts">
+        <button id="mCancel">Annuler</button>
+        <button class="confirm" id="mConfirm">Supprimer</button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"><span class="d"></span><span id="toastMsg"></span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  if(/[?&]embed=1/.test(location.search)) document.body.classList.add('embed');
+  var SUPABASE_URL='https://ammmyhtxnwyoopfxtans.supabase.co';
+  var SUPABASE_KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
+  var sb=null;
+  try{ if(window.supabase) sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
+
+  var users=[], query='', myId=null, pendingDelete=null;
+  var $=function(id){return document.getElementById(id);};
+  function fmtDate(iso){ if(!iso) return null; try{ var d=new Date(iso); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}); }catch(e){ return null; } }
+  function fmtDateTime(iso){ if(!iso) return null; try{ var d=new Date(iso); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return null; } }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function toast(m,ok){ var t=$('toast'); $('toastMsg').textContent=m; t.querySelector('.d').style.background = ok===false?'var(--neg)':'var(--pos)'; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove('show');},2600); }
+
+  function show(which){ $('loading').hidden=which!=='loading'; $('deny').hidden=which!=='deny'; $('content').hidden=which!=='content'; }
+  function denied(title,msg){ $('denyTitle').textContent=title; $('denyMsg').textContent=msg; show('deny'); }
+
+  function renderStats(){
+    var total=users.length, connected=users.filter(function(u){return u.last_sign_in_at;}).length, confirmed=users.filter(function(u){return u.email_confirmed_at;}).length;
+    $('stats').innerHTML=
+      '<div class="stat"><div class="sv">'+total+'</div><div class="sl">Comptes au total</div></div>'+
+      '<div class="stat pos"><div class="sv">'+connected+'</div><div class="sl">Déjà connectés</div></div>'+
+      '<div class="stat"><div class="sv">'+confirmed+'</div><div class="sl">E-mails confirmés</div></div>';
+  }
+  function renderRows(){
+    var q=query.trim().toLowerCase();
+    var shown=users.filter(function(u){ return !q || (u.email||'').toLowerCase().indexOf(q)>=0; });
+    if(!shown.length){ $('rows').innerHTML='<tr><td colspan="5" class="muted" style="text-align:center;padding:26px">'+(users.length?'Aucun résultat.':'Aucun utilisateur.')+'</td></tr>'; return; }
+    $('rows').innerHTML=shown.map(function(u){
+      var last = u.last_sign_in_at ? '<span class="badge ok">'+fmtDateTime(u.last_sign_in_at)+'</span>' : '<span class="badge never">Jamais</span>';
+      var status = u.email_confirmed_at ? '<span class="badge ok">Confirmé</span>' : '<span class="badge wait">En attente</span>';
+      var isMe = u.id===myId;
+      return '<tr>'+
+        '<td><div class="u-cell"><span class="u-av">'+esc((u.email||'?').charAt(0))+'</span><span class="u-mail">'+esc(u.email||'—')+(isMe?'<span class="u-you">vous</span>':'')+'</span></div></td>'+
+        '<td class="muted">'+(fmtDate(u.created_at)||'—')+'</td>'+
+        '<td>'+last+'</td>'+
+        '<td>'+status+'</td>'+
+        '<td style="text-align:right">'+(isMe
+            ? '<button class="del" disabled title="Vous ne pouvez pas vous supprimer">Supprimer</button>'
+            : '<button class="del" data-id="'+esc(u.id)+'" data-email="'+esc(u.email)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Supprimer</button>')+
+        '</td></tr>';
+    }).join('');
+  }
+
+  async function loadUsers(){
+    show('loading');
+    var res=await sb.rpc('admin_list_users');
+    if(res.error){ throw res.error; }
+    users=(res.data||[]).slice();
+    renderStats(); renderRows(); show('content');
+  }
+
+  async function init(){
+    if(!sb){ denied('Service indisponible','Impossible de contacter le service. Vérifiez votre connexion et réessayez.'); return; }
+    var s=await sb.auth.getSession();
+    if(!s.data || !s.data.session){ denied('Non connecté','Reconnectez-vous à votre espace pour accéder à l\'administration.'); return; }
+    myId=s.data.session.user.id;
+    // Vérif. serveur : l'appelant est-il admin ?
+    var adm=await sb.rpc('is_admin');
+    if(adm.error || adm.data!==true){
+      denied('Accès réservé','Cet espace est réservé aux administrateurs. Votre compte n\'a pas les droits nécessaires.');
+      return;
+    }
+    try{ await loadUsers(); }
+    catch(e){ denied('Erreur',(e&&e.message)||'Impossible de charger les utilisateurs. Le script SQL d\'administration a-t-il bien été installé dans Supabase ?'); }
+  }
+
+  // Events
+  $('search').addEventListener('input', function(e){ query=e.target.value; renderRows(); });
+  $('refresh').addEventListener('click', function(){ loadUsers().catch(function(e){ toast((e&&e.message)||'Erreur de chargement',false); }); });
+  $('rows').addEventListener('click', function(e){ var b=e.target.closest('.del'); if(!b||b.disabled) return; pendingDelete={id:b.dataset.id,email:b.dataset.email}; $('mEmail').textContent=b.dataset.email; $('ov').classList.add('open'); });
+  $('mCancel').addEventListener('click', function(){ $('ov').classList.remove('open'); pendingDelete=null; });
+  $('ov').addEventListener('click', function(e){ if(e.target===$('ov')){ $('ov').classList.remove('open'); pendingDelete=null; } });
+  $('mConfirm').addEventListener('click', async function(){
+    if(!pendingDelete) return;
+    var btn=this; btn.disabled=true; btn.textContent='Suppression…';
+    var target=pendingDelete;
+    try{
+      var res=await sb.rpc('admin_delete_user',{target:target.id});
+      if(res.error) throw res.error;
+      users=users.filter(function(u){ return u.id!==target.id; });
+      renderStats(); renderRows();
+      toast('Compte supprimé : '+target.email);
+    }catch(e){ toast((e&&e.message)||'Suppression impossible',false); }
+    finally{ btn.disabled=false; btn.textContent='Supprimer'; $('ov').classList.remove('open'); pendingDelete=null; }
+  });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ $('ov').classList.remove('open'); pendingDelete=null; } });
+
+  init();
+</script>
+</body>
+</html>
