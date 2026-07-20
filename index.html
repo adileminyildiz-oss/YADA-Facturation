@@ -19,7 +19,7 @@
     --line:rgba(150,168,255,.11); --line-2:rgba(150,168,255,.18);
     --glass:rgba(255,255,255,.035); --glass-2:rgba(255,255,255,.06);
     --txt:#f2f4ff; --txt2:#8b98bd; --pos:#3ee9a4;
-    --sidebar:210px;
+    --sidebar:224px;
   }
   *{box-sizing:border-box;margin:0}
   html,body{height:100%}
@@ -29,26 +29,34 @@
 
   .sidebar{width:var(--sidebar);flex:none;display:flex;flex-direction:column;border-right:1px solid var(--line);
     background:linear-gradient(180deg,rgba(11,14,26,.9),rgba(5,7,14,.94));z-index:70}
-  .sb-logo{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
-  .sb-logo img{height:24px;filter:brightness(1.14) drop-shadow(0 0 8px rgba(169,184,255,.4))}
-  .sb-logo .t{font-family:'Inter Tight';font-weight:600;font-size:13px;line-height:1.1}
-  .sb-logo .t small{display:block;font-weight:400;font-size:10px;color:var(--txt2)}
+  .sb-logo{display:flex;align-items:center;gap:12px;padding:18px 16px;border-bottom:1px solid var(--line);overflow:hidden}
+  .sb-logo img{height:38px;filter:brightness(1.14) drop-shadow(0 0 8px rgba(169,184,255,.4))}
+  .sb-logo .t{font-family:'Inter Tight';font-weight:700;font-size:17px;line-height:1.12}
+  .sb-logo .t small{display:block;font-weight:500;font-size:12px;letter-spacing:.02em;color:var(--txt2);white-space:nowrap}
   .sb-section{padding:14px 13px 5px;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#5a6488;font-weight:600}
-  .snav{display:flex;flex-direction:column;gap:3px;padding:0 10px;overflow-y:auto}
-  .snav .item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-family:'Inter Tight';font-weight:500;font-size:13px;
-    color:var(--txt2);cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:.16s;position:relative}
-  .snav .item .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;background:var(--glass);border:1px solid var(--line);color:var(--peri)}
-  .snav .item .ic svg{width:14px;height:14px}
-  .snav .item .lbl{flex:1;min-width:0}
-  .snav .item:hover{background:var(--glass);color:#fff}
-  .snav .item.active{background:var(--glass-2);color:#fff;box-shadow:inset 3px 0 0 0 var(--azur)}
-  .snav .item.active .ic{background:linear-gradient(135deg,rgba(109,134,255,.28),rgba(43,69,255,.24));border-color:var(--line-2);color:#fff}
+  .snav{display:flex;flex-direction:column;gap:4px;padding:0 10px;overflow-y:auto}
+  .snav .item{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13.5px;
+    color:var(--txt2);cursor:pointer;border:1px solid transparent;background:none;width:100%;text-align:left;transition:.16s;position:relative}
+  .snav .item .ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;flex:none;background:var(--glass);border:1px solid var(--line);color:var(--peri);transition:.16s}
+  .snav .item .ic svg{width:16px;height:16px}
+  .snav .item .lbl{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.18}
+  .snav .item .lbl .l2{font-size:10.5px;font-weight:400;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .snav .item:hover{background:var(--glass);border-color:var(--line);color:#fff}
+  .snav .item:hover .l2{color:var(--peri)}
+  .snav .item.active{background:var(--glass-2);border-color:var(--line-2);color:#fff;box-shadow:inset 3px 0 0 0 var(--azur)}
+  .snav .item.active .l2{color:var(--peri)}
+  .snav .item.active .ic{background:linear-gradient(135deg,rgba(109,134,255,.3),rgba(43,69,255,.26));border-color:var(--line-2);color:#fff;box-shadow:0 4px 14px rgba(43,69,255,.22)}
   .snav .item .pill{font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(109,134,255,.12);border:1px solid var(--line-2);color:var(--peri);flex:none}
   .sb-foot{margin-top:auto;padding:10px;border-top:1px solid var(--line)}
-  .sb-foot .item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;font-family:'Inter Tight';font-weight:500;font-size:13px;color:var(--txt2);transition:.16s}
+  .sb-foot .item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:9px;border:none;background:none;
+    font-family:'Inter Tight';font-weight:500;font-size:13px;color:var(--txt2);text-align:left;cursor:pointer;transition:.16s}
   .sb-foot .item:hover{background:var(--glass);color:#fff}
-  .sb-foot .item .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;background:var(--glass);border:1px solid var(--line);color:var(--txt2)}
+  .sb-foot .item .ic{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;flex:none;background:var(--glass);border:1px solid var(--line);color:var(--txt2);transition:.16s}
   .sb-foot .item .ic svg{width:14px;height:14px}
+  .sb-foot .logout{color:#ff9a9a;font-weight:600}
+  .sb-foot .logout .ic{background:rgba(255,92,92,.09);border-color:rgba(255,92,92,.22);color:#ff9a9a}
+  .sb-foot .logout:hover{background:rgba(255,92,92,.1);color:#ffb3b3}
+  .sb-foot .logout:hover .ic{background:rgba(255,92,92,.18);border-color:rgba(255,92,92,.32);color:#ffb3b3}
 
   .main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--noir)}
   .mtop{display:none;align-items:center;gap:12px;padding:11px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(12,16,30,.9),rgba(7,9,18,.8))}
@@ -139,17 +147,17 @@
   <aside class="sidebar" id="sidebar">
     <div class="sb-logo">
       <img src="assets/logo-full.png" alt="AEM CONSEIL">
-      <span class="t">Espace<small>AEM-CONSEIL</small></span>
+      <span class="t">Espace<small>AEM CONSEIL</small></span>
     </div>
     <div class="sb-section">Modules</div>
     <nav class="snav" id="snav" aria-label="Modules">
       <button class="item" data-module="facturation">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span>
-        <span class="lbl">Facturation</span>
+        <span class="lbl"><span class="l1">Facturation</span><span class="l2">Factures &amp; devis</span></span>
       </button>
       <button class="item" data-module="documents">
-        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7M9 13h6M9 17h6"/></svg></span>
-        <span class="lbl">Mes documents</span>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span>
+        <span class="lbl"><span class="l1">Mes documents</span><span class="l2">Dossiers clients</span></span>
       </button>
     </nav>
     <div class="sb-foot">
@@ -157,7 +165,7 @@
         <span class="av" id="userAv">A</span>
         <span class="uinfo"><span class="ue" id="userEmail"></span><span class="ur">Connecté</span></span>
       </div>
-      <button class="item" type="button" id="logoutBtn" hidden>
+      <button class="item logout" type="button" id="logoutBtn" hidden>
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
         <span class="lbl">Déconnexion</span>
       </button>
@@ -265,7 +273,7 @@
 
   var MODULES = {
     facturation: { title:'Facturation', url:'facturation/?embed=1', enabled:true },
-    documents:   { title:'Mes documents', enabled:true, desc:'Consultez et téléchargez vos documents. Bientôt disponible.' }
+    documents:   { title:'Mes documents', url:'documents/?embed=1', enabled:true }
   };
   var DEFAULT='facturation', current=null;
   var frame=document.getElementById('moduleFrame'), frameLoad=document.getElementById('frameLoad');
@@ -296,6 +304,10 @@
   function toggleNav(open){ document.getElementById('sidebar').classList.toggle('open',open); document.getElementById('ov').classList.toggle('open',open); }
   var toastTimer=null;
   function toast(m){ var t=document.getElementById('toast'); document.getElementById('toastMsg').textContent=m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove('show');},2200); }
+  window.addEventListener('message', function(e){
+    var d=e.data; if(!d||d.type!=='aem-nav'||!d.module) return;
+    if(MODULES[d.module]&&MODULES[d.module].enabled){ if(('#'+d.module)!==location.hash){ location.hash=d.module; } else { route(); } }
+  });
   window.addEventListener('hashchange', route);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') toggleNav(false); });
   initAuth();

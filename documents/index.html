@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mes documents — AEM-CONSEIL</title>
+<meta name="description" content="Dossiers clients et documents — Espace AEM-CONSEIL.">
+<meta name="theme-color" content="#04050b">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --noir:#04050b; --noir2:#070912; --noir3:#0b0e1a;
+    --outremer:#2b45ff; --azur:#6d86ff; --peri:#a9b8ff;
+    --line:rgba(150,168,255,.11); --line-2:rgba(150,168,255,.18);
+    --glass:rgba(255,255,255,.035); --glass-2:rgba(255,255,255,.06);
+    --txt:#f2f4ff; --txt2:#8b98bd; --pos:#3ee9a4; --warn:#ffcf6d;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);background:var(--noir);-webkit-font-smoothing:antialiased;line-height:1.5;
+    display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px clamp(14px,3vw,26px);border-bottom:1px solid var(--line);flex:none;
+    background:linear-gradient(180deg,rgba(12,16,30,.9),rgba(7,9,18,.7))}
+  .topbar .brand{display:flex;align-items:center;gap:12px}
+  .topbar .brand img{height:30px;filter:brightness(1.14) drop-shadow(0 0 8px rgba(169,184,255,.4))}
+  .topbar .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
+  .topbar .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
+  body.embed .topbar{display:none}
+
+  .shell{flex:1;min-height:0;display:grid;grid-template-columns:296px minmax(0,1fr);gap:0}
+  @media(max-width:860px){ .shell{grid-template-columns:1fr} .shell.detail-open .folders{display:none} .shell:not(.detail-open) .detail{display:none} }
+
+  /* ---- Colonne dossiers ---- */
+  .folders{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,rgba(9,12,22,.6),transparent)}
+  .fol-head{padding:16px 16px 12px;flex:none}
+  .fol-head h1{font-family:'Inter Tight';font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .fol-head p{font-size:12px;color:var(--txt2);margin-top:2px}
+  .search{margin-top:12px;position:relative}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--txt2)}
+  .search input{width:100%;padding:9px 11px 9px 33px;background:var(--noir2);border:1px solid var(--line-2);border-radius:10px;color:var(--txt);font-size:13px;transition:.16s}
+  .search input:focus{outline:none;border-color:var(--azur);box-shadow:0 0 0 3px rgba(109,134,255,.16)}
+  .fol-list{flex:1;overflow-y:auto;padding:6px 10px 14px;display:flex;flex-direction:column;gap:5px}
+  .folder{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 11px;border-radius:12px;border:1px solid transparent;background:none;color:inherit;cursor:pointer;transition:.15s}
+  .folder:hover{background:var(--glass);border-color:var(--line)}
+  .folder.active{background:var(--glass-2);border-color:var(--line-2);box-shadow:inset 3px 0 0 0 var(--azur)}
+  .folder .fic{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;
+    background:linear-gradient(135deg,rgba(109,134,255,.22),rgba(43,69,255,.18));border:1px solid var(--line-2);color:var(--peri);font-family:'Inter Tight';font-weight:700;font-size:15px;text-transform:uppercase}
+  .folder .fmeta{flex:1;min-width:0;display:flex;flex-direction:column}
+  .folder .fname{font-family:'Inter Tight';font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .folder .fsub{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .folder .fcount{flex:none;font-size:11px;font-weight:600;color:var(--peri);background:rgba(109,134,255,.12);border:1px solid var(--line-2);padding:2px 8px;border-radius:999px}
+
+  .empty{margin:auto;text-align:center;max-width:340px;padding:30px 20px}
+  .empty .eic{width:58px;height:58px;margin:0 auto 15px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(109,134,255,.22),rgba(43,69,255,.16));border:1px solid var(--line-2);color:var(--peri)}
+  .empty .eic svg{width:27px;height:27px}
+  .empty h2{font-family:'Inter Tight';font-weight:600;font-size:18px;margin-bottom:7px}
+  .empty p{color:var(--txt2);font-size:13px;line-height:1.55}
+  .empty .cta{display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:9px 16px;border-radius:10px;
+    background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff;font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;border:none}
+  .empty .cta svg{width:15px;height:15px}
+
+  /* ---- Détail dossier ---- */
+  .detail{display:flex;flex-direction:column;min-height:0}
+  .detail .placeholder{margin:auto;text-align:center;color:var(--txt2);max-width:320px;padding:24px}
+  .detail .placeholder .pic{width:54px;height:54px;margin:0 auto 14px;border-radius:14px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);color:var(--peri)}
+  .detail .placeholder .pic svg{width:26px;height:26px}
+  .detail .placeholder h2{font-family:'Inter Tight';font-weight:600;font-size:17px;color:var(--txt);margin-bottom:6px}
+  .d-head{padding:18px clamp(14px,2.4vw,24px) 0;flex:none}
+  .d-back{display:none;align-items:center;gap:6px;font-size:12.5px;color:var(--txt2);background:none;border:none;cursor:pointer;margin-bottom:10px;padding:0}
+  .d-back svg{width:15px;height:15px}
+  @media(max-width:860px){ .d-back{display:inline-flex} }
+  .d-title{display:flex;align-items:flex-start;gap:14px}
+  .d-title .dav{width:48px;height:48px;flex:none;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(135deg,rgba(109,134,255,.24),rgba(43,69,255,.2));border:1px solid var(--line-2);color:#fff;font-family:'Inter Tight';font-weight:700;font-size:19px;text-transform:uppercase}
+  .d-title .dinfo{flex:1;min-width:0}
+  .d-title h2{font-family:'Inter Tight';font-weight:700;font-size:20px;letter-spacing:-.01em}
+  .d-title .dcontact{font-size:12.5px;color:var(--txt2);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 14px}
+  .d-title .dcontact span{display:inline-flex;align-items:center;gap:5px}
+  .d-title .dcontact svg{width:12px;height:12px;opacity:.8}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}
+  .stat{flex:1;min-width:120px;background:var(--glass);border:1px solid var(--line);border-radius:13px;padding:11px 13px}
+  .stat .sv{font-family:'Inter Tight';font-weight:700;font-size:17px;letter-spacing:-.01em}
+  .stat .sl{font-size:11px;color:var(--txt2);margin-top:1px}
+  .stat.pos .sv{color:var(--pos)} .stat.warn .sv{color:var(--warn)}
+
+  .tabs{display:flex;gap:3px;margin:16px clamp(14px,2.4vw,24px) 0;padding-bottom:0;border-bottom:1px solid var(--line);flex:none;overflow-x:auto}
+  .tab{padding:9px 14px;border:none;background:none;color:var(--txt2);font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;transition:.15s;white-space:nowrap;display:flex;align-items:center;gap:7px}
+  .tab:hover{color:var(--txt)}
+  .tab.active{color:#fff;border-bottom-color:var(--azur)}
+  .tab .cnt{font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--glass-2);border:1px solid var(--line);color:var(--peri)}
+  .tab.active .cnt{background:rgba(109,134,255,.16);color:#fff}
+
+  .tab-body{flex:1;overflow-y:auto;padding:14px clamp(14px,2.4vw,24px) 30px}
+  .doc-list{display:flex;flex-direction:column;gap:8px}
+  .doc{display:flex;align-items:center;gap:13px;padding:12px 14px;border:1px solid var(--line);border-radius:13px;background:var(--noir2);cursor:pointer;transition:.15s}
+  .doc:hover{border-color:var(--line-2);background:var(--noir3);transform:translateY(-1px)}
+  .doc .dk{width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);color:var(--peri)}
+  .doc .dk svg{width:18px;height:18px}
+  .doc .dm{flex:1;min-width:0}
+  .doc .dm .dn{font-family:'Inter Tight';font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .doc .dm .dd{font-size:12px;color:var(--txt2);margin-top:1px;display:flex;gap:10px;flex-wrap:wrap}
+  .doc .dr{flex:none;text-align:right}
+  .doc .dr .amt{font-family:'Inter Tight';font-weight:700;font-size:15px}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:999px;letter-spacing:.02em}
+  .badge.facture{background:rgba(109,134,255,.14);border:1px solid var(--line-2);color:var(--peri)}
+  .badge.devis{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
+  .badge.paid{background:rgba(62,233,164,.12);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+  .tab-empty{margin:34px auto;text-align:center;color:var(--txt2);font-size:13px;max-width:280px}
+
+  /* ---- Résumé (onglet) ---- */
+  .resume{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+  .rcard{background:var(--noir2);border:1px solid var(--line);border-radius:14px;padding:15px}
+  .rcard h3{font-family:'Inter Tight';font-weight:600;font-size:12px;letter-spacing:.03em;text-transform:uppercase;color:var(--txt2);margin-bottom:11px}
+  .rrow{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .rrow:last-child{border-bottom:none}
+  .rrow .k{color:var(--txt2)} .rrow .v{font-weight:600;text-align:right}
+  .rrow .v.pos{color:var(--pos)} .rrow .v.warn{color:var(--warn)}
+
+  /* ---- Drawer détail document ---- */
+  .ov{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);opacity:0;visibility:hidden;transition:.26s}
+  .ov.open{opacity:1;visibility:visible}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(440px,94vw);z-index:61;background:var(--noir3);border-left:1px solid var(--line-2);
+    transform:translateX(100%);transition:transform .3s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;box-shadow:-20px 0 60px rgba(0,0,0,.5)}
+  .drawer.open{transform:none}
+  .dw-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line);flex:none}
+  .dw-head .dw-k{width:40px;height:40px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line-2);color:var(--peri)}
+  .dw-head .dw-k svg{width:19px;height:19px}
+  .dw-head .dw-t{flex:1;min-width:0}
+  .dw-head .dw-t h3{font-family:'Inter Tight';font-weight:700;font-size:16px}
+  .dw-head .dw-t p{font-size:12px;color:var(--txt2)}
+  .dw-close{width:34px;height:34px;flex:none;border-radius:9px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+  .dw-close svg{width:17px;height:17px}
+  .dw-body{flex:1;overflow-y:auto;padding:18px}
+  .dw-sec{margin-bottom:18px}
+  .dw-sec h4{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--txt2);margin-bottom:8px}
+  .dw-line{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:7px 0;border-bottom:1px solid var(--line)}
+  .dw-line:last-child{border-bottom:none}
+  .dw-line .dl-d{flex:1;min-width:0} .dw-line .dl-q{color:var(--txt2);flex:none}
+  .dw-tot{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+  .dw-tot.big{font-family:'Inter Tight';font-weight:700;font-size:16px;padding-top:10px;margin-top:6px;border-top:1px solid var(--line-2)}
+  .dw-foot{flex:none;padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:9px}
+  .dw-foot button{flex:1;padding:11px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);transition:.15s}
+  .dw-foot button:hover{background:var(--glass-2)}
+  .dw-foot button.primary{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
+
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <img src="../assets/logo-full.png" alt="AEM CONSEIL">
+      <span class="t">Mes documents<small>AEM CONSEIL</small></span>
+    </div>
+  </div>
+
+  <div class="shell" id="shell">
+    <!-- Colonne dossiers clients -->
+    <aside class="folders">
+      <div class="fol-head">
+        <h1>Dossiers clients</h1>
+        <p id="folCount">—</p>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search" type="search" placeholder="Rechercher un client…" autocomplete="off">
+        </div>
+      </div>
+      <div class="fol-list" id="folList"></div>
+    </aside>
+
+    <!-- Détail dossier -->
+    <section class="detail" id="detail">
+      <div class="placeholder" id="detailPlaceholder">
+        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></div>
+        <h2>Sélectionnez un dossier</h2>
+        <p>Choisissez un client à gauche pour consulter toutes ses factures, devis et son récapitulatif.</p>
+      </div>
+      <div class="d-head" id="dHead" hidden>
+        <button class="d-back" id="dBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Dossiers</button>
+        <div class="d-title">
+          <span class="dav" id="dAv">C</span>
+          <div class="dinfo">
+            <h2 id="dName">Client</h2>
+            <div class="dcontact" id="dContact"></div>
+          </div>
+        </div>
+        <div class="stats" id="dStats"></div>
+      </div>
+      <div class="tabs" id="tabs" hidden></div>
+      <div class="tab-body" id="tabBody" hidden></div>
+    </section>
+  </div>
+
+  <div class="ov" id="ov"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="dw-head">
+      <span class="dw-k" id="dwK"></span>
+      <div class="dw-t"><h3 id="dwTitle">—</h3><p id="dwSub">—</p></div>
+      <button class="dw-close" id="dwClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="dw-body" id="dwBody"></div>
+    <div class="dw-foot">
+      <button id="dwOpen" class="primary">Ouvrir dans la facturation</button>
+    </div>
+  </aside>
+
+<script>
+  var EMBED = /[?&]embed=1/.test(location.search);
+  if(EMBED) document.body.classList.add('embed');
+
+  var LS_DOCS='aem_fact_docs', LS_CUR='aem_fact_current';
+  var euro=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2});
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function fmtDate(iso){ if(!iso) return '—'; var p=String(iso).split('-'); return p.length===3? p[2]+'/'+p[1]+'/'+p[0] : iso; }
+  function loadDocs(){ try{ return JSON.parse(localStorage.getItem(LS_DOCS)||'[]'); }catch(e){ return []; } }
+
+  /* Totaux (réplique simplifiée de la facturation) */
+  function computeTotal(s){
+    var subHT=0, vatMap={};
+    (s.lines||[]).forEach(function(l){
+      var ht=(Number(l.qty)||0)*(Number(l.pu)||0); subHT+=ht;
+      var rate=s.vatExempt?0:(Number(l.vat)||0); vatMap[rate]=(vatMap[rate]||0)+ht;
+    });
+    var discAmt = s.discountType==='pct' ? subHT*(Number(s.discount)||0)/100 : Math.min(Number(s.discount)||0,subHT);
+    var factor = subHT>0 ? (subHT-discAmt)/subHT : 1;
+    var netHT = subHT-discAmt, totalVAT=0;
+    Object.keys(vatMap).map(Number).forEach(function(r){ if(!s.vatExempt) totalVAT += vatMap[r]*factor*r/100; });
+    var ttc=netHT+totalVAT;
+    var deposit=Math.min(Number(s.deposit)||0, ttc);
+    return {subHT:subHT, discAmt:discAmt, netHT:netHT, totalVAT:totalVAT, ttc:ttc, deposit:deposit, due:ttc-deposit};
+  }
+
+  var folders=[], activeKey=null, activeTab='factures', query='';
+
+  function clientKey(d){ var n=((d.client&&d.client.name)||'').trim(); return n? n.toLowerCase() : '__sans__'; }
+  function clientName(d){ var n=((d.client&&d.client.name)||'').trim(); return n||'Sans client'; }
+
+  function buildFolders(){
+    var docs=loadDocs(), map={};
+    docs.forEach(function(d){
+      var k=clientKey(d);
+      if(!map[k]) map[k]={key:k, name:clientName(d), docs:[], email:'', siret:'', addr:'', totalFact:0, totalDevis:0, due:0};
+      var f=map[k]; f.docs.push(d);
+      if(d.client){ if(d.client.email&&!f.email)f.email=d.client.email; if(d.client.siret&&!f.siret)f.siret=d.client.siret; if(d.client.addr&&!f.addr)f.addr=d.client.addr; }
+      var t=computeTotal(d);
+      if(d.kind==='devis') f.totalDevis+=t.ttc; else { f.totalFact+=t.ttc; f.due+=t.due; }
+    });
+    folders=Object.keys(map).map(function(k){return map[k];});
+    folders.forEach(function(f){ f.docs.sort(function(a,b){ return (b.date||'').localeCompare(a.date||'') || (b.updated||0)-(a.updated||0); }); });
+    folders.sort(function(a,b){ return b.docs.length-a.docs.length || a.name.localeCompare(b.name); });
+  }
+
+  function renderFolders(){
+    var list=document.getElementById('folList');
+    var q=query.trim().toLowerCase();
+    var shown=folders.filter(function(f){ return !q || f.name.toLowerCase().indexOf(q)>=0 || (f.email||'').toLowerCase().indexOf(q)>=0; });
+    document.getElementById('folCount').textContent = folders.length ? (folders.length+' client'+(folders.length>1?'s':'')+' · '+loadDocs().length+' document'+(loadDocs().length>1?'s':'')) : 'Aucun document';
+    if(!folders.length){
+      list.innerHTML='<div class="empty"><div class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>'+
+        '<h2>Aucun document</h2><p>Créez une facture ou un devis dans le module Facturation : les dossiers clients apparaîtront ici automatiquement.</p>'+
+        '<button class="cta" id="goFact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5v14"/></svg> Nouvelle facturation</button></div>';
+      var g=document.getElementById('goFact'); if(g) g.onclick=openFacturation;
+      return;
+    }
+    if(!shown.length){ list.innerHTML='<div class="tab-empty">Aucun client ne correspond à « '+esc(query)+' ».</div>'; return; }
+    list.innerHTML=shown.map(function(f){
+      var sub = f.email || (f.docs.length+' document'+(f.docs.length>1?'s':''));
+      return '<button class="folder'+(f.key===activeKey?' active':'')+'" data-key="'+esc(f.key)+'">'+
+        '<span class="fic">'+esc((f.name[0]||'?'))+'</span>'+
+        '<span class="fmeta"><span class="fname">'+esc(f.name)+'</span><span class="fsub">'+esc(sub)+'</span></span>'+
+        '<span class="fcount">'+f.docs.length+'</span></button>';
+    }).join('');
+  }
+
+  function folderByKey(k){ for(var i=0;i<folders.length;i++) if(folders[i].key===k) return folders[i]; return null; }
+
+  function openFolder(key){
+    activeKey=key; var f=folderByKey(key);
+    document.querySelectorAll('.folder').forEach(function(b){ b.classList.toggle('active', b.dataset.key===key); });
+    document.getElementById('shell').classList.add('detail-open');
+    if(!f){ return; }
+    document.getElementById('detailPlaceholder').hidden=true;
+    document.getElementById('dHead').hidden=false;
+    document.getElementById('tabs').hidden=false;
+    document.getElementById('tabBody').hidden=false;
+    document.getElementById('dAv').textContent=(f.name[0]||'?');
+    document.getElementById('dName').textContent=f.name;
+    var ct=[];
+    if(f.email) ct.push('<span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg>'+esc(f.email)+'</span>');
+    if(f.siret) ct.push('<span>SIRET '+esc(f.siret)+'</span>');
+    document.getElementById('dContact').innerHTML=ct.join('');
+    var factures=f.docs.filter(function(d){return d.kind!=='devis';});
+    var devis=f.docs.filter(function(d){return d.kind==='devis';});
+    document.getElementById('dStats').innerHTML=
+      '<div class="stat"><div class="sv">'+euro.format(f.totalFact)+'</div><div class="sl">Facturé (TTC)</div></div>'+
+      (f.due>0.005?'<div class="stat warn"><div class="sv">'+euro.format(f.due)+'</div><div class="sl">Reste à encaisser</div></div>':'<div class="stat pos"><div class="sv">Soldé</div><div class="sl">Factures réglées</div></div>')+
+      '<div class="stat"><div class="sv">'+euro.format(f.totalDevis)+'</div><div class="sl">Devis émis</div></div>';
+    renderTabs(f, factures, devis);
+    if(activeTab==='factures' && !factures.length && devis.length) activeTab='devis';
+    renderTabBody(f, factures, devis);
+  }
+
+  function renderTabs(f, factures, devis){
+    var tabs=[
+      {k:'factures', label:'Factures', cnt:factures.length},
+      {k:'devis', label:'Devis', cnt:devis.length},
+      {k:'resume', label:'Résumé', cnt:null}
+    ];
+    document.getElementById('tabs').innerHTML=tabs.map(function(t){
+      return '<button class="tab'+(t.k===activeTab?' active':'')+'" data-tab="'+t.k+'">'+t.label+(t.cnt!=null?' <span class="cnt">'+t.cnt+'</span>':'')+'</button>';
+    }).join('');
+  }
+
+  function docRow(d){
+    var t=computeTotal(d), isDevis=d.kind==='devis';
+    var svg = isDevis
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
+    var num = d.number ? (isDevis?'Devis ':'Facture ')+d.number : (isDevis?'Devis':'Facture')+' (brouillon)';
+    var badge = isDevis ? '<span class="badge devis">Devis</span>' : (t.due<=0.005 ? '<span class="badge paid">Réglée</span>' : '<span class="badge facture">Facture</span>');
+    return '<div class="doc" data-id="'+esc(d.id)+'">'+
+      '<span class="dk">'+svg+'</span>'+
+      '<div class="dm"><div class="dn">'+esc(num)+'</div><div class="dd"><span>'+fmtDate(d.date)+'</span>'+(d.due&&!isDevis?'<span>Échéance '+fmtDate(d.due)+'</span>':'')+'</div></div>'+
+      '<div class="dr"><div class="amt">'+euro.format(t.ttc)+'</div>'+badge+'</div>'+
+      '</div>';
+  }
+
+  function renderTabBody(f, factures, devis){
+    var body=document.getElementById('tabBody');
+    if(activeTab==='resume'){
+      var totalDocs=f.docs.length;
+      body.innerHTML='<div class="resume">'+
+        '<div class="rcard"><h3>Activité</h3>'+
+          '<div class="rrow"><span class="k">Documents</span><span class="v">'+totalDocs+'</span></div>'+
+          '<div class="rrow"><span class="k">Factures</span><span class="v">'+factures.length+'</span></div>'+
+          '<div class="rrow"><span class="k">Devis</span><span class="v">'+devis.length+'</span></div>'+
+        '</div>'+
+        '<div class="rcard"><h3>Montants</h3>'+
+          '<div class="rrow"><span class="k">Facturé TTC</span><span class="v">'+euro.format(f.totalFact)+'</span></div>'+
+          '<div class="rrow"><span class="k">Reste à encaisser</span><span class="v '+(f.due>0.005?'warn':'pos')+'">'+euro.format(f.due)+'</span></div>'+
+          '<div class="rrow"><span class="k">Devis émis</span><span class="v">'+euro.format(f.totalDevis)+'</span></div>'+
+        '</div>'+
+        '<div class="rcard"><h3>Coordonnées</h3>'+
+          '<div class="rrow"><span class="k">E-mail</span><span class="v">'+esc(f.email||'—')+'</span></div>'+
+          '<div class="rrow"><span class="k">SIRET</span><span class="v">'+esc(f.siret||'—')+'</span></div>'+
+          '<div class="rrow"><span class="k">Adresse</span><span class="v">'+esc(f.addr||'—')+'</span></div>'+
+        '</div>'+
+      '</div>';
+      return;
+    }
+    var arr = activeTab==='devis' ? devis : factures;
+    if(!arr.length){ body.innerHTML='<div class="tab-empty">Aucun '+(activeTab==='devis'?'devis':'facture')+' pour ce client pour le moment.</div>'; return; }
+    body.innerHTML='<div class="doc-list">'+arr.map(docRow).join('')+'</div>';
+  }
+
+  /* Drawer document */
+  function openDoc(id){
+    var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;}
+    if(!d) return;
+    var t=computeTotal(d), isDevis=d.kind==='devis';
+    document.getElementById('dwK').innerHTML= isDevis
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
+    document.getElementById('dwTitle').textContent=(isDevis?'Devis ':'Facture ')+(d.number||'(brouillon)');
+    document.getElementById('dwSub').textContent=fmtDate(d.date)+' · '+((d.client&&d.client.name)||'Sans client');
+    var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu)||Number(l.qty)!==1;});
+    var linesHtml=lines.length? lines.map(function(l){
+      var ht=(Number(l.qty)||0)*(Number(l.pu)||0);
+      return '<div class="dw-line"><span class="dl-d">'+esc(l.desc||'—')+'</span><span class="dl-q">'+(Number(l.qty)||0)+' × '+euro.format(Number(l.pu)||0)+'</span><span>'+euro.format(ht)+'</span></div>';
+    }).join('') : '<div class="dw-line"><span class="dl-d" style="color:var(--txt2)">Aucune ligne renseignée</span></div>';
+    var body='<div class="dw-sec"><h4>Prestations</h4>'+linesHtml+'</div>';
+    body+='<div class="dw-sec"><h4>Totaux</h4>';
+    body+='<div class="dw-tot"><span style="color:var(--txt2)">Total HT</span><span>'+euro.format(t.netHT)+'</span></div>';
+    body+='<div class="dw-tot"><span style="color:var(--txt2)">TVA</span><span>'+euro.format(t.totalVAT)+'</span></div>';
+    if(t.deposit>0.005) body+='<div class="dw-tot"><span style="color:var(--txt2)">Acompte</span><span>−'+euro.format(t.deposit)+'</span></div>';
+    body+='<div class="dw-tot big"><span>'+(t.deposit>0.005?'Reste dû':'Total TTC')+'</span><span>'+euro.format(t.deposit>0.005?t.due:t.ttc)+'</span></div>';
+    body+='</div>';
+    document.getElementById('dwBody').innerHTML=body;
+    document.getElementById('dwOpen').onclick=function(){ try{ localStorage.setItem(LS_CUR, d.id); }catch(e){} openFacturation(); };
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('ov').classList.add('open');
+    document.getElementById('drawer').setAttribute('aria-hidden','false');
+  }
+  function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); document.getElementById('ov').classList.remove('open'); document.getElementById('drawer').setAttribute('aria-hidden','true'); }
+
+  function openFacturation(){
+    if(EMBED && window.parent!==window){ try{ window.parent.postMessage({type:'aem-nav',module:'facturation'},'*'); return; }catch(e){} }
+    location.href='../facturation/'+(EMBED?'?embed=1':'');
+  }
+
+  /* Events */
+  document.getElementById('search').addEventListener('input', function(e){ query=e.target.value; renderFolders(); });
+  document.getElementById('folList').addEventListener('click', function(e){ var b=e.target.closest('.folder'); if(b) openFolder(b.dataset.key); });
+  document.getElementById('tabs').addEventListener('click', function(e){ var b=e.target.closest('.tab'); if(!b) return; activeTab=b.dataset.tab; var f=folderByKey(activeKey); if(f){ var fa=f.docs.filter(function(d){return d.kind!=='devis';}), dv=f.docs.filter(function(d){return d.kind==='devis';}); renderTabs(f,fa,dv); renderTabBody(f,fa,dv);} });
+  document.getElementById('tabBody').addEventListener('click', function(e){ var b=e.target.closest('.doc'); if(b) openDoc(b.dataset.id); });
+  document.getElementById('dBack').addEventListener('click', function(){ document.getElementById('shell').classList.remove('detail-open'); });
+  document.getElementById('dwClose').addEventListener('click', closeDrawer);
+  document.getElementById('ov').addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrawer(); });
+  window.addEventListener('storage', function(e){ if(e.key===LS_DOCS){ buildFolders(); renderFolders(); if(activeKey && folderByKey(activeKey)) openFolder(activeKey); } });
+
+  buildFolders(); renderFolders();
+</script>
+</body>
+</html>
