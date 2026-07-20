@@ -104,6 +104,9 @@
     background:var(--noir2);border:1px solid var(--line-2);border-radius:7px;padding:5px 8px;transition:border-color .18s,background .18s}
   input:focus,textarea:focus,select:focus{border-color:var(--azur);background:var(--noir3)}
   input::placeholder,textarea::placeholder{color:#4a5578}
+  input.locked{background:rgba(109,134,255,.07);border-color:var(--line);border-style:dashed;color:var(--peri);font-weight:600;letter-spacing:.02em;cursor:default;font-family:'IBM Plex Mono',ui-monospace,monospace}
+  input.locked:focus{border-color:var(--line);background:rgba(109,134,255,.07)}
+  .auto-tag{display:inline-block;margin-left:5px;font-size:8px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--peri);background:rgba(109,134,255,.14);border:1px solid var(--line-2);border-radius:999px;padding:1px 6px;vertical-align:middle}
   textarea{resize:vertical;min-height:44px;line-height:1.4}
   select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236d86ff' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:34px}
 
@@ -280,15 +283,15 @@
     <!-- Type & numérotation -->
     <div class="card">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span> Type de document</h3>
-      <p class="hint">Choisissez le type, le numéro et les dates.</p>
+      <p class="hint">Choisissez le type et les dates. Le numéro est attribué automatiquement, par client.</p>
       <div class="seg" style="width:100%;margin-bottom:14px">
         <button type="button" id="segFacture" class="on" onclick="setKind('facture')">Facture</button>
         <button type="button" id="segDevis" onclick="setKind('devis')">Devis</button>
       </div>
       <div class="grid3">
         <div class="field col-2">
-          <label for="f-number">Numéro</label>
-          <input id="f-number" placeholder="F-2026-001">
+          <label for="f-number">Numéro <span class="auto-tag">auto</span></label>
+          <input id="f-number" class="locked" readonly tabindex="-1" placeholder="Renseignez le client…">
         </div>
         <div class="field">
           <label for="f-date">Date d'émission</label>
@@ -431,6 +434,7 @@ function blankState(){
     kind: 'facture',
     template: '2C',
     number: '',
+    numKey: '', numSeq: 0, numYear: '', numKind: '',
     date: todayISO(),
     due: '',
     emit: {name:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
@@ -797,8 +801,10 @@ function fillForm(){
 
 /* ============ Type de document ============ */
 function setKind(k){
+  if(state.kind===k) return;
   state.kind=k;
-  if(!state.number){ /* laisser vide */ }
+  assignNumber();                 // le numéro dépend du type (F/D) et du client
+  document.getElementById('f-number').value=state.number;
   updateKindUI(); render(); scheduleSave();
 }
 function updateKindUI(){
@@ -807,7 +813,7 @@ function updateKindUI(){
   document.getElementById('segDevis').classList.toggle('on',isDevis);
   document.getElementById('dueLabel').textContent = isDevis ? 'Date de validité' : 'Date d\'échéance';
   const ph=document.getElementById('f-number');
-  if(!state.number) ph.placeholder = isDevis ? 'D-2026-001' : 'F-2026-001';
+  ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
 }
 
 /* ============ Actions documents ============ */
@@ -816,19 +822,49 @@ function newDoc(){
   const prevEmit = loadEmit();
   state = blankState();
   if(prevEmit) state.emit = Object.assign(state.emit, prevEmit);
-  // suggérer un numéro
-  state.number = suggestNumber(state.kind);
+  // Le numéro sera attribué automatiquement dès qu'un client est renseigné.
   fillForm(); render(); persist();
   toast('Nouveau document créé');
 }
-function suggestNumber(kind){
-  const list=loadDocs();
-  const yr=new Date().getFullYear();
-  const prefix=(kind==='devis'?'D-':'F-')+yr+'-';
-  let max=0;
-  list.forEach(d=>{ if(d.number && d.number.startsWith(prefix)){ const n=parseInt(d.number.slice(prefix.length),10); if(n>max) max=n; } });
-  return prefix+String(max+1).padStart(3,'0');
+/* ===== Numérotation automatique, unique et par client ===== */
+const LS_SEQ='aem_fact_seq';
+function loadSeq(){ try{ return JSON.parse(localStorage.getItem(LS_SEQ)||'{}'); }catch(e){ return {}; } }
+function saveSeq(s){ localStorage.setItem(LS_SEQ, JSON.stringify(s)); }
+function clientKeyOf(name){ return String(name||'').trim().toLowerCase().replace(/\s+/g,' '); }
+function clientCodeFor(seq, key, name){
+  seq.codes = seq.codes || {};
+  if(seq.codes[key]) return seq.codes[key];
+  let base = String(name||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  while(base.length<3) base+='X';
+  const taken={}; Object.keys(seq.codes).forEach(k=>{ taken[seq.codes[k]]=true; });
+  let code=base, n=1;
+  while(taken[code]){ n++; code=base+n; }
+  seq.codes[key]=code;
+  return code;
 }
+function counterKey(key,kind,year){ return key+'|'+(kind==='devis'?'D':'F')+'|'+year; }
+function releaseNumber(s){
+  if(!s.number || !s.numKey) return;
+  const seq=loadSeq(); const ck=counterKey(s.numKey, s.numKind, s.numYear);
+  if(seq.counters && seq.counters[ck]===s.numSeq){ seq.counters[ck]=s.numSeq-1; saveSeq(seq); }
+}
+/* Attribue (ou réattribue) un numéro au document selon son client. */
+function assignNumberFor(s){
+  const key=clientKeyOf(s.client && s.client.name);
+  if(!key){ releaseNumber(s); s.number=''; s.numKey=''; s.numSeq=0; s.numYear=''; s.numKind=''; return; }
+  if(s.number && s.numKey===key && s.numKind===s.kind) return; // déjà numéroté pour ce client/type
+  releaseNumber(s);
+  const seq=loadSeq();
+  const year=((s.date&&/^\d{4}/.test(s.date))?s.date.slice(0,4):String(new Date().getFullYear()));
+  const code=clientCodeFor(seq, key, s.client.name);
+  seq.counters = seq.counters || {};
+  const ck=counterKey(key, s.kind, year);
+  const n=(seq.counters[ck]||0)+1; seq.counters[ck]=n;
+  saveSeq(seq);
+  s.number=(s.kind==='devis'?'D':'F')+'-'+code+'-'+year+'-'+String(n).padStart(3,'0');
+  s.numKey=key; s.numSeq=n; s.numYear=year; s.numKind=s.kind;
+}
+function assignNumber(){ assignNumberFor(state); }
 function loadDoc(id){
   if(dirty) persist();
   const list=loadDocs();
@@ -845,7 +881,7 @@ function duplicateDoc(id,e){
   const list=loadDocs(); const d=list.find(x=>x.id===id); if(!d) return;
   const copy=JSON.parse(JSON.stringify(d));
   copy.id='doc_'+Date.now().toString(36)+Math.floor(performance.now()).toString(36);
-  copy.number=suggestNumber(copy.kind); copy.updated=Date.now();
+  copy.number=''; copy.numKey=''; copy.numSeq=0; assignNumberFor(copy); copy.updated=Date.now();
   list.unshift(copy); saveDocs(list);
   renderDrawer(); toast('Document dupliqué');
 }
@@ -853,7 +889,7 @@ function deleteDoc(id,e){
   e&&e.stopPropagation();
   if(!confirm('Supprimer définitivement ce document ?')) return;
   let list=loadDocs().filter(d=>d.id!==id); saveDocs(list);
-  if(state.id===id){ state=blankState(); const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em); state.number=suggestNumber(state.kind); fillForm(); render(); persist(); }
+  if(state.id===id){ state=blankState(); const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em); fillForm(); render(); persist(); }
   renderDrawer(); toast('Document supprimé');
 }
 function clearAll(){
@@ -950,12 +986,19 @@ function init(){
   // Mode intégré dans l'espace (shell) : masque la marque, garde les actions
   if(new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
   // bindings
-  bind('f-number','number'); bind('f-date','date'); bind('f-due','due');
+  bind('f-date','date'); bind('f-due','due');
   bind('e-name','emit.name'); bind('e-addr','emit.addr'); bind('e-siret','emit.siret'); bind('e-tva','emit.tva');
   bind('e-email','emit.email'); bind('e-phone','emit.phone'); bind('e-iban','emit.iban'); bind('e-bic','emit.bic');
   bind('c-name','client.name'); bind('c-addr','client.addr'); bind('c-siret','client.siret'); bind('c-email','client.email');
   bind('f-discount','discount'); bind('f-discount-type','discountType'); bind('f-deposit','deposit');
   bind('f-vat-exempt','vatExempt'); bind('f-terms','terms'); bind('f-notes','notes');
+
+  // Numéro auto : (ré)attribué dès que le nom du client est validé
+  document.getElementById('c-name').addEventListener('change', ()=>{
+    assignNumber();
+    document.getElementById('f-number').value=state.number;
+    render(); scheduleSave();
+  });
 
   // charger le doc courant ou en créer un
   const docs=loadDocs();
@@ -965,7 +1008,6 @@ function init(){
   else{
     state=blankState();
     const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em);
-    state.number=suggestNumber(state.kind);
   }
   fillForm(); render(); applyZoom(); markSaved(true);
   if(!cur) persist();
