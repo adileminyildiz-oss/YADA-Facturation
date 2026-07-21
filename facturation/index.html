@@ -502,6 +502,7 @@ function persist(){
   saveEmit(state.emit);
   localStorage.setItem(LS_CUR, state.id);
   dirty=false; markSaved(true);
+  if(typeof CLOUD!=='undefined'){ CLOUD.pushDoc(state); CLOUD.pushSettings(); }
 }
 
 /* ============ Calculs ============ */
@@ -914,6 +915,7 @@ function deleteDoc(id,e){
   e&&e.stopPropagation();
   if(!confirm('Supprimer définitivement ce document ?')) return;
   let list=loadDocs().filter(d=>d.id!==id); saveDocs(list);
+  if(typeof CLOUD!=='undefined') CLOUD.remove(id);
   if(state.id===id){ state=blankState(); const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em); fillForm(); render(); persist(); }
   renderDrawer(); toast('Document supprimé');
 }
@@ -1007,9 +1009,43 @@ function toast(msg){
 }
 
 /* ============ Init ============ */
-function init(){
+/* ============ Synchronisation cloud (par compte, RLS) ============ */
+var CLOUD=(function(){
+  var URL='https://ammmyhtxnwyoopfxtans.supabase.co', KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
+  var sb=null, uid=null;
+  try{ if(window.supabase) sb=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
+  function race(pr,ms){ return Promise.race([pr, new Promise(function(res){ setTimeout(function(){res(null);},ms); })]); }
+  function ready(){ return !!(sb&&uid); }
+  async function initAndPull(){
+    if(!sb) return;
+    try{
+      var s=await race(sb.auth.getSession(),2500);
+      if(!s||!s.data||!s.data.session) return;
+      uid=s.data.session.user.id;
+      var owner=localStorage.getItem('aem_fact_owner');
+      if(owner && owner!==uid){ [LS_DOCS,LS_EMIT,LS_SEQ,LS_CUR].forEach(function(k){ localStorage.removeItem(k); }); }
+      localStorage.setItem('aem_fact_owner', uid);
+      var res=await race(sb.from('invoices').select('id,data,updated_at').eq('user_id',uid), 3500);
+      if(res && res.data){
+        var byId={}; loadDocs().forEach(function(d){ if(d&&d.id) byId[d.id]=d; });
+        res.data.forEach(function(r){ var d=r.data; if(!d||!d.id) return; var ex=byId[d.id]; if(!ex || (d.updated||0)>=(ex.updated||0)) byId[d.id]=d; });
+        var merged=Object.keys(byId).map(function(k){return byId[k];}).sort(function(a,b){return (b.updated||0)-(a.updated||0);});
+        saveDocs(merged);
+      }
+      var st=await race(sb.from('user_settings').select('emit,seq').eq('user_id',uid).maybeSingle(), 3500);
+      if(st && st.data){ if(st.data.emit) saveEmit(st.data.emit); if(st.data.seq) localStorage.setItem(LS_SEQ, JSON.stringify(st.data.seq)); }
+    }catch(e){}
+  }
+  function pushDoc(doc){ if(!ready()||!doc||!doc.id) return; try{ sb.from('invoices').upsert({id:doc.id,user_id:uid,data:doc,updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
+  function remove(id){ if(!ready()) return; try{ sb.from('invoices').delete().eq('id',id).then(function(){},function(){}); }catch(e){} }
+  function pushSettings(){ if(!ready()) return; try{ sb.from('user_settings').upsert({user_id:uid,emit:loadEmit(),seq:loadSeq(),updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
+  return {initAndPull:initAndPull, pushDoc:pushDoc, remove:remove, pushSettings:pushSettings, ready:ready};
+})();
+
+async function init(){
   // Mode intégré dans l'espace (shell) : masque la marque, garde les actions
   if(new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
+  await CLOUD.initAndPull();   // récupère les données du compte avant l'affichage
   // bindings
   bind('f-date','date'); bind('f-due','due');
   bind('e-name','emit.name'); bind('e-addr','emit.addr'); bind('e-siret','emit.siret'); bind('e-tva','emit.tva');

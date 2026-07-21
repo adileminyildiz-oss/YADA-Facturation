@@ -526,8 +526,27 @@
     save(LS_PDP,c); updatePdpBadge(c); toast('Réglages PDP enregistrés');
   });
 
+  // Récupère les documents du compte (cloud) avant l'affichage
+  async function cloudPull(){
+    try{
+      if(!window.supabase) return;
+      var sb=window.supabase.createClient('https://ammmyhtxnwyoopfxtans.supabase.co','sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo',{auth:{persistSession:true,autoRefreshToken:true}});
+      var s=await Promise.race([sb.auth.getSession(), new Promise(function(r){setTimeout(function(){r(null);},2500);})]);
+      if(!s||!s.data||!s.data.session) return;
+      var uid=s.data.session.user.id, owner=localStorage.getItem('aem_fact_owner');
+      if(owner&&owner!==uid){ ['aem_fact_docs','aem_fact_emit','aem_fact_seq','aem_fact_current'].forEach(function(k){localStorage.removeItem(k);}); }
+      localStorage.setItem('aem_fact_owner',uid);
+      var res=await Promise.race([sb.from('invoices').select('id,data,updated_at').eq('user_id',uid), new Promise(function(r){setTimeout(function(){r(null);},3500);})]);
+      if(res&&res.data){
+        var byId={}; load(LS_DOCS,[]).forEach(function(d){ if(d&&d.id) byId[d.id]=d; });
+        res.data.forEach(function(r){ var d=r.data; if(!d||!d.id) return; var ex=byId[d.id]; if(!ex||(d.updated||0)>=(ex.updated||0)) byId[d.id]=d; });
+        localStorage.setItem(LS_DOCS, JSON.stringify(Object.keys(byId).map(function(k){return byId[k];})));
+      }
+    }catch(e){}
+  }
   // init
-  refreshPick(); renderOutbox(); renderInbox(); loadPdp();
+  renderOutbox(); renderInbox(); loadPdp();
+  cloudPull().then(function(){ refreshPick(); });
   window.addEventListener('storage', function(e){ if(e.key===LS_DOCS) refreshPick(); });
 </script>
 </body>
