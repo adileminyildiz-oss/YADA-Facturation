@@ -143,6 +143,17 @@
     <div class="authmsg" id="authMsg" role="status"></div>
   </form>
 </div>
+<div class="authgate" id="pendingGate" hidden>
+  <div class="authcard" style="text-align:center">
+    <div class="brand" style="justify-content:center"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM CONSEIL</small></span></div>
+    <div style="width:56px;height:56px;margin:16px auto 4px;border-radius:15px;display:grid;place-items:center;background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.3);color:#ffcf6d">
+      <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+    </div>
+    <h2 style="font-family:'Inter Tight';font-weight:600;font-size:19px;margin:10px 0 8px">Compte en attente de validation</h2>
+    <p class="lead" style="margin-bottom:20px">Votre compte <b id="pendEmail" style="color:var(--txt)"></b> a bien été créé. Un administrateur doit l'approuver avant l'accès à l'espace. Reconnectez-vous une fois la validation effectuée.</p>
+    <button class="submit" id="pendLogout" type="button" style="background:var(--glass);border:1px solid var(--line-2);color:var(--txt)">Se déconnecter</button>
+  </div>
+</div>
 <div class="app" hidden>
   <aside class="sidebar" id="sidebar">
     <div class="sb-logo">
@@ -226,6 +237,7 @@
     authMsg();
   }
   function showApp(session){
+    document.getElementById('pendingGate').hidden=true;
     elGate.hidden=true; elApp.hidden=false;
     var em = session && session.user ? (session.user.email||'') : '';
     document.getElementById('userEmail').textContent=em;
@@ -233,20 +245,31 @@
     document.getElementById('sbUser').hidden=false;
     document.getElementById('logoutBtn').hidden=false;
     if(!showApp._routed){ showApp._routed=true; route(); }
-    checkAdmin();
+  }
+  function showPending(session){
+    elApp.hidden=true; elGate.hidden=true;
+    document.getElementById('pendingGate').hidden=false;
+    var em = session && session.user ? (session.user.email||'') : '';
+    document.getElementById('pendEmail').textContent=em;
   }
   function showGate(){
     elApp.hidden=true; elGate.hidden=false;
+    document.getElementById('pendingGate').hidden=true;
     document.getElementById('sbUser').hidden=true;
     document.getElementById('logoutBtn').hidden=true;
     IS_ADMIN=false; document.getElementById('admItem').hidden=true;
   }
-  function checkAdmin(){
-    if(!sb){ return; }
-    sb.rpc('is_admin').then(function(r){
-      IS_ADMIN = !r.error && r.data===true;
-      document.getElementById('admItem').hidden = !IS_ADMIN;
-    }).catch(function(){ IS_ADMIN=false; document.getElementById('admItem').hidden=true; });
+  /* Décide de l'accès : admin ou compte approuvé. Tant que le SQL de
+     validation n'est pas installé (RPC absente), on n'empêche personne. */
+  async function resolveAccess(session){
+    var isAdmin=false, approved=true;
+    if(sb){
+      try{ var a=await sb.rpc('is_admin'); isAdmin = !a.error && a.data===true; }catch(e){}
+      try{ var p=await sb.rpc('is_approved'); if(!p.error) approved = (p.data===true); }catch(e){}
+    }
+    IS_ADMIN=isAdmin;
+    document.getElementById('admItem').hidden = !isAdmin;
+    if(isAdmin || approved){ showApp(session); } else { showPending(session); }
   }
   document.getElementById('authTabs').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setAuthMode(b.dataset.mode); });
   document.getElementById('authForm').addEventListener('submit', async function(e){
@@ -277,14 +300,15 @@
     }finally{ btn.disabled=false; btn.textContent = authMode==='signup' ? 'Créer mon compte' : 'Se connecter'; }
   });
   document.getElementById('logoutBtn').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
+  document.getElementById('pendLogout').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
 
   async function initAuth(){
     if(!sb){ showGate(); authMsg('err',"Service d'authentification indisponible. Vérifiez votre connexion et réessayez."); return; }
     try{
       var res=await sb.auth.getSession();
-      if(res.data && res.data.session){ showApp(res.data.session); } else { showGate(); }
+      if(res.data && res.data.session){ resolveAccess(res.data.session); } else { showGate(); }
     }catch(e){ showGate(); }
-    sb.auth.onAuthStateChange(function(_evt,session){ if(session){ authMsg(); showApp(session); } else { showGate(); } });
+    sb.auth.onAuthStateChange(function(_evt,session){ if(session){ authMsg(); resolveAccess(session); } else { showGate(); } });
     authReady=true;
   }
 

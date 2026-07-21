@@ -75,6 +75,11 @@
   .del:hover{background:rgba(255,92,92,.16);color:#ffb3b3}
   .del svg{width:14px;height:14px}
   .del[disabled]{opacity:.4;cursor:not-allowed}
+  .btnx{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:9px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;transition:.15s;border:1px solid}
+  .btnx.appr{background:rgba(62,233,164,.1);border-color:rgba(62,233,164,.3);color:var(--pos)}
+  .btnx.appr:hover{background:rgba(62,233,164,.18)}
+  .btnx.susp{background:rgba(255,207,109,.09);border-color:rgba(255,207,109,.28);color:var(--warn)}
+  .btnx.susp:hover{background:rgba(255,207,109,.16)}
 
   .state{margin:40px auto;text-align:center;max-width:400px;padding:26px}
   .state .sic{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line-2);color:var(--peri)}
@@ -136,7 +141,7 @@
       </div>
       <div class="tablewrap">
         <table>
-          <thead><tr><th>Utilisateur</th><th>Inscrit le</th><th>Dernière connexion</th><th>Statut</th><th></th></tr></thead>
+          <thead><tr><th>Utilisateur</th><th>Inscrit le</th><th>Dernière connexion</th><th>Accès</th><th></th></tr></thead>
           <tbody id="rows"></tbody>
         </table>
       </div>
@@ -175,11 +180,12 @@
   function denied(title,msg){ $('denyTitle').textContent=title; $('denyMsg').textContent=msg; show('deny'); }
 
   function renderStats(){
-    var total=users.length, connected=users.filter(function(u){return u.last_sign_in_at;}).length, confirmed=users.filter(function(u){return u.email_confirmed_at;}).length;
+    var total=users.length, connected=users.filter(function(u){return u.last_sign_in_at;}).length;
+    var pending=users.filter(function(u){return u.approved!==true;}).length;
     $('stats').innerHTML=
       '<div class="stat"><div class="sv">'+total+'</div><div class="sl">Comptes au total</div></div>'+
-      '<div class="stat pos"><div class="sv">'+connected+'</div><div class="sl">Déjà connectés</div></div>'+
-      '<div class="stat"><div class="sv">'+confirmed+'</div><div class="sl">E-mails confirmés</div></div>';
+      '<div class="stat '+(pending?'warn':'pos')+'"><div class="sv">'+pending+'</div><div class="sl">En attente d\'approbation</div></div>'+
+      '<div class="stat pos"><div class="sv">'+connected+'</div><div class="sl">Déjà connectés</div></div>';
   }
   function renderRows(){
     var q=query.trim().toLowerCase();
@@ -187,17 +193,22 @@
     if(!shown.length){ $('rows').innerHTML='<tr><td colspan="5" class="muted" style="text-align:center;padding:26px">'+(users.length?'Aucun résultat.':'Aucun utilisateur.')+'</td></tr>'; return; }
     $('rows').innerHTML=shown.map(function(u){
       var last = u.last_sign_in_at ? '<span class="badge ok">'+fmtDateTime(u.last_sign_in_at)+'</span>' : '<span class="badge never">Jamais</span>';
-      var status = u.email_confirmed_at ? '<span class="badge ok">Confirmé</span>' : '<span class="badge wait">En attente</span>';
-      var isMe = u.id===myId;
+      var isMe = u.id===myId, approved = u.approved===true;
+      var access = approved ? '<span class="badge ok">Approuvé</span>' : '<span class="badge wait">En attente</span>';
+      var conf = u.email_confirmed_at ? '' : '<div class="u-mail" style="font-weight:400;font-size:11px;color:var(--warn)">e-mail non confirmé</div>';
+      var toggle = isMe ? '' : (approved
+        ? '<button class="btnx susp" data-susp="'+esc(u.id)+'">Suspendre</button>'
+        : '<button class="btnx appr" data-appr="'+esc(u.id)+'">Approuver</button>');
+      var delBtn = isMe
+        ? '<button class="del" disabled title="Vous ne pouvez pas vous supprimer">Supprimer</button>'
+        : '<button class="del" data-id="'+esc(u.id)+'" data-email="'+esc(u.email)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Supprimer</button>';
       return '<tr>'+
-        '<td><div class="u-cell"><span class="u-av">'+esc((u.email||'?').charAt(0))+'</span><span class="u-mail">'+esc(u.email||'—')+(isMe?'<span class="u-you">vous</span>':'')+'</span></div></td>'+
+        '<td><div class="u-cell"><span class="u-av">'+esc((u.email||'?').charAt(0))+'</span><span><span class="u-mail">'+esc(u.email||'—')+(isMe?'<span class="u-you">vous</span>':'')+'</span>'+conf+'</span></div></td>'+
         '<td class="muted">'+(fmtDate(u.created_at)||'—')+'</td>'+
         '<td>'+last+'</td>'+
-        '<td>'+status+'</td>'+
-        '<td style="text-align:right">'+(isMe
-            ? '<button class="del" disabled title="Vous ne pouvez pas vous supprimer">Supprimer</button>'
-            : '<button class="del" data-id="'+esc(u.id)+'" data-email="'+esc(u.email)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Supprimer</button>')+
-        '</td></tr>';
+        '<td>'+access+'</td>'+
+        '<td style="text-align:right"><div style="display:inline-flex;gap:7px;justify-content:flex-end;align-items:center">'+toggle+delBtn+'</div></td>'+
+      '</tr>';
     }).join('');
   }
 
@@ -227,7 +238,20 @@
   // Events
   $('search').addEventListener('input', function(e){ query=e.target.value; renderRows(); });
   $('refresh').addEventListener('click', function(){ loadUsers().catch(function(e){ toast((e&&e.message)||'Erreur de chargement',false); }); });
-  $('rows').addEventListener('click', function(e){ var b=e.target.closest('.del'); if(!b||b.disabled) return; pendingDelete={id:b.dataset.id,email:b.dataset.email}; $('mEmail').textContent=b.dataset.email; $('ov').classList.add('open'); });
+  $('rows').addEventListener('click', function(e){
+    var appr=e.target.closest('[data-appr]'), susp=e.target.closest('[data-susp]'), del=e.target.closest('.del');
+    if(appr){ setApproved(appr.dataset.appr, true); return; }
+    if(susp){ setApproved(susp.dataset.susp, false); return; }
+    if(del && !del.disabled && del.dataset.id){ pendingDelete={id:del.dataset.id,email:del.dataset.email}; $('mEmail').textContent=del.dataset.email; $('ov').classList.add('open'); }
+  });
+  async function setApproved(id, val){
+    try{
+      var r=await sb.rpc('admin_set_approved',{target:id, val:val});
+      if(r.error) throw r.error;
+      var u=users.find(function(x){return x.id===id;}); if(u) u.approved=val;
+      renderStats(); renderRows(); toast(val?'Compte approuvé':'Accès suspendu');
+    }catch(e){ toast((e&&e.message)||'Action impossible', false); }
+  }
   $('mCancel').addEventListener('click', function(){ $('ov').classList.remove('open'); pendingDelete=null; });
   $('ov').addEventListener('click', function(e){ if(e.target===$('ov')){ $('ov').classList.remove('open'); pendingDelete=null; } });
   $('mConfirm').addEventListener('click', async function(){

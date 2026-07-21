@@ -11,6 +11,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Verrou d'accès : page réservée aux comptes connectés (et approuvés). */
+(function(){
+  try{
+    var root=document.documentElement; root.style.visibility='hidden';
+    function reveal(){ root.style.visibility=''; }
+    function bounce(){ location.replace('../'); }
+    if(!window.supabase){ reveal(); return; }
+    var sb=window.supabase.createClient('https://ammmyhtxnwyoopfxtans.supabase.co','sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo',{auth:{persistSession:true,autoRefreshToken:true}});
+    sb.auth.getSession().then(function(r){
+      if(!(r&&r.data&&r.data.session)){ bounce(); return; }
+      sb.rpc('is_approved').then(function(p){ if(p&&!p.error&&p.data!==true){ bounce(); } else { reveal(); } }).catch(reveal);
+    }).catch(reveal);
+  }catch(e){ try{document.documentElement.style.visibility='';}catch(_){} }
+})();
+</script>
 <style>
   :root{
     --noir:#04050b; --noir2:#070912; --noir3:#0b0e1a;
