@@ -147,13 +147,32 @@
     else { cur.hidden=false; document.getElementById('curName').textContent='Aucune offre active'; }
   }
 
-  document.getElementById('plans').addEventListener('click', function(e){
-    var b=e.target.closest('[data-plan]'); if(!b) return;
-    var p=PLANS.filter(function(x){return x.id===b.dataset.plan;})[0]; if(!p) return;
+  function mailtoRequest(p){
     var subject=encodeURIComponent('Demande d\'abonnement — offre '+p.name);
     var body=encodeURIComponent('Bonjour,\n\nJe souhaite souscrire à l\'offre '+p.name+' ('+p.price+' € / mois).\n\nMerci.');
     window.open('mailto:'+CONTACT+'?subject='+subject+'&body='+body, '_blank');
     toast('Votre demande pour l\'offre '+p.name+' est prête à être envoyée.');
+  }
+  document.getElementById('plans').addEventListener('click', async function(e){
+    var b=e.target.closest('[data-plan]'); if(!b) return;
+    var p=PLANS.filter(function(x){return x.id===b.dataset.plan;})[0]; if(!p) return;
+    var old=b.textContent; b.disabled=true; b.textContent='Redirection…';
+    try{
+      if(!sb) throw new Error('no-sb');
+      var s=await sb.auth.getSession(); if(!s.data||!s.data.session) throw new Error('no-session');
+      var origin=(location.origin&&location.origin.indexOf('http')===0)?location.origin:'https://yada.aemconseil.eu';
+      var r=await fetch(SUPABASE_URL+'/functions/v1/create-checkout',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','apikey':SUPABASE_KEY,'Authorization':'Bearer '+s.data.session.access_token},
+        body:JSON.stringify({plan:p.id, origin:origin})
+      });
+      var d=null; try{ d=await r.json(); }catch(_){}
+      if(r.ok && d && d.url){ (window.top||window).location.href=d.url; return; }
+      throw new Error((d&&d.error)||'checkout-indisponible');
+    }catch(err){
+      // Paiement pas encore configuré : repli sur la demande par e-mail
+      mailtoRequest(p);
+    }finally{ b.disabled=false; b.textContent=old; }
   });
 
   (async function(){

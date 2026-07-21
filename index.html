@@ -404,6 +404,10 @@
   });
   window.addEventListener('hashchange', route);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') toggleNav(false); });
+  if(/[?&]paid=1/.test(location.search)){
+    setTimeout(function(){ toast('Merci ! Votre abonnement est en cours d’activation.'); }, 1000);
+    try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
+  }
   initAuth();
 </script>
 </body>
