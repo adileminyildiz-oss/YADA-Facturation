@@ -882,26 +882,38 @@ function clientCodeFor(seq, key, name){
   return code;
 }
 function kindCode(kind){ return kind==='devis'?'D':(kind==='avoir'?'AV':'F'); }
-function counterKey(key,kind,year){ return key+'|'+kindCode(kind)+'|'+year; }
+/* Conformité (BOI-TVA-DECLA-30-20-20) : une séquence chronologique CONTINUE, sans rupture
+   ni doublon, par type de document et par année — indépendante du client. Le code client
+   n'est qu'un préfixe lisible ; il ne réinitialise jamais le compteur. */
+function seriesKey(kind,year){ return kindCode(kind)+'|'+year; }
+function fmtNumber(kind,code,year,n){ return kindCode(kind)+'-'+code+'-'+year+'-'+String(n).padStart(4,'0'); }
+/* On ne "rend" un numéro que s'il est le DERNIER émis de sa série (brouillon abandonné) :
+   jamais de trou, jamais de doublon. Un numéro réellement consommé n'est jamais réutilisé. */
 function releaseNumber(s){
-  if(!s.number || !s.numKey) return;
-  const seq=loadSeq(); const ck=counterKey(s.numKey, s.numKind, s.numYear);
-  if(seq.counters && seq.counters[ck]===s.numSeq){ seq.counters[ck]=s.numSeq-1; saveSeq(seq); }
+  if(!s.number || !s.numYear || !s.numSeq) return;
+  const seq=loadSeq(); const sk=seriesKey(s.numKind, s.numYear);
+  if(seq.counters && seq.counters[sk]===s.numSeq){ seq.counters[sk]=s.numSeq-1; saveSeq(seq); }
 }
-/* Attribue (ou réattribue) un numéro au document selon son client. */
+/* Attribue (ou met à jour) le numéro du document. Le compteur est global à la série ;
+   changer de client ne modifie que le code lisible, pas le rang dans la séquence. */
 function assignNumberFor(s){
   const key=clientKeyOf(s.client && s.client.name);
   if(!key){ releaseNumber(s); s.number=''; s.numKey=''; s.numSeq=0; s.numYear=''; s.numKind=''; return; }
-  if(s.number && s.numKey===key && s.numKind===s.kind) return; // déjà numéroté pour ce client/type
-  releaseNumber(s);
-  const seq=loadSeq();
   const year=((s.date&&/^\d{4}/.test(s.date))?s.date.slice(0,4):String(new Date().getFullYear()));
+  if(s.number && s.numKind===s.kind && s.numYear===year){
+    // Déjà numéroté dans la bonne série : on rafraîchit seulement le préfixe client, le rang ne bouge pas.
+    const seq=loadSeq(); const code=clientCodeFor(seq, key, s.client.name);
+    s.numKey=key; s.number=fmtNumber(s.kind, code, year, s.numSeq); saveSeq(seq); return;
+  }
+  // Nouveau document, ou changement de type/année : prochain rang de la série (l'ancien est rendu s'il était le dernier).
+  releaseNumber(s);                 // persiste sa propre décrémentation…
+  const seq=loadSeq();              // …que l'on recharge ici pour ne pas l'écraser.
   const code=clientCodeFor(seq, key, s.client.name);
   seq.counters = seq.counters || {};
-  const ck=counterKey(key, s.kind, year);
-  const n=(seq.counters[ck]||0)+1; seq.counters[ck]=n;
+  const sk=seriesKey(s.kind, year);
+  const n=(seq.counters[sk]||0)+1; seq.counters[sk]=n;
   saveSeq(seq);
-  s.number=kindCode(s.kind)+'-'+code+'-'+year+'-'+String(n).padStart(3,'0');
+  s.number=fmtNumber(s.kind, code, year, n);
   s.numKey=key; s.numSeq=n; s.numYear=year; s.numKind=s.kind;
 }
 function assignNumber(){ assignNumberFor(state); }
