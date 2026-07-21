@@ -47,6 +47,19 @@
   .snav .item.active .l2{color:var(--peri)}
   .snav .item.active .ic{background:linear-gradient(135deg,rgba(109,134,255,.3),rgba(43,69,255,.26));border-color:var(--line-2);color:#fff;box-shadow:0 4px 14px rgba(43,69,255,.22)}
   .snav .item .pill{font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:rgba(109,134,255,.12);border:1px solid var(--line-2);color:var(--peri);flex:none}
+  .snav .item[hidden]{display:none}
+  .snav .item .lockbadge{display:none;flex:none;width:22px;height:22px;border-radius:6px;place-items:center;background:rgba(255,207,109,.1);border:1px solid rgba(255,207,109,.26);color:#ffcf6d}
+  .snav .item .lockbadge svg{width:12px;height:12px}
+  .snav .item.locked{opacity:.62}
+  .snav .item.locked .l2{color:#ffcf6d;opacity:.9}
+  .snav .item.locked .lockbadge{display:grid}
+  .snav .item.locked:hover{opacity:.85}
+  .sb-foot .item.subscribe{border:1px solid rgba(255,207,109,.28);background:linear-gradient(135deg,rgba(255,207,109,.08),rgba(109,134,255,.06));color:#fff;font-weight:600;align-items:center}
+  .sb-foot .item.subscribe .ic{background:linear-gradient(135deg,#ffcf6d,#ffb347);border-color:transparent;color:#241a04}
+  .sb-foot .item.subscribe .lbl{display:flex;flex-direction:column;line-height:1.18}
+  .sb-foot .item.subscribe .l2{font-size:10.5px;font-weight:400;color:#ffcf6d}
+  .sb-foot .item.subscribe.active{box-shadow:inset 3px 0 0 0 #ffcf6d}
+  .sb-foot .item.subscribe:hover{background:linear-gradient(135deg,rgba(255,207,109,.14),rgba(109,134,255,.08))}
   .sb-foot{margin-top:auto;padding:10px;border-top:1px solid var(--line)}
   .sb-foot .item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:9px;border:none;background:none;
     font-family:'Inter Tight';font-weight:500;font-size:13px;color:var(--txt2);text-align:left;cursor:pointer;transition:.16s}
@@ -165,14 +178,17 @@
       <button class="item" data-module="facturation">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span>
         <span class="lbl"><span class="l1">Facturation</span><span class="l2">Factures &amp; devis</span></span>
+        <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
       </button>
       <button class="item" data-module="efacture">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg></span>
         <span class="lbl"><span class="l1">Facturation électronique</span><span class="l2">Factur-X · émission &amp; réception</span></span>
+        <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
       </button>
       <button class="item" data-module="documents">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span>
-        <span class="lbl"><span class="l1">Mes documents</span><span class="l2">Dossiers clients</span></span>
+        <span class="lbl"><span class="l1">Mes documents</span><span class="l2">Envois clients &amp; relances</span></span>
+        <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
       </button>
       <button class="item" data-module="admin" id="admItem" hidden>
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
@@ -180,6 +196,10 @@
       </button>
     </nav>
     <div class="sb-foot">
+      <button class="item subscribe" type="button" data-module="abonnement">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l7.1-1.01L12 2z"/></svg></span>
+        <span class="lbl"><span class="l1">Abonnement</span><span class="l2" id="planSub">Choisir une offre</span></span>
+      </button>
       <div class="sb-user" id="sbUser" hidden>
         <span class="av" id="userAv">A</span>
         <span class="uinfo"><span class="ue" id="userEmail"></span><span class="ur">Connecté</span></span>
@@ -259,17 +279,41 @@
     document.getElementById('logoutBtn').hidden=true;
     IS_ADMIN=false; document.getElementById('admItem').hidden=true;
   }
-  /* Décide de l'accès : admin ou compte approuvé. Tant que le SQL de
-     validation n'est pas installé (RPC absente), on n'empêche personne. */
+  /* Décide de l'accès : admin / approuvé / offre. Tant que le SQL n'est
+     pas installé (RPC absente), on n'empêche personne et tout est ouvert. */
   async function resolveAccess(session){
-    var isAdmin=false, approved=true;
+    var acc={admin:false, approved:true, plan:'pro'};
     if(sb){
-      try{ var a=await sb.rpc('is_admin'); isAdmin = !a.error && a.data===true; }catch(e){}
-      try{ var p=await sb.rpc('is_approved'); if(!p.error) approved = (p.data===true); }catch(e){}
+      try{
+        var r=await sb.rpc('my_access');
+        if(!r.error && r.data){ acc.admin=r.data.admin===true; acc.approved=r.data.approved===true; acc.plan=r.data.plan||'free'; }
+        else {
+          try{ var a=await sb.rpc('is_admin'); acc.admin=!a.error && a.data===true; }catch(e){}
+          try{ var p=await sb.rpc('is_approved'); if(!p.error) acc.approved=p.data===true; }catch(e){}
+          acc.plan='premium';
+        }
+      }catch(e){ acc.plan='premium'; }
     }
-    IS_ADMIN=isAdmin;
-    document.getElementById('admItem').hidden = !isAdmin;
-    if(isAdmin || approved){ showApp(session); } else { showPending(session); }
+    IS_ADMIN=acc.admin; USER_PLAN = acc.plan || 'free';
+    document.getElementById('admItem').hidden = !IS_ADMIN;
+    var planNames={free:'Aucune offre', essentiel:'Essentiel', pro:'Pro', premium:'Premium'};
+    document.getElementById('planSub').textContent = IS_ADMIN ? 'Accès complet' : ((USER_PLAN&&USER_PLAN!=='free') ? 'Offre '+planNames[USER_PLAN] : 'Choisir une offre');
+    applyLocks();
+    if(acc.admin || acc.approved){ showApp(session); } else { showPending(session); }
+  }
+  function applyLocks(){
+    document.querySelectorAll('.snav .item[data-module]').forEach(function(b){
+      var m=MODULES[b.dataset.module];
+      b.classList.toggle('locked', moduleLocked(m));
+    });
+  }
+  function trackVisit(){
+    if(!sb) return;
+    try{
+      var v=localStorage.getItem('aem_visitor');
+      if(!v){ v=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():('v'+Date.now().toString(36)+Math.random().toString(36).slice(2)); localStorage.setItem('aem_visitor',v); }
+      sb.rpc('track_visit',{visitor:v}).then(function(){},function(){});
+    }catch(e){}
   }
   document.getElementById('authTabs').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setAuthMode(b.dataset.mode); });
   document.getElementById('authForm').addEventListener('submit', async function(e){
@@ -303,6 +347,7 @@
   document.getElementById('pendLogout').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
 
   async function initAuth(){
+    trackVisit();
     if(!sb){ showGate(); authMsg('err',"Service d'authentification indisponible. Vérifiez votre connexion et réessayez."); return; }
     try{
       var res=await sb.auth.getSession();
@@ -312,18 +357,23 @@
     authReady=true;
   }
 
+  var PLAN_RANK = { free:0, essentiel:1, pro:2, premium:3 };
   var MODULES = {
-    facturation: { title:'Facturation', url:'facturation/?embed=1', enabled:true },
-    efacture:    { title:'Facturation électronique', url:'efacture/?embed=1', enabled:true },
-    documents:   { title:'Mes documents', url:'documents/?embed=1', enabled:true },
+    facturation: { title:'Facturation', url:'facturation/?embed=1', enabled:true, min:'essentiel' },
+    efacture:    { title:'Facturation électronique', url:'efacture/?embed=1', enabled:true, min:'pro' },
+    documents:   { title:'Mes documents', url:'documents/?embed=1', enabled:true, min:'premium' },
+    abonnement:  { title:'Abonnement', url:'abonnement/?embed=1', enabled:true },
     admin:       { title:'Administration', url:'admin/?embed=1', enabled:true, admin:true }
   };
-  var DEFAULT='facturation', current=null, IS_ADMIN=false;
+  var current=null, IS_ADMIN=false, USER_PLAN='free';
+  function userRank(){ return IS_ADMIN ? 99 : (PLAN_RANK[USER_PLAN]||0); }
+  function moduleLocked(m){ if(!m) return false; if(m.admin) return !IS_ADMIN; if(m.min) return userRank() < PLAN_RANK[m.min]; return false; }
+  function firstAccessible(){ var order=['facturation','efacture','documents','admin']; for(var i=0;i<order.length;i++){ if(!moduleLocked(MODULES[order[i]])) return order[i]; } return 'abonnement'; }
   var frame=document.getElementById('moduleFrame'), frameLoad=document.getElementById('frameLoad');
-  function currentKey(){ var h=(location.hash||'').replace(/^#/,''); var ok=MODULES[h]&&MODULES[h].enabled&&(!MODULES[h].admin||IS_ADMIN); return ok?h:DEFAULT; }
+  function currentKey(){ var h=(location.hash||'').replace(/^#/,''); var m=MODULES[h]; var ok=m&&m.enabled&&!moduleLocked(m); return ok?h:firstAccessible(); }
   function route(){
     var key=currentKey(), mod=MODULES[key];
-    document.querySelectorAll('.snav .item').forEach(function(b){ b.classList.toggle('active', b.dataset.module===key); });
+    document.querySelectorAll('.item[data-module]').forEach(function(b){ b.classList.toggle('active', b.dataset.module===key); });
     document.getElementById('mtTitle').textContent=mod.title;
     document.title=mod.title+' — Espace AEM-CONSEIL';
     var empty=document.getElementById('frameEmpty');
@@ -339,9 +389,10 @@
     toggleNav(false);
   }
   frame.addEventListener('load', function(){ if(frame.src && !frame.src.endsWith('about:blank')) frameLoad.classList.add('hide'); });
-  document.getElementById('snav').addEventListener('click', function(e){
-    var b=e.target.closest('.item'); if(!b) return;
-    var key=b.dataset.module;
+  document.getElementById('sidebar').addEventListener('click', function(e){
+    var b=e.target.closest('.item[data-module]'); if(!b) return;
+    var key=b.dataset.module, mod=MODULES[key];
+    if(moduleLocked(mod)){ toast('Cette fonctionnalité nécessite un abonnement supérieur.'); key='abonnement'; }
     if(('#'+key)!==location.hash){ location.hash=key; } else { route(); }
   });
   function toggleNav(open){ document.getElementById('sidebar').classList.toggle('open',open); document.getElementById('ov').classList.toggle('open',open); }

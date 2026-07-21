@@ -80,6 +80,39 @@
   .btnx.appr:hover{background:rgba(62,233,164,.18)}
   .btnx.susp{background:rgba(255,207,109,.09);border-color:rgba(255,207,109,.28);color:var(--warn)}
   .btnx.susp:hover{background:rgba(255,207,109,.16)}
+  .plansel{font-family:inherit;font-size:12px;color:var(--txt);background:var(--noir3);border:1px solid var(--line-2);border-radius:8px;padding:5px 8px;cursor:pointer;max-width:150px}
+  .plansel:focus{outline:none;border-color:var(--azur)}
+
+  .section{margin-top:26px}
+  .sh{display:flex;align-items:center;gap:9px;font-family:'Inter Tight';font-weight:600;font-size:16px;margin-bottom:3px}
+  .sh svg{width:18px;height:18px;color:var(--peri)}
+  .shp{font-size:12.5px;color:var(--txt2);margin-bottom:12px}
+  .cntbadge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:rgba(255,207,109,.14);border:1px solid rgba(255,207,109,.3);color:var(--warn)}
+  .reqlist{display:flex;flex-direction:column;gap:9px}
+  .req{display:flex;align-items:center;gap:13px;padding:13px 15px;border:1px solid rgba(255,207,109,.22);border-radius:13px;background:rgba(255,207,109,.04)}
+  .req .rav{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(255,207,109,.24),rgba(255,179,71,.18));border:1px solid rgba(255,207,109,.3);color:#ffcf6d;font-family:'Inter Tight';font-weight:700;font-size:15px;text-transform:uppercase}
+  .req .rm{flex:1;min-width:0}
+  .req .rm .re{font-family:'Inter Tight';font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .req .rm .rd{font-size:12px;color:var(--txt2);margin-top:1px}
+  .req .ra{display:flex;gap:8px;flex:none}
+
+  .params{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .pcard{background:var(--noir2);border:1px solid var(--line);border-radius:15px;padding:17px}
+  .pcard h3{font-family:'Inter Tight';font-weight:600;font-size:14px;margin-bottom:4px}
+  .pcard .pcd{font-size:12px;color:var(--txt2);line-height:1.55;margin-bottom:12px}
+  .adminlist{display:flex;flex-direction:column;gap:7px;margin-bottom:12px}
+  .adminrow{display:flex;align-items:center;gap:10px;padding:8px 11px;border:1px solid var(--line);border-radius:10px;background:var(--noir3)}
+  .adminrow .ae{flex:1;min-width:0;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .adminrow .rmadm{width:28px;height:28px;flex:none;border-radius:7px;background:rgba(255,92,92,.09);border:1px solid rgba(255,92,92,.24);color:#ff9a9a;cursor:pointer;display:grid;place-items:center}
+  .adminrow .rmadm:hover{background:rgba(255,92,92,.16)}
+  .adminrow .rmadm svg{width:14px;height:14px}
+  .adminrow .self{font-size:10px;color:var(--peri);background:rgba(109,134,255,.14);border:1px solid var(--line-2);padding:2px 7px;border-radius:999px}
+  .addrow{display:flex;gap:8px}
+  .addrow input{flex:1;padding:9px 11px;background:var(--noir3);border:1px solid var(--line-2);border-radius:10px;color:var(--txt);font-size:13px}
+  .addrow input:focus{outline:none;border-color:var(--azur)}
+  .prow{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .prow:last-of-type{border-bottom:none}
+  .prow .pk{color:var(--txt2)} .prow .pv{font-weight:600;text-align:right}
 
   .state{margin:40px auto;text-align:center;max-width:400px;padding:26px}
   .state .sic{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line-2);color:var(--peri)}
@@ -135,15 +168,47 @@
         <button class="btn" id="refresh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg> Actualiser</button>
       </div>
       <div class="stats" id="stats"></div>
-      <div class="search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        <input id="search" type="search" placeholder="Rechercher un e-mail…" autocomplete="off">
+
+      <div class="section" id="requestsSection" hidden>
+        <h2 class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v4"/><circle cx="8" cy="7" r="4"/><path d="M22 11h-6M19 8v6"/></svg> Demandes d'accès <span class="cntbadge" id="reqCnt">0</span></h2>
+        <p class="shp">Nouveaux comptes en attente de votre validation.</p>
+        <div class="reqlist" id="requests"></div>
       </div>
-      <div class="tablewrap">
-        <table>
-          <thead><tr><th>Utilisateur</th><th>Inscrit le</th><th>Dernière connexion</th><th>Accès</th><th></th></tr></thead>
-          <tbody id="rows"></tbody>
-        </table>
+
+      <div class="section">
+        <h2 class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> Tous les utilisateurs</h2>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search" type="search" placeholder="Rechercher un e-mail…" autocomplete="off">
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>Utilisateur</th><th>Inscrit le</th><th>Dernière connexion</th><th>Accès</th><th>Offre</th><th></th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="sh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Paramètres de connexion</h2>
+        <div class="params">
+          <div class="pcard">
+            <h3>Administrateurs</h3>
+            <p class="pcd">Comptes ayant tous les droits (accès complet, sans abonnement).</p>
+            <div class="adminlist" id="adminList"></div>
+            <div class="addrow">
+              <input id="newAdmin" type="email" placeholder="email@exemple.fr" autocomplete="off">
+              <button class="btn primary" id="addAdmin">Ajouter</button>
+            </div>
+          </div>
+          <div class="pcard">
+            <h3>Configuration d'accès</h3>
+            <div class="prow"><span class="pk">Méthode de connexion</span><span class="pv">E-mail + mot de passe</span></div>
+            <div class="prow"><span class="pk">Nouveaux comptes</span><span class="pv">Validation manuelle</span></div>
+            <div class="prow"><span class="pk">Offres</span><span class="pv">Essentiel · Pro · Premium</span></div>
+            <p class="pcd" style="margin-top:12px">Les réglages avancés (confirmation d'e-mail, sécurité des mots de passe, limitation des tentatives) se règlent dans le tableau de bord Supabase → Authentication.</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -179,59 +244,101 @@
   function show(which){ $('loading').hidden=which!=='loading'; $('deny').hidden=which!=='deny'; $('content').hidden=which!=='content'; }
   function denied(title,msg){ $('denyTitle').textContent=title; $('denyMsg').textContent=msg; show('deny'); }
 
+  var siteStats=null;
   function renderStats(){
     var total=users.length, connected=users.filter(function(u){return u.last_sign_in_at;}).length;
     var pending=users.filter(function(u){return u.approved!==true;}).length;
+    var s=siteStats||{};
+    var views = s.views_total!=null ? s.views_total : '—';
+    var visitors = s.visitors_total!=null ? s.visitors_total : '—';
+    var today = s.views_today!=null ? s.views_today : '—';
     $('stats').innerHTML=
-      '<div class="stat"><div class="sv">'+total+'</div><div class="sl">Comptes au total</div></div>'+
-      '<div class="stat '+(pending?'warn':'pos')+'"><div class="sv">'+pending+'</div><div class="sl">En attente d\'approbation</div></div>'+
+      '<div class="stat"><div class="sv">'+visitors+'</div><div class="sl">Visiteurs uniques</div></div>'+
+      '<div class="stat"><div class="sv">'+views+'</div><div class="sl">Vues du site</div></div>'+
+      '<div class="stat"><div class="sv">'+today+'</div><div class="sl">Vues aujourd\'hui</div></div>'+
+      '<div class="stat"><div class="sv">'+total+'</div><div class="sl">Comptes</div></div>'+
+      '<div class="stat '+(pending?'warn':'pos')+'"><div class="sv">'+pending+'</div><div class="sl">En attente</div></div>'+
       '<div class="stat pos"><div class="sv">'+connected+'</div><div class="sl">Déjà connectés</div></div>';
+  }
+  async function loadStats(){
+    try{ var r=await sb.rpc('admin_stats'); if(!r.error && r.data){ siteStats=r.data; renderStats(); } }catch(e){}
   }
   function renderRows(){
     var q=query.trim().toLowerCase();
     var shown=users.filter(function(u){ return !q || (u.email||'').toLowerCase().indexOf(q)>=0; });
-    if(!shown.length){ $('rows').innerHTML='<tr><td colspan="5" class="muted" style="text-align:center;padding:26px">'+(users.length?'Aucun résultat.':'Aucun utilisateur.')+'</td></tr>'; return; }
-    $('rows').innerHTML=shown.map(function(u){
-      var last = u.last_sign_in_at ? '<span class="badge ok">'+fmtDateTime(u.last_sign_in_at)+'</span>' : '<span class="badge never">Jamais</span>';
-      var isMe = u.id===myId, approved = u.approved===true;
-      var access = approved ? '<span class="badge ok">Approuvé</span>' : '<span class="badge wait">En attente</span>';
-      var conf = u.email_confirmed_at ? '' : '<div class="u-mail" style="font-weight:400;font-size:11px;color:var(--warn)">e-mail non confirmé</div>';
-      var toggle = isMe ? '' : (approved
-        ? '<button class="btnx susp" data-susp="'+esc(u.id)+'">Suspendre</button>'
-        : '<button class="btnx appr" data-appr="'+esc(u.id)+'">Approuver</button>');
-      var delBtn = isMe
-        ? '<button class="del" disabled title="Vous ne pouvez pas vous supprimer">Supprimer</button>'
-        : '<button class="del" data-id="'+esc(u.id)+'" data-email="'+esc(u.email)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Supprimer</button>';
-      return '<tr>'+
-        '<td><div class="u-cell"><span class="u-av">'+esc((u.email||'?').charAt(0))+'</span><span><span class="u-mail">'+esc(u.email||'—')+(isMe?'<span class="u-you">vous</span>':'')+'</span>'+conf+'</span></div></td>'+
-        '<td class="muted">'+(fmtDate(u.created_at)||'—')+'</td>'+
-        '<td>'+last+'</td>'+
-        '<td>'+access+'</td>'+
-        '<td style="text-align:right"><div style="display:inline-flex;gap:7px;justify-content:flex-end;align-items:center">'+toggle+delBtn+'</div></td>'+
-      '</tr>';
-    }).join('');
+    if(!shown.length){ $('rows').innerHTML='<tr><td colspan="6" class="muted" style="text-align:center;padding:26px">'+(users.length?'Aucun résultat.':'Aucun utilisateur.')+'</td></tr>'; return; }
+    $('rows').innerHTML=shown.map(rowHtml).join('');
+  }
+  var PLANS=['free','essentiel','pro','premium'], PLABEL={free:'Gratuit',essentiel:'Essentiel · 14,99',pro:'Pro · 44,99',premium:'Premium · 149,99'};
+  function planSelect(u){
+    return '<select class="plansel" data-plan-for="'+esc(u.id)+'">'+PLANS.map(function(pl){ return '<option value="'+pl+'"'+((u.plan||'free')===pl?' selected':'')+'>'+PLABEL[pl]+'</option>'; }).join('')+'</select>';
+  }
+  function rowHtml(u){
+    var last = u.last_sign_in_at ? '<span class="badge ok">'+fmtDateTime(u.last_sign_in_at)+'</span>' : '<span class="badge never">Jamais</span>';
+    var isMe = u.id===myId, approved = u.approved===true;
+    var access = approved ? '<span class="badge ok">Approuvé</span>' : '<span class="badge wait">En attente</span>';
+    var conf = u.email_confirmed_at ? '' : '<div class="u-mail" style="font-weight:400;font-size:11px;color:var(--warn)">e-mail non confirmé</div>';
+    var toggle = isMe ? '' : (approved
+      ? '<button class="btnx susp" data-susp="'+esc(u.id)+'">Suspendre</button>'
+      : '<button class="btnx appr" data-appr="'+esc(u.id)+'">Approuver</button>');
+    var delBtn = isMe
+      ? '<button class="del" disabled title="Vous ne pouvez pas vous supprimer">Supprimer</button>'
+      : '<button class="del" data-id="'+esc(u.id)+'" data-email="'+esc(u.email)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Supprimer</button>';
+    return '<tr>'+
+      '<td><div class="u-cell"><span class="u-av">'+esc((u.email||'?').charAt(0))+'</span><span><span class="u-mail">'+esc(u.email||'—')+(isMe?'<span class="u-you">vous</span>':'')+'</span>'+conf+'</span></div></td>'+
+      '<td class="muted">'+(fmtDate(u.created_at)||'—')+'</td>'+
+      '<td>'+last+'</td>'+
+      '<td>'+access+'</td>'+
+      '<td>'+planSelect(u)+'</td>'+
+      '<td style="text-align:right"><div style="display:inline-flex;gap:7px;justify-content:flex-end;align-items:center">'+toggle+delBtn+'</div></td>'+
+    '</tr>';
   }
 
+  function renderRequests(){
+    var pending=users.filter(function(u){ return u.approved!==true; });
+    var sec=$('requestsSection');
+    if(!pending.length){ sec.hidden=true; return; }
+    sec.hidden=false; $('reqCnt').textContent=pending.length;
+    $('requests').innerHTML=pending.map(function(u){
+      return '<div class="req"><span class="rav">'+esc((u.email||'?').charAt(0))+'</span>'+
+        '<div class="rm"><div class="re">'+esc(u.email||'—')+'</div><div class="rd">Inscrit le '+(fmtDate(u.created_at)||'—')+(u.email_confirmed_at?'':' · e-mail non confirmé')+'</div></div>'+
+        '<div class="ra"><button class="btnx appr" data-appr="'+esc(u.id)+'">Approuver</button>'+
+        '<button class="btnx" style="background:rgba(255,92,92,.09);border-color:rgba(255,92,92,.24);color:#ff9a9a" data-refuse="'+esc(u.id)+'" data-email="'+esc(u.email)+'">Refuser</button></div></div>';
+    }).join('');
+  }
+  var admins=[], currentEmail='';
+  function renderAdmins(){
+    var me=(currentEmail||'').toLowerCase();
+    $('adminList').innerHTML = admins.length ? admins.map(function(em){
+      var self=em.toLowerCase()===me;
+      return '<div class="adminrow"><span class="ae">'+esc(em)+'</span>'+(self
+        ? '<span class="self">vous</span>'
+        : '<button class="rmadm" data-rmadm="'+esc(em)+'" title="Retirer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>')+'</div>';
+    }).join('') : '<div class="muted" style="font-size:12.5px">Aucun administrateur listé.</div>';
+  }
+  async function loadAdmins(){
+    try{ var r=await sb.rpc('admin_list_admins'); if(!r.error){ admins=(r.data||[]).map(function(x){return x.email;}); renderAdmins(); } }catch(e){}
+  }
   async function loadUsers(){
     show('loading');
     var res=await sb.rpc('admin_list_users');
     if(res.error){ throw res.error; }
     users=(res.data||[]).slice();
-    renderStats(); renderRows(); show('content');
+    renderStats(); renderRequests(); renderRows(); show('content');
   }
 
   async function init(){
     if(!sb){ denied('Service indisponible','Impossible de contacter le service. Vérifiez votre connexion et réessayez.'); return; }
     var s=await sb.auth.getSession();
     if(!s.data || !s.data.session){ denied('Non connecté','Reconnectez-vous à votre espace pour accéder à l\'administration.'); return; }
-    myId=s.data.session.user.id;
+    myId=s.data.session.user.id; currentEmail=s.data.session.user.email||'';
     // Vérif. serveur : l'appelant est-il admin ?
     var adm=await sb.rpc('is_admin');
     if(adm.error || adm.data!==true){
       denied('Accès réservé','Cet espace est réservé aux administrateurs. Votre compte n\'a pas les droits nécessaires.');
       return;
     }
-    try{ await loadUsers(); }
+    try{ await loadUsers(); loadStats(); loadAdmins(); }
     catch(e){ denied('Erreur',(e&&e.message)||'Impossible de charger les utilisateurs. Le script SQL d\'administration a-t-il bien été installé dans Supabase ?'); }
   }
 
@@ -249,9 +356,31 @@
       var r=await sb.rpc('admin_set_approved',{target:id, val:val});
       if(r.error) throw r.error;
       var u=users.find(function(x){return x.id===id;}); if(u) u.approved=val;
-      renderStats(); renderRows(); toast(val?'Compte approuvé':'Accès suspendu');
+      renderStats(); renderRequests(); renderRows(); toast(val?'Compte approuvé':'Accès suspendu');
     }catch(e){ toast((e&&e.message)||'Action impossible', false); }
   }
+  // Demandes d'accès (approuver / refuser)
+  $('requests').addEventListener('click', function(e){
+    var appr=e.target.closest('[data-appr]'), ref=e.target.closest('[data-refuse]');
+    if(appr){ setApproved(appr.dataset.appr, true); return; }
+    if(ref){ pendingDelete={id:ref.dataset.refuse,email:ref.dataset.email}; $('mEmail').textContent=ref.dataset.email; $('ov').classList.add('open'); }
+  });
+  // Changement d'offre
+  $('rows').addEventListener('change', function(e){
+    var s=e.target.closest('.plansel'); if(!s) return;
+    var id=s.dataset.planFor, val=s.value;
+    sb.rpc('admin_set_plan',{target:id, new_plan:val}).then(function(r){
+      if(r.error){ toast(r.error.message||'Erreur',false); return; }
+      var u=users.find(function(x){return x.id===id;}); if(u) u.plan=val;
+      toast('Offre mise à jour : '+PLABEL[val]);
+    }).catch(function(){ toast('Erreur',false); });
+  });
+  // Gestion des administrateurs
+  $('adminList').addEventListener('click', function(e){ var b=e.target.closest('[data-rmadm]'); if(b) removeAdmin(b.dataset.rmadm); });
+  $('addAdmin').addEventListener('click', function(){ var em=$('newAdmin').value.trim(); if(em) addAdmin(em); });
+  $('newAdmin').addEventListener('keydown', function(e){ if(e.key==='Enter'){ var em=this.value.trim(); if(em) addAdmin(em); } });
+  async function addAdmin(em){ try{ var r=await sb.rpc('admin_add_admin',{new_email:em}); if(r.error) throw r.error; $('newAdmin').value=''; await loadAdmins(); toast('Administrateur ajouté'); }catch(e){ toast((e&&e.message)||'Erreur',false); } }
+  async function removeAdmin(em){ try{ var r=await sb.rpc('admin_remove_admin',{old_email:em}); if(r.error) throw r.error; await loadAdmins(); toast('Administrateur retiré'); }catch(e){ toast((e&&e.message)||'Erreur',false); } }
   $('mCancel').addEventListener('click', function(){ $('ov').classList.remove('open'); pendingDelete=null; });
   $('ov').addEventListener('click', function(e){ if(e.target===$('ov')){ $('ov').classList.remove('open'); pendingDelete=null; } });
   $('mConfirm').addEventListener('click', async function(){
@@ -262,7 +391,7 @@
       var res=await sb.rpc('admin_delete_user',{target:target.id});
       if(res.error) throw res.error;
       users=users.filter(function(u){ return u.id!==target.id; });
-      renderStats(); renderRows();
+      renderStats(); renderRequests(); renderRows();
       toast('Compte supprimé : '+target.email);
     }catch(e){ toast((e&&e.message)||'Suppression impossible',false); }
     finally{ btn.disabled=false; btn.textContent='Supprimer'; $('ov').classList.remove('open'); pendingDelete=null; }
