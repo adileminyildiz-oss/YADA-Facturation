@@ -18,7 +18,9 @@ alter table public.admins enable row level security;
 -- Gérez la liste des admins ici, dans l'éditeur SQL.
 
 -- Admin initial (modifiez / ajoutez vos e-mails d'admin ci-dessous) :
-insert into public.admins(email) values ('adilemin.yildiz@gmail.com')
+insert into public.admins(email) values
+  ('adilemin.yildiz@gmail.com'),
+  ('adileminyildiz@icloud.com')
   on conflict (email) do nothing;
 
 -- 2) L'appelant est-il administrateur ? --------------------------------
