@@ -184,6 +184,8 @@
   .btn-pay.part:hover{background:var(--glass-2)}
   .btn-pay.send{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
   .btn-pay.send:hover{filter:brightness(1.08)}
+  .btn-pay.relance{background:rgba(255,207,109,.1);border-color:rgba(255,207,109,.3);color:var(--warn)}
+  .btn-pay.relance:hover{background:rgba(255,207,109,.18)}
   .btn-pay[disabled]{opacity:.6;cursor:default}
   .pay-note{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:10px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;
     background:rgba(62,233,164,.1);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
@@ -447,12 +449,17 @@
         body+='<div class="pay-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Facture soldée</div>';
       }
       body+='</div>';
-      // Envoi au client
+      // Envoi & relances
       var cemail=((d.client&&d.client.email)||'').trim();
-      body+='<div class="dw-sec"><h4>Envoi</h4>';
-      if(d.sentAt) body+='<div class="dw-tot"><span style="color:var(--txt2)">Envoyée le</span><span class="badge partial">'+fmtDate(d.sentAt)+'</span></div>';
+      var late = t.due>0.005 && isPast(d.due);
+      var rem=(d.reminders||[]);
+      body+='<div class="dw-sec"><h4>Envoi &amp; relances</h4>';
       body+='<div class="dw-tot"><span style="color:var(--txt2)">Destinataire</span><span>'+(cemail?esc(cemail):'<span style="color:var(--txt2)">non renseigné</span>')+'</span></div>';
-      body+='<div class="pay-actions"><button class="btn-pay send" data-send="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> '+(d.sentAt?'Renvoyer au client':'Envoyer au client')+'</button></div>';
+      if(d.sentAt) body+='<div class="dw-tot"><span style="color:var(--txt2)">Envoyée le</span><span>'+fmtDate(d.sentAt)+'</span></div>';
+      if(rem.length) body+='<div class="dw-tot"><span style="color:var(--txt2)">Relances</span><span class="badge overdue">'+rem.length+' · dernière '+fmtDate(rem[rem.length-1].date)+'</span></div>';
+      body+='<div class="pay-actions"><button class="btn-pay send" data-send="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> '+(d.sentAt?'Renvoyer':'Envoyer au client')+'</button>'+
+        (late?'<button class="btn-pay relance" data-relance="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6M21 12a9 9 0 1 1-3-6.7L21 8"/></svg> Relancer</button>':'')+'</div>';
+      if(late) body+='<div style="font-size:11.5px;color:var(--warn);margin-top:6px">Facture en retard — reste dû '+euro.format(t.due)+'.</div>';
       body+='</div>';
     }
     document.getElementById('dwBody').innerHTML=body;
@@ -492,7 +499,9 @@
     var full=e.target.closest('[data-payfull]'), part=e.target.closest('[data-paypart]'), send=e.target.closest('[data-send]');
     if(full){ var id=full.dataset.payfull, docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(d) recordPayment(id, computeTotal(d).due); return; }
     if(part){ var v=prompt('Montant encaissé (€) :'); if(v!=null){ var a=Number(String(v).replace(/\s/g,'').replace(',','.')); if(a>0) recordPayment(part.dataset.paypart, a); } return; }
-    if(send){ sendInvoice(send.dataset.send, send); }
+    if(send){ sendInvoice(send.dataset.send, send, 'send'); return; }
+    var relance=e.target.closest('[data-relance]');
+    if(relance){ sendInvoice(relance.dataset.relance, relance, 'reminder'); }
   });
   function invoicePayload(d){
     var t=computeTotal(d);
@@ -502,25 +511,30 @@
       number:d.number||'', date:d.date||'', dueDate:d.due||'', lines:lines,
       totalHT:t.netHT, totalTVA:t.totalVAT, totalTTC:t.ttc, due:t.due, terms:d.terms||'' };
   }
-  function mailtoInvoice(d){
-    var t=computeTotal(d), to=((d.client&&d.client.email)||'').trim();
-    var subject='Facture '+(d.number||'')+' — '+((d.emit&&d.emit.name)||'');
-    var body='Bonjour '+((d.client&&d.client.name)||'')+',\n\nVeuillez trouver le récapitulatif de votre facture '+(d.number||'')+' :\n'+
+  function mailtoInvoice(d, mode){
+    var t=computeTotal(d), to=((d.client&&d.client.email)||'').trim(), rel=mode==='reminder';
+    var subject=(rel?'Rappel — Facture ':'Facture ')+(d.number||'')+(rel?'':' — '+((d.emit&&d.emit.name)||''));
+    var intro=rel
+      ? 'Sauf erreur de notre part, la facture '+(d.number||'')+(d.due?' (échéance du '+fmtDate(d.due)+')':'')+' reste impayée. Merci de bien vouloir procéder à son règlement.'
+      : 'Veuillez trouver le récapitulatif de votre facture '+(d.number||')')+'.';
+    var body='Bonjour '+((d.client&&d.client.name)||'')+',\n\n'+intro+'\n\n'+
       'Total TTC : '+euro.format(t.ttc)+'\nMontant dû : '+euro.format(t.due>0.005?t.due:t.ttc)+(d.due?'\nÉchéance : '+fmtDate(d.due):'')+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'');
     window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body), '_blank');
   }
-  async function sendInvoice(id, btn){
+  async function sendInvoice(id, btn, mode){
     var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d) return;
-    var to=((d.client&&d.client.email)||'').trim();
-    var old = btn? btn.innerHTML : ''; if(btn){ btn.disabled=true; btn.textContent='Envoi…'; }
+    var to=((d.client&&d.client.email)||'').trim(), rel=mode==='reminder';
+    var old = btn? btn.innerHTML : ''; if(btn){ btn.disabled=true; btn.textContent=rel?'Relance…':'Envoi…'; }
     try{
       if(!/.+@.+\..+/.test(to)) throw new Error('no-email');
-      await callFn('send-invoice', invoicePayload(d));
-      d.sentAt=todayISO(); d.updated=Date.now(); saveDocs(docs); cloudPushDoc(d);
+      var payload=invoicePayload(d); if(rel) payload.reminder=true;
+      await callFn('send-invoice', payload);
+      if(rel){ d.reminders=(d.reminders||[]).concat([{date:todayISO()}]); } else { d.sentAt=todayISO(); }
+      d.updated=Date.now(); saveDocs(docs); cloudPushDoc(d);
       openDoc(id);
     }catch(e){
       // Repli : ouvrir la messagerie avec un e-mail pré-rempli
-      mailtoInvoice(d);
+      mailtoInvoice(d, mode);
       if(btn){ btn.disabled=false; btn.innerHTML=old; }
     }
   }

@@ -44,7 +44,9 @@ function renderEmail(inv: any) {
       </div>
       <div style="padding:20px 24px">
         <p style="margin:0 0 14px;font-size:14px">Bonjour ${esc(inv.clientName || "")},</p>
-        <p style="margin:0 0 16px;font-size:14px;color:#3a4661">Veuillez trouver ci-dessous le récapitulatif de votre facture${inv.dueDate ? `, à régler avant le <b>${fmtDate(inv.dueDate)}</b>` : ""}.</p>
+        ${inv.reminder
+          ? `<p style="margin:0 0 16px;font-size:14px;color:#3a4661">Sauf erreur de notre part, la facture <b>${esc(inv.number || "")}</b>${inv.dueDate ? ` (échéance du <b>${fmtDate(inv.dueDate)}</b>)` : ""} n'a pas encore été réglée. Nous vous remercions de bien vouloir procéder à son règlement.</p>`
+          : `<p style="margin:0 0 16px;font-size:14px;color:#3a4661">Veuillez trouver ci-dessous le récapitulatif de votre facture${inv.dueDate ? `, à régler avant le <b>${fmtDate(inv.dueDate)}</b>` : ""}.</p>`}
         <table style="width:100%;border-collapse:collapse;font-size:13px;margin:8px 0 4px">${lines}</table>
         <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
           <tr><td style="padding:3px 0;color:#6b7590">Total HT</td><td style="padding:3px 0;text-align:right">${eur(inv.totalHT)}</td></tr>
@@ -78,7 +80,7 @@ Deno.serve(async (req) => {
     const payload: Record<string, unknown> = {
       from: FROM,
       to: [inv.to],
-      subject: `Facture ${inv.number || ""} — ${inv.emitName || ""}`.trim(),
+      subject: (inv.reminder ? `Rappel — Facture ${inv.number || ""}` : `Facture ${inv.number || ""} — ${inv.emitName || ""}`).trim(),
       html: renderEmail(inv),
     };
     if (inv.replyTo && /.+@.+\..+/.test(inv.replyTo)) payload.reply_to = inv.replyTo;
