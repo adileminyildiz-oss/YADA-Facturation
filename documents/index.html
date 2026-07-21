@@ -137,6 +137,8 @@
   .badge.facture{background:rgba(109,134,255,.14);border:1px solid var(--line-2);color:var(--peri)}
   .badge.devis{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
   .badge.paid{background:rgba(62,233,164,.12);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+  .badge.partial{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
+  .badge.overdue{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.3);color:#ff8f8f}
   .tab-empty{margin:34px auto;text-align:center;color:var(--txt2);font-size:13px;max-width:280px}
 
   /* ---- Résumé (onglet) ---- */
@@ -174,6 +176,15 @@
   .dw-foot button{flex:1;padding:11px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);transition:.15s}
   .dw-foot button:hover{background:var(--glass-2)}
   .dw-foot button.primary{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
+  .pay-actions{display:flex;gap:9px;margin-top:14px}
+  .btn-pay{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;transition:.15s;border:1px solid var(--line-2);background:var(--glass);color:var(--txt)}
+  .btn-pay svg{width:15px;height:15px}
+  .btn-pay.full{border:none;background:linear-gradient(135deg,#1f9d6b,var(--pos));color:#05271a}
+  .btn-pay.full:hover{filter:brightness(1.06)}
+  .btn-pay.part:hover{background:var(--glass-2)}
+  .pay-note{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:10px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;
+    background:rgba(62,233,164,.1);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+  .pay-note svg{width:15px;height:15px}
 
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -245,6 +256,7 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function fmtDate(iso){ if(!iso) return '—'; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso)); return m? m[3]+'/'+m[2]+'/'+m[1] : '—'; }
   function loadDocs(){ try{ return JSON.parse(localStorage.getItem(LS_DOCS)||'[]'); }catch(e){ return []; } }
+  function saveDocs(list){ try{ localStorage.setItem(LS_DOCS, JSON.stringify(list)); }catch(e){} }
 
   /* Totaux (réplique simplifiée de la facturation) */
   function computeTotal(s){
@@ -259,8 +271,19 @@
     Object.keys(vatMap).map(Number).forEach(function(r){ if(!s.vatExempt) totalVAT += vatMap[r]*factor*r/100; });
     var ttc=netHT+totalVAT;
     var deposit=Math.min(Number(s.deposit)||0, ttc);
-    return {subHT:subHT, discAmt:discAmt, netHT:netHT, totalVAT:totalVAT, ttc:ttc, deposit:deposit, due:ttc-deposit};
+    var extra=0; (s.payments||[]).forEach(function(p){ extra += Number(p.amount)||0; });
+    var paid=Math.min(ttc, deposit+extra);
+    var due=Math.max(0, ttc-paid);
+    var status;
+    if(s.kind==='devis') status='devis';
+    else if(ttc>0 && due<=0.005) status='paid';
+    else if(paid>0.005) status='partial';
+    else if(isPast(s.due)) status='overdue';
+    else status='pending';
+    return {subHT:subHT, discAmt:discAmt, netHT:netHT, totalVAT:totalVAT, ttc:ttc, deposit:deposit, paid:paid, due:due, status:status};
   }
+  function isPast(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return false; var d=new Date(+m[1],+m[2]-1,+m[3]); var t=new Date(); t.setHours(0,0,0,0); return d<t; }
+  var STATUS={paid:{t:'Payée',c:'paid'},partial:{t:'Partielle',c:'partial'},overdue:{t:'En retard',c:'overdue'},pending:{t:'En attente',c:'facture'},devis:{t:'Devis',c:'devis'}};
 
   var folders=[], activeKey=null, activeTab='factures', query='';
 
@@ -349,7 +372,7 @@
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
     var num = d.number ? (isDevis?'Devis ':'Facture ')+d.number : (isDevis?'Devis':'Facture')+' (brouillon)';
-    var badge = isDevis ? '<span class="badge devis">Devis</span>' : (t.due<=0.005 ? '<span class="badge paid">Réglée</span>' : '<span class="badge facture">Facture</span>');
+    var st=STATUS[t.status]||STATUS.pending; var badge='<span class="badge '+st.c+'">'+st.t+'</span>';
     return '<div class="doc" data-id="'+esc(d.id)+'">'+
       '<span class="dk">'+svg+'</span>'+
       '<div class="dm"><div class="dn">'+esc(num)+'</div><div class="dd"><span>'+fmtDate(d.date)+'</span>'+(d.due&&!isDevis?'<span>Échéance '+fmtDate(d.due)+'</span>':'')+'</div></div>'+
@@ -405,8 +428,23 @@
     body+='<div class="dw-tot"><span style="color:var(--txt2)">Total HT</span><span>'+euro.format(t.netHT)+'</span></div>';
     body+='<div class="dw-tot"><span style="color:var(--txt2)">TVA</span><span>'+euro.format(t.totalVAT)+'</span></div>';
     if(t.deposit>0.005) body+='<div class="dw-tot"><span style="color:var(--txt2)">Acompte</span><span>−'+euro.format(t.deposit)+'</span></div>';
-    body+='<div class="dw-tot big"><span>'+(t.deposit>0.005?'Reste dû':'Total TTC')+'</span><span>'+euro.format(t.deposit>0.005?t.due:t.ttc)+'</span></div>';
+    body+='<div class="dw-tot big"><span>Total TTC</span><span>'+euro.format(t.ttc)+'</span></div>';
     body+='</div>';
+    if(!isDevis){
+      var st=STATUS[t.status]||STATUS.pending;
+      body+='<div class="dw-sec"><h4>Règlement</h4>';
+      body+='<div class="dw-tot"><span style="color:var(--txt2)">Statut</span><span class="badge '+st.c+'">'+st.t+'</span></div>';
+      body+='<div class="dw-tot"><span style="color:var(--txt2)">Encaissé</span><span>'+euro.format(t.paid)+'</span></div>';
+      body+='<div class="dw-tot"><span style="color:var(--txt2)">Reste dû</span><span'+(t.due>0.005?' style="color:var(--warn);font-weight:700"':'')+'>'+euro.format(t.due)+'</span></div>';
+      var pays=(d.payments||[]).filter(function(p){return Number(p.amount)>0;});
+      if(pays.length) body+='<div style="margin-top:6px">'+pays.map(function(p){ return '<div class="dw-line"><span class="dl-d" style="color:var(--txt2)">Encaissement '+fmtDate(p.date)+'</span><span>'+euro.format(Number(p.amount)||0)+'</span></div>'; }).join('')+'</div>';
+      if(t.due>0.005){
+        body+='<div class="pay-actions"><button class="btn-pay full" data-payfull="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Marquer payée</button><button class="btn-pay part" data-paypart="'+esc(d.id)+'">Encaissement partiel</button></div>';
+      } else {
+        body+='<div class="pay-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Facture soldée</div>';
+      }
+      body+='</div>';
+    }
     document.getElementById('dwBody').innerHTML=body;
     document.getElementById('dwOpen').onclick=function(){ try{ localStorage.setItem(LS_CUR, d.id); }catch(e){} openFacturation(); };
     document.getElementById('drawer').classList.add('open');
@@ -429,19 +467,36 @@
   document.getElementById('dwClose').addEventListener('click', closeDrawer);
   document.getElementById('ov').addEventListener('click', closeDrawer);
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrawer(); });
+
+  function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function recordPayment(id, amount){
+    amount=Number(amount); if(!(amount>0)) return;
+    var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d) return;
+    var due=computeTotal(d).due; amount=Math.min(amount, due+0.005);
+    d.payments=(d.payments||[]).concat([{date:todayISO(), amount:Math.round(amount*100)/100}]); d.updated=Date.now();
+    saveDocs(docs); cloudPushDoc(d);
+    buildFolders(); renderFolders(); if(activeKey&&folderByKey(activeKey)) openFolder(activeKey);
+    openDoc(id);
+  }
+  document.getElementById('dwBody').addEventListener('click', function(e){
+    var full=e.target.closest('[data-payfull]'), part=e.target.closest('[data-paypart]');
+    if(full){ var id=full.dataset.payfull, docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(d) recordPayment(id, computeTotal(d).due); return; }
+    if(part){ var v=prompt('Montant encaissé (€) :'); if(v!=null){ var a=Number(String(v).replace(/\s/g,'').replace(',','.')); if(a>0) recordPayment(part.dataset.paypart, a); } }
+  });
   window.addEventListener('storage', function(e){ if(e.key===LS_DOCS){ buildFolders(); renderFolders(); if(activeKey && folderByKey(activeKey)) openFolder(activeKey); } });
 
-  // Récupère les documents du compte (cloud) avant l'affichage
+  // Synchronisation cloud (par compte)
+  var _sb=null, _uid=null;
+  try{ if(window.supabase) _sb=window.supabase.createClient('https://ammmyhtxnwyoopfxtans.supabase.co','sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo',{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
   async function cloudPull(){
     try{
-      if(!window.supabase) return;
-      var sb=window.supabase.createClient('https://ammmyhtxnwyoopfxtans.supabase.co','sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo',{auth:{persistSession:true,autoRefreshToken:true}});
-      var s=await Promise.race([sb.auth.getSession(), new Promise(function(r){setTimeout(function(){r(null);},2500);})]);
+      if(!_sb) return;
+      var s=await Promise.race([_sb.auth.getSession(), new Promise(function(r){setTimeout(function(){r(null);},2500);})]);
       if(!s||!s.data||!s.data.session) return;
-      var uid=s.data.session.user.id, owner=localStorage.getItem('aem_fact_owner');
-      if(owner&&owner!==uid){ ['aem_fact_docs','aem_fact_emit','aem_fact_seq','aem_fact_current'].forEach(function(k){localStorage.removeItem(k);}); }
-      localStorage.setItem('aem_fact_owner',uid);
-      var res=await Promise.race([sb.from('invoices').select('id,data,updated_at').eq('user_id',uid), new Promise(function(r){setTimeout(function(){r(null);},3500);})]);
+      _uid=s.data.session.user.id; var owner=localStorage.getItem('aem_fact_owner');
+      if(owner&&owner!==_uid){ ['aem_fact_docs','aem_fact_emit','aem_fact_seq','aem_fact_current'].forEach(function(k){localStorage.removeItem(k);}); }
+      localStorage.setItem('aem_fact_owner',_uid);
+      var res=await Promise.race([_sb.from('invoices').select('id,data,updated_at').eq('user_id',_uid), new Promise(function(r){setTimeout(function(){r(null);},3500);})]);
       if(res&&res.data){
         var byId={}; loadDocs().forEach(function(d){ if(d&&d.id) byId[d.id]=d; });
         res.data.forEach(function(r){ var d=r.data; if(!d||!d.id) return; var ex=byId[d.id]; if(!ex||(d.updated||0)>=(ex.updated||0)) byId[d.id]=d; });
@@ -449,6 +504,7 @@
       }
     }catch(e){}
   }
+  function cloudPushDoc(d){ if(!_sb||!_uid||!d||!d.id) return; try{ _sb.from('invoices').upsert({id:d.id,user_id:_uid,data:d,updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
   cloudPull().then(function(){ buildFolders(); renderFolders(); });
 </script>
 </body>
