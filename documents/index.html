@@ -182,6 +182,9 @@
   .btn-pay.full{border:none;background:linear-gradient(135deg,#1f9d6b,var(--pos));color:#05271a}
   .btn-pay.full:hover{filter:brightness(1.06)}
   .btn-pay.part:hover{background:var(--glass-2)}
+  .btn-pay.send{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
+  .btn-pay.send:hover{filter:brightness(1.08)}
+  .btn-pay[disabled]{opacity:.6;cursor:default}
   .pay-note{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;padding:10px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;
     background:rgba(62,233,164,.1);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
   .pay-note svg{width:15px;height:15px}
@@ -444,6 +447,13 @@
         body+='<div class="pay-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Facture soldée</div>';
       }
       body+='</div>';
+      // Envoi au client
+      var cemail=((d.client&&d.client.email)||'').trim();
+      body+='<div class="dw-sec"><h4>Envoi</h4>';
+      if(d.sentAt) body+='<div class="dw-tot"><span style="color:var(--txt2)">Envoyée le</span><span class="badge partial">'+fmtDate(d.sentAt)+'</span></div>';
+      body+='<div class="dw-tot"><span style="color:var(--txt2)">Destinataire</span><span>'+(cemail?esc(cemail):'<span style="color:var(--txt2)">non renseigné</span>')+'</span></div>';
+      body+='<div class="pay-actions"><button class="btn-pay send" data-send="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> '+(d.sentAt?'Renvoyer au client':'Envoyer au client')+'</button></div>';
+      body+='</div>';
     }
     document.getElementById('dwBody').innerHTML=body;
     document.getElementById('dwOpen').onclick=function(){ try{ localStorage.setItem(LS_CUR, d.id); }catch(e){} openFacturation(); };
@@ -479,15 +489,55 @@
     openDoc(id);
   }
   document.getElementById('dwBody').addEventListener('click', function(e){
-    var full=e.target.closest('[data-payfull]'), part=e.target.closest('[data-paypart]');
+    var full=e.target.closest('[data-payfull]'), part=e.target.closest('[data-paypart]'), send=e.target.closest('[data-send]');
     if(full){ var id=full.dataset.payfull, docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(d) recordPayment(id, computeTotal(d).due); return; }
-    if(part){ var v=prompt('Montant encaissé (€) :'); if(v!=null){ var a=Number(String(v).replace(/\s/g,'').replace(',','.')); if(a>0) recordPayment(part.dataset.paypart, a); } }
+    if(part){ var v=prompt('Montant encaissé (€) :'); if(v!=null){ var a=Number(String(v).replace(/\s/g,'').replace(',','.')); if(a>0) recordPayment(part.dataset.paypart, a); } return; }
+    if(send){ sendInvoice(send.dataset.send, send); }
   });
+  function invoicePayload(d){
+    var t=computeTotal(d);
+    var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu);}).map(function(l){ return {desc:l.desc||'',qty:Number(l.qty)||0,pu:Number(l.pu)||0,ht:(Number(l.qty)||0)*(Number(l.pu)||0)}; });
+    return { to:((d.client&&d.client.email)||'').trim(), replyTo:((d.emit&&d.emit.email)||'').trim(),
+      emitName:(d.emit&&d.emit.name)||'', emitEmail:(d.emit&&d.emit.email)||'', clientName:(d.client&&d.client.name)||'',
+      number:d.number||'', date:d.date||'', dueDate:d.due||'', lines:lines,
+      totalHT:t.netHT, totalTVA:t.totalVAT, totalTTC:t.ttc, due:t.due, terms:d.terms||'' };
+  }
+  function mailtoInvoice(d){
+    var t=computeTotal(d), to=((d.client&&d.client.email)||'').trim();
+    var subject='Facture '+(d.number||'')+' — '+((d.emit&&d.emit.name)||'');
+    var body='Bonjour '+((d.client&&d.client.name)||'')+',\n\nVeuillez trouver le récapitulatif de votre facture '+(d.number||'')+' :\n'+
+      'Total TTC : '+euro.format(t.ttc)+'\nMontant dû : '+euro.format(t.due>0.005?t.due:t.ttc)+(d.due?'\nÉchéance : '+fmtDate(d.due):'')+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'');
+    window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body), '_blank');
+  }
+  async function sendInvoice(id, btn){
+    var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d) return;
+    var to=((d.client&&d.client.email)||'').trim();
+    var old = btn? btn.innerHTML : ''; if(btn){ btn.disabled=true; btn.textContent='Envoi…'; }
+    try{
+      if(!/.+@.+\..+/.test(to)) throw new Error('no-email');
+      await callFn('send-invoice', invoicePayload(d));
+      d.sentAt=todayISO(); d.updated=Date.now(); saveDocs(docs); cloudPushDoc(d);
+      openDoc(id);
+    }catch(e){
+      // Repli : ouvrir la messagerie avec un e-mail pré-rempli
+      mailtoInvoice(d);
+      if(btn){ btn.disabled=false; btn.innerHTML=old; }
+    }
+  }
   window.addEventListener('storage', function(e){ if(e.key===LS_DOCS){ buildFolders(); renderFolders(); if(activeKey && folderByKey(activeKey)) openFolder(activeKey); } });
 
   // Synchronisation cloud (par compte)
+  var SB_URL='https://ammmyhtxnwyoopfxtans.supabase.co', SB_KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
   var _sb=null, _uid=null;
-  try{ if(window.supabase) _sb=window.supabase.createClient('https://ammmyhtxnwyoopfxtans.supabase.co','sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo',{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
+  try{ if(window.supabase) _sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
+  async function callFn(name, payload){
+    if(!_sb) throw new Error('Service indisponible (connexion requise).');
+    var s=await _sb.auth.getSession(); if(!s.data||!s.data.session) throw new Error('Connectez-vous pour envoyer.');
+    var r=await fetch(SB_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+s.data.session.access_token},body:JSON.stringify(payload)});
+    var d=null; try{ d=await r.json(); }catch(e){}
+    if(!r.ok) throw new Error((d&&d.error)||('Service d’envoi non déployé ('+r.status+').'));
+    return d;
+  }
   async function cloudPull(){
     try{
       if(!_sb) return;
