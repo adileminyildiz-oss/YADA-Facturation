@@ -254,6 +254,13 @@
   .doc-item .di-amt{font-family:'Inter Tight';font-weight:600;font-size:13px;text-align:right;flex:none}
   .doc-item .di-del{background:none;border:none;color:var(--txt2);cursor:pointer;padding:5px;border-radius:7px;flex:none}
   .doc-item .di-del:hover{color:var(--danger);background:rgba(255,107,125,.1)}
+  .doc-item .di-status{font-size:9.5px;font-weight:600;letter-spacing:.03em;padding:3px 8px;border-radius:6px;flex:none;white-space:nowrap}
+  .doc-item .di-status.paid{background:rgba(62,233,164,.14);color:var(--pos)}
+  .doc-item .di-status.partial{background:rgba(255,207,109,.14);color:#ffcf6d}
+  .doc-item .di-status.overdue{background:rgba(255,107,125,.14);color:#ff8f9e}
+  .doc-item .di-status.pending{background:rgba(109,134,255,.12);color:var(--peri)}
+  .doc-item .di-pay{background:none;border:none;color:var(--pos);cursor:pointer;padding:5px;border-radius:7px;flex:none}
+  .doc-item .di-pay:hover{background:rgba(62,233,164,.14)}
   .drawer .dempty{text-align:center;color:var(--txt2);font-size:13px;padding:40px 20px}
   .drawer .dfoot{padding:14px 16px;border-top:1px solid var(--line);display:flex;gap:9px}
   .drawer .dfoot .btn{flex:1;justify-content:center}
@@ -927,19 +934,46 @@ function clearAll(){
 /* ============ Tiroir ============ */
 function openDrawer(){ renderDrawer(); document.getElementById('overlay').classList.add('open'); document.getElementById('drawer').classList.add('open'); }
 function closeDrawer(){ document.getElementById('overlay').classList.remove('open'); document.getElementById('drawer').classList.remove('open'); }
+function isPastDue(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return false; const dd=new Date(+m[1],+m[2]-1,+m[3]); const t=new Date(); t.setHours(0,0,0,0); return dd<t; }
+function payInfo(d,t){
+  let extra=0; (d.payments||[]).forEach(p=>extra+=Number(p.amount)||0);
+  const paid=Math.min(t.totalTTC, (t.deposit||0)+extra);
+  const due=Math.max(0, t.totalTTC-paid);
+  let status;
+  if(d.kind==='devis') status='devis';
+  else if(t.totalTTC>0 && due<=0.005) status='paid';
+  else if(paid>0.005) status='partial';
+  else if(isPastDue(d.due)) status='overdue';
+  else status='pending';
+  return {paid, due, status};
+}
+const PAY_LABEL={paid:['Payée','paid'],partial:['Partielle','partial'],overdue:['En retard','overdue'],pending:['En attente','pending']};
+function markPaidQuick(id, ev){
+  ev&&ev.stopPropagation();
+  const list=loadDocs(); let d=null; for(let i=0;i<list.length;i++) if(list[i].id===id){d=list[i];break;} if(!d) return;
+  const info=payInfo(d, computeTotals(d)); if(info.due<=0.005) return;
+  d.payments=(d.payments||[]).concat([{date:todayISO(), amount:Math.round(info.due*100)/100}]); d.updated=Date.now();
+  saveDocs(list); if(typeof CLOUD!=='undefined') CLOUD.pushDoc(d);
+  if(state && state.id===id){ state.payments=d.payments; }
+  renderDrawer(); toast('Facture marquée payée');
+}
 function renderDrawer(){
   const list=loadDocs().slice().sort((a,b)=>b.updated-a.updated);
   const box=document.getElementById('docList');
   if(!list.length){ box.innerHTML='<div class="dempty">Aucun document enregistré pour le moment.<br>Créez-en un, il apparaîtra ici automatiquement.</div>'; return; }
   box.innerHTML=list.map(d=>{
-    const t=computeTotals(d);
+    const t=computeTotals(d); const isDevis=d.kind==='devis'; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
+    const chip = (!isDevis && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
+    const payBtn = (!isDevis && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
-      <span class="di-kind ${d.kind}">${d.kind==='devis'?'Devis':'Facture'}</span>
+      <span class="di-kind ${d.kind}">${isDevis?'Devis':'Facture'}</span>
       <div class="di-main">
         <div class="di-no">${esc(d.number)||'Sans numéro'}</div>
         <div class="di-sub">${esc(d.client.name)||'Client non renseigné'} · ${fmtDate(d.date)}</div>
       </div>
+      ${chip}
       <div class="di-amt">${euro.format(t.totalTTC)}</div>
+      ${payBtn}
       <button class="di-del" title="Dupliquer" onclick="duplicateDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
       <button class="di-del" title="Supprimer" onclick="deleteDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
     </div>`;
