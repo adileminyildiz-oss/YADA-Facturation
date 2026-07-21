@@ -58,6 +58,23 @@ Tant que ces étapes ne sont pas faites, **rien n'est cassé** : le bouton
 « Choisir » bascule simplement sur une **demande par e-mail**, et vous pouvez
 attribuer l'offre manuellement depuis le panneau **Administration**.
 
+## Paiement en ligne des factures (par le client)
+
+En plus des abonnements, le client peut régler **une facture** en ligne.
+
+```bash
+supabase functions deploy create-invoice-payment
+```
+
+Aucun secret supplémentaire : `STRIPE_SECRET_KEY` suffit. Le webhook
+`stripe-webhook` (déjà déployé, événement `checkout.session.completed`
+déjà abonné) reconnaît les paiements de facture et **enregistre le
+règlement** sur la facture (statut « Payée »).
+
+Utilisation : dans *Mes documents* → facture non soldée → **Générer un
+lien de paiement**. Le lien est copiable et automatiquement ajouté à
+l'e-mail « Payer en ligne ».
+
 ## Notes
 
 - Testez d'abord en mode **Test** de Stripe (clés `sk_test_` / `price_` de test,

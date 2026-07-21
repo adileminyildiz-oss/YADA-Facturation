@@ -53,6 +53,7 @@ function renderEmail(inv: any) {
           <tr><td style="padding:3px 0;color:#6b7590">TVA</td><td style="padding:3px 0;text-align:right">${eur(inv.totalTVA)}</td></tr>
           <tr><td style="padding:8px 0 0;font-weight:700;font-size:15px;border-top:1px solid #e6e9f2">Montant dû</td><td style="padding:8px 0 0;text-align:right;font-weight:700;font-size:15px;border-top:1px solid #e6e9f2">${eur(due)}</td></tr>
         </table>
+        ${inv.payUrl ? `<div style="margin-top:18px"><a href="${esc(inv.payUrl)}" style="display:inline-block;background:#2b45ff;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:11px 22px;border-radius:10px">Payer en ligne</a></div>` : ""}
         ${inv.terms ? `<p style="margin:16px 0 0;font-size:12px;color:#6b7590">${esc(inv.terms)}</p>` : ""}
         ${inv.message ? `<p style="margin:14px 0 0;font-size:13px">${esc(inv.message)}</p>` : ""}
       </div>

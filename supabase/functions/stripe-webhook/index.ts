@@ -31,6 +31,18 @@ async function setPlan(userId: string | null | undefined, plan: string) {
   await admin.from("profiles").update({ plan }).eq("id", userId);
 }
 
+// Enregistre un règlement de facture (paiement en ligne du client)
+async function recordInvoicePayment(userId: string | null | undefined, invoiceId: string | null | undefined, amount: number) {
+  if (!userId || !invoiceId || !(amount > 0)) return;
+  const { data } = await admin.from("invoices").select("data").eq("id", invoiceId).eq("user_id", userId).maybeSingle();
+  if (!data) return;
+  const d: any = data.data || {};
+  d.payments = Array.isArray(d.payments) ? d.payments : [];
+  d.payments.push({ date: new Date().toISOString().slice(0, 10), amount, source: "stripe" });
+  d.updated = Date.now();
+  await admin.from("invoices").update({ data: d, updated_at: new Date().toISOString() }).eq("id", invoiceId).eq("user_id", userId);
+}
+
 Deno.serve(async (req) => {
   const sig = req.headers.get("stripe-signature");
   const body = await req.text();
@@ -44,9 +56,15 @@ Deno.serve(async (req) => {
   try {
     if (event.type === "checkout.session.completed") {
       const s = event.data.object as Stripe.Checkout.Session;
-      const uid = (s.metadata?.user_id) ?? s.client_reference_id ?? null;
-      const plan = s.metadata?.plan ?? "pro";
-      await setPlan(uid, plan);
+      if (s.metadata?.type === "invoice") {
+        // Paiement en ligne d'une facture par le client
+        await recordInvoicePayment(s.metadata?.user_id, s.metadata?.invoice_id, (s.amount_total ?? 0) / 100);
+      } else {
+        // Souscription à une offre
+        const uid = (s.metadata?.user_id) ?? s.client_reference_id ?? null;
+        const plan = s.metadata?.plan ?? "pro";
+        await setPlan(uid, plan);
+      }
     } else if (event.type === "customer.subscription.updated") {
       const sub = event.data.object as Stripe.Subscription;
       const priceId = sub.items?.data?.[0]?.price?.id ?? "";
