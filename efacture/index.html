@@ -227,7 +227,7 @@
   function xesc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c];}); }
   function n2(x){ return (Math.round((Number(x)||0)*100)/100).toFixed(2); }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
-  function fmtDate(iso){ if(!iso) return '—'; var p=String(iso).split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:iso; }
+  function fmtDate(iso){ if(!iso) return '—'; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso)); return m?m[3]+'/'+m[2]+'/'+m[1]:'—'; }
   function toast(m,ok){ var t=$('toast'); $('toastMsg').textContent=m; t.querySelector('.d').style.background=ok===false?'var(--neg)':'var(--pos)'; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){t.classList.remove('show');},2600); }
 
   function totals(s){
