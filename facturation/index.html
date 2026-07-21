@@ -316,11 +316,15 @@
     <!-- Type & numérotation -->
     <div class="card">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span> Type de document</h3>
-      <p class="hint">Choisissez le type et les dates. Le numéro est attribué automatiquement, par client.</p>
+      <p class="hint">Choisissez le type et les dates. Le numéro est attribué automatiquement, dans une séquence unique et continue.</p>
       <div class="seg" style="width:100%;margin-bottom:14px">
         <button type="button" id="segFacture" class="on" onclick="setKind('facture')">Facture</button>
         <button type="button" id="segDevis" onclick="setKind('devis')">Devis</button>
         <button type="button" id="segAvoir" onclick="setKind('avoir')">Avoir</button>
+      </div>
+      <div class="field" id="avoirRefWrap" style="display:none;margin-bottom:14px">
+        <label for="f-avoir-ref">Facture d'origine (créditée par cet avoir)</label>
+        <select id="f-avoir-ref"><option value="">— Sélectionnez la facture —</option></select>
       </div>
       <div class="grid3">
         <div class="field col-2">
@@ -330,6 +334,10 @@
         <div class="field">
           <label for="f-date">Date d'émission</label>
           <input id="f-date" type="date">
+        </div>
+        <div class="field" id="supplyWrap">
+          <label for="f-supply" id="supplyLabel">Date de prestation / livraison</label>
+          <input id="f-supply" type="date">
         </div>
         <div class="field" id="dueWrap">
           <label for="f-due" id="dueLabel">Date d'échéance</label>
@@ -344,8 +352,11 @@
       <p class="hint">Vos informations. Enregistrées pour vos prochains documents.</p>
       <div class="grid2">
         <div class="field col-2"><label for="e-name">Nom / Raison sociale</label><input id="e-name" placeholder="AEM-CONSEIL"></div>
+        <div class="field"><label for="e-legalform">Forme juridique</label><input id="e-legalform" placeholder="SARL, SAS, EI, auto-entrepreneur…"></div>
+        <div class="field"><label for="e-capital">Capital social</label><input id="e-capital" placeholder="ex. 10 000 €"></div>
         <div class="field col-2"><label for="e-addr">Adresse</label><textarea id="e-addr" placeholder="12 rue de l'Exemple&#10;75000 Paris"></textarea></div>
         <div class="field"><label for="e-siret">SIRET</label><input id="e-siret" placeholder="000 000 000 00000"></div>
+        <div class="field"><label for="e-rcs">RCS / RM + ville</label><input id="e-rcs" placeholder="RCS Paris 000 000 000"></div>
         <div class="field"><label for="e-tva">N° TVA intracom.</label><input id="e-tva" placeholder="FR00000000000"></div>
         <div class="field"><label for="e-email">Email</label><input id="e-email" placeholder="contact@exemple.fr"></div>
         <div class="field"><label for="e-phone">Téléphone</label><input id="e-phone" placeholder="06 00 00 00 00"></div>
@@ -470,8 +481,10 @@ function blankState(){
     number: '',
     numKey: '', numSeq: 0, numYear: '', numKind: '',
     date: todayISO(),
+    supplyDate: '',
     due: '',
-    emit: {name:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
+    avoirRef: '',
+    emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
     client: {name:'',addr:'',siret:'',email:''},
     lines: [ newLine() ],
     discount: 0, discountType: 'pct',
@@ -566,18 +579,30 @@ function buildDocData(s,t){
     puF: euro.format(Number(l.pu)||0),
     totalF: euro.format(lineHT(l))
   }));
+  const capBits=[]; if(s.emit.legalForm) capBits.push(esc(s.emit.legalForm));
+  if(s.emit.capital) capBits.push('au capital de '+esc(s.emit.capital));
+  const regBits=[]; if(s.emit.siret) regBits.push('SIRET '+esc(s.emit.siret));
+  if(s.emit.rcs) regBits.push(esc(s.emit.rcs));
+  if(s.emit.tva) regBits.push('TVA '+esc(s.emit.tva));
   return {
     s, t, isDevis, isAvoir,
     kind: isDevis?'Devis':(isAvoir?'Avoir':'Facture'),
     recipientLabel: isDevis?'Devis pour':(isAvoir?'Avoir pour':'Facturé à'),
     number: esc(s.number)||'—',
     dateEmis: fmtDate(s.date),
+    supplyDate: s.supplyDate?fmtDate(s.supplyDate):'',
+    avoirRef: esc(s.avoirRef||''),
     dueLabel: isDevis?'Valable jusqu’au':'Échéance',
     dueDate: s.due?fmtDate(s.due):'',
     emitName: esc(s.emit.name)||'Votre société',
+    emitLegalForm: esc(s.emit.legalForm||''),
+    emitCapital: esc(s.emit.capital||''),
+    emitRcs: esc(s.emit.rcs||''),
     emitAddr: br(s.emit.addr),
     emitSiret: esc(s.emit.siret||''),
     emitTva: esc(s.emit.tva||''),
+    emitCapLine: capBits.join(' '),
+    emitRegLine: regBits.join(' · '),
     emitContact: esc([s.emit.email,s.emit.phone].filter(Boolean).join(' · ')),
     iban: esc(s.emit.iban||''), bic: esc(s.emit.bic||''),
     clientName: esc(s.client.name)||'Nom du client',
@@ -603,9 +628,15 @@ function buildDocData(s,t){
 function legalText(D){
   const bits=[];
   if(D.vatExempt) bits.push('TVA non applicable, art. 293 B du CGI.');
-  if(D.isAvoir) bits.push('Avoir à valoir sur une prochaine facture ou à rembourser.');
-  else if(D.isDevis) bits.push('Devis valable 30 jours. Bon pour accord (date &amp; signature).');
-  else bits.push('Pénalités de retard : 3× le taux légal · indemnité forfaitaire de recouvrement 40 €.');
+  if(D.isAvoir){
+    bits.push(D.avoirRef ? ('Avoir se rapportant à la facture '+D.avoirRef+'.') : 'Facture d’avoir.');
+    bits.push('À valoir sur une prochaine facture ou à rembourser.');
+  } else if(D.isDevis){
+    bits.push('Devis valable 30 jours. Bon pour accord (date &amp; signature).');
+  } else {
+    bits.push('Pénalités de retard : 3× le taux d’intérêt légal · indemnité forfaitaire de recouvrement 40 € (art. L441-10 et D441-5 du Code de commerce).');
+    bits.push('Escompte pour paiement anticipé : néant.');
+  }
   return bits.join(' · ');
 }
 
@@ -628,10 +659,11 @@ const TEMPLATES = {
     return `<div style="width:100%;min-height:297mm;background:#fff;display:flex;font-family:'Inter',sans-serif;color:#1e293b;">
       <div style="width:206px;background:#0f172a;color:#cbd5e1;padding:40px 24px;display:flex;flex-direction:column;box-sizing:border-box;flex:none;">
         <div style="font-size:19px;font-weight:800;color:#fff;letter-spacing:-.01em;line-height:1.2;">${D.emitName}</div>
+        ${D.emitCapLine?`<div style="font-size:10px;line-height:1.5;margin-top:5px;color:#94a3b8;">${D.emitCapLine}</div>`:''}
         <div style="height:1px;background:#1e293b;margin:22px 0;"></div>
         <div style="font-size:9px;letter-spacing:.14em;color:#64748b;text-transform:uppercase;">Émetteur</div>
         <div style="font-size:11.5px;line-height:1.7;margin-top:7px;color:#cbd5e1;">${D.emitAddr||'—'}</div>
-        ${(D.emitSiret||D.emitTva)?`<div style="font-size:10px;line-height:1.7;margin-top:8px;color:#94a3b8;">${[D.emitSiret&&'SIRET '+D.emitSiret,D.emitTva&&'TVA '+D.emitTva].filter(Boolean).join('<br>')}</div>`:''}
+        ${D.emitRegLine?`<div style="font-size:10px;line-height:1.7;margin-top:8px;color:#94a3b8;">${D.emitRegLine.replace(/ · /g,'<br>')}</div>`:''}
         ${D.iban?`<div style="font-size:9px;letter-spacing:.14em;color:#64748b;text-transform:uppercase;margin-top:24px;">Paiement</div><div style="font-size:10px;line-height:1.7;margin-top:7px;color:#94a3b8;word-break:break-word;">IBAN ${D.iban}${D.bic?'<br>BIC '+D.bic:''}</div>`:''}
         ${D.emitContact?`<div style="margin-top:auto;font-size:10px;color:#475569;line-height:1.7;padding-top:24px;">${D.emitContact}</div>`:''}
       </div>
@@ -641,6 +673,7 @@ const TEMPLATES = {
           <div style="font-size:12.5px;color:#64748b;margin-top:4px;">N° ${D.number}</div></div>
           <div style="text-align:right;font-size:12.5px;color:#475569;line-height:1.9;">
             <div><span style="color:#94a3b8;">Date&nbsp;&nbsp;</span>${D.dateEmis}</div>
+            ${D.supplyDate?`<div><span style="color:#94a3b8;">Prestation&nbsp;&nbsp;</span>${D.supplyDate}</div>`:''}
             ${D.dueDate?`<div><span style="color:#94a3b8;">${D.dueLabel}&nbsp;&nbsp;</span>${D.dueDate}</div>`:''}
           </div>
         </div>
@@ -684,12 +717,13 @@ const TEMPLATES = {
       <div style="padding:52px 60px 34px;text-align:center;border-bottom:1px solid #2a2823;">
         <div style="font-family:'Fraunces',serif;font-size:13px;letter-spacing:.42em;color:#c8a35b;text-transform:uppercase;padding-left:.42em;">${D.kind}</div>
         <div style="font-family:'Fraunces',serif;font-size:33px;font-weight:400;color:#f4f1e9;margin-top:12px;">${D.emitName}</div>
+        ${D.emitCapLine?`<div style="font-size:11px;color:#8f8a7e;margin-top:6px;">${D.emitCapLine}</div>`:''}
         ${D.emitAddr?`<div style="font-size:12px;color:#8f8a7e;margin-top:8px;">${D.emitAddr.replace(/<br>/g,' · ')}</div>`:''}
       </div>
       <div style="padding:34px 60px;flex:1;display:flex;flex-direction:column;">
         <div style="display:flex;justify-content:space-between;font-size:13px;color:#b8b2a4;">
           <div><div style="font-size:9px;letter-spacing:.18em;color:#6b6558;text-transform:uppercase;margin-bottom:6px;">${D.recipientLabel}</div><div style="color:#f4f1e9;font-weight:600;font-size:15px;">${D.clientName}</div><div style="margin-top:3px;line-height:1.6;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret].filter(Boolean).join('<br>')}</div></div>
-          <div style="text-align:right;"><div style="font-size:9px;letter-spacing:.18em;color:#6b6558;text-transform:uppercase;margin-bottom:6px;">Détails</div><div>N° ${D.number}</div><div style="margin-top:3px;">Émise le ${D.dateEmis}</div>${D.dueDate?`<div style="margin-top:3px;">${D.dueLabel} ${D.dueDate}</div>`:''}</div>
+          <div style="text-align:right;"><div style="font-size:9px;letter-spacing:.18em;color:#6b6558;text-transform:uppercase;margin-bottom:6px;">Détails</div><div>N° ${D.number}</div><div style="margin-top:3px;">Émise le ${D.dateEmis}</div>${D.supplyDate?`<div style="margin-top:3px;">Prestation le ${D.supplyDate}</div>`:''}${D.dueDate?`<div style="margin-top:3px;">${D.dueLabel} ${D.dueDate}</div>`:''}</div>
         </div>
         <div style="margin-top:30px;">
           <div style="display:grid;grid-template-columns:1fr 54px 100px 116px;gap:12px;padding-bottom:12px;border-bottom:1px solid #c8a35b;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#c8a35b;">
@@ -702,7 +736,7 @@ const TEMPLATES = {
           </div>
         </div>
         ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#8f8a7e;line-height:1.6;text-align:center;">${D.notes}</div>`:''}
-        <div style="margin-top:auto;padding-top:40px;font-size:11px;color:#6b6558;line-height:1.8;text-align:center;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}</div>
+        <div style="margin-top:auto;padding-top:40px;font-size:11px;color:#6b6558;line-height:1.8;text-align:center;">${D.emitRegLine?D.emitRegLine+'<br>':''}${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}</div>
       </div>
     </div>`;
   },
@@ -726,6 +760,7 @@ const TEMPLATES = {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="display:flex;flex-direction:column;gap:6px;">
           <div style="font-family:'Fraunces',serif;font-size:28px;font-weight:500;letter-spacing:-.01em;color:#1a1a1a;">${D.emitName}</div>
+          ${D.emitCapLine?`<div style="font-size:11.5px;color:#9a968a;">${D.emitCapLine}</div>`:''}
           ${D.emitAddr?`<div style="font-size:12.5px;color:#7a776d;line-height:1.6;">${D.emitAddr}</div>`:''}
         </div>
         <div style="text-align:right;">
@@ -742,6 +777,7 @@ const TEMPLATES = {
         </div>
         <div style="display:flex;flex-direction:column;gap:9px;">
           <div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#b0ac9f;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;">Date</span><span>${D.dateEmis}</span></div>
+          ${D.supplyDate?`<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#b0ac9f;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;">Prestation</span><span>${D.supplyDate}</span></div>`:''}
           ${D.dueDate?`<div style="display:flex;justify-content:space-between;font-size:13px;"><span style="color:#b0ac9f;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;">${D.dueLabel}</span><span>${D.dueDate}</span></div>`:''}
         </div>
       </div>
@@ -763,7 +799,7 @@ const TEMPLATES = {
         </div>
         <div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">Mentions</div>
-          <div style="font-size:12px;color:#7a776d;line-height:1.7;">${[D.emitSiret&&'SIRET '+D.emitSiret,D.emitTva&&'TVA '+D.emitTva].filter(Boolean).join(' · ')}${(D.emitSiret||D.emitTva)?'<br>':''}${legalText(D)}${D.notes?'<br>'+D.notes:''}</div>
+          <div style="font-size:12px;color:#7a776d;line-height:1.7;">${D.emitRegLine?D.emitRegLine+'<br>':''}${legalText(D)}${D.notes?'<br>'+D.notes:''}</div>
         </div>
       </div>
     </div>`;
@@ -812,10 +848,14 @@ function fillForm(){
   const s=state;
   document.getElementById('f-number').value=s.number;
   document.getElementById('f-date').value=s.date;
+  document.getElementById('f-supply').value=s.supplyDate||'';
   document.getElementById('f-due').value=s.due;
   document.getElementById('e-name').value=s.emit.name;
+  document.getElementById('e-legalform').value=s.emit.legalForm||'';
+  document.getElementById('e-capital').value=s.emit.capital||'';
   document.getElementById('e-addr').value=s.emit.addr;
   document.getElementById('e-siret').value=s.emit.siret;
+  document.getElementById('e-rcs').value=s.emit.rcs||'';
   document.getElementById('e-tva').value=s.emit.tva;
   document.getElementById('e-email').value=s.emit.email;
   document.getElementById('e-phone').value=s.emit.phone;
@@ -851,8 +891,22 @@ function updateKindUI(){
   document.getElementById('segDevis').classList.toggle('on',k==='devis');
   document.getElementById('segAvoir').classList.toggle('on',k==='avoir');
   document.getElementById('dueLabel').textContent = k==='devis' ? 'Date de validité' : 'Date d\'échéance';
+  document.getElementById('supplyLabel').textContent = k==='devis' ? 'Date de prestation prévue' : 'Date de prestation / livraison';
+  const avoirWrap=document.getElementById('avoirRefWrap');
+  if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
+}
+/* Liste les factures existantes pour rattacher un avoir à sa facture d'origine. */
+function populateAvoirRef(){
+  const sel=document.getElementById('f-avoir-ref'); if(!sel) return;
+  const factures=loadDocs().filter(d=>d.kind==='facture'&&d.number).sort((a,b)=>b.updated-a.updated);
+  const cur=state.avoirRef||'';
+  sel.innerHTML='<option value="">— Sélectionnez la facture —</option>'+factures.map(d=>{
+    const label=esc(d.number)+' · '+(esc(d.client&&d.client.name)||'client')+' · '+fmtDate(d.date);
+    return '<option value="'+esc(d.number)+'"'+(d.number===cur?' selected':'')+'>'+label+'</option>';
+  }).join('');
+  if(cur && !factures.some(d=>d.number===cur)) sel.innerHTML+='<option value="'+esc(cur)+'" selected>'+esc(cur)+'</option>';
 }
 
 /* ============ Actions documents ============ */
@@ -1102,8 +1156,9 @@ async function init(){
   if(new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
   await CLOUD.initAndPull();   // récupère les données du compte avant l'affichage
   // bindings
-  bind('f-date','date'); bind('f-due','due');
-  bind('e-name','emit.name'); bind('e-addr','emit.addr'); bind('e-siret','emit.siret'); bind('e-tva','emit.tva');
+  bind('f-date','date'); bind('f-supply','supplyDate'); bind('f-due','due'); bind('f-avoir-ref','avoirRef');
+  bind('e-name','emit.name'); bind('e-legalform','emit.legalForm'); bind('e-capital','emit.capital');
+  bind('e-addr','emit.addr'); bind('e-siret','emit.siret'); bind('e-rcs','emit.rcs'); bind('e-tva','emit.tva');
   bind('e-email','emit.email'); bind('e-phone','emit.phone'); bind('e-iban','emit.iban'); bind('e-bic','emit.bic');
   bind('c-name','client.name'); bind('c-addr','client.addr'); bind('c-siret','client.siret'); bind('c-email','client.email');
   bind('f-discount','discount'); bind('f-discount-type','discountType'); bind('f-deposit','deposit');
