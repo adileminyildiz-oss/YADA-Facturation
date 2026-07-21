@@ -248,6 +248,7 @@
   .doc-item .di-kind{font-size:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:6px;flex:none}
   .doc-item .di-kind.facture{background:rgba(43,69,255,.18);color:var(--peri)}
   .doc-item .di-kind.devis{background:rgba(62,233,164,.14);color:var(--pos)}
+  .doc-item .di-kind.avoir{background:rgba(255,159,90,.16);color:#ff9f5a}
   .doc-item .di-main{flex:1;min-width:0}
   .doc-item .di-no{font-family:'Inter Tight';font-weight:600;font-size:13.5px}
   .doc-item .di-sub{font-size:11.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -319,6 +320,7 @@
       <div class="seg" style="width:100%;margin-bottom:14px">
         <button type="button" id="segFacture" class="on" onclick="setKind('facture')">Facture</button>
         <button type="button" id="segDevis" onclick="setKind('devis')">Devis</button>
+        <button type="button" id="segAvoir" onclick="setKind('avoir')">Avoir</button>
       </div>
       <div class="grid3">
         <div class="field col-2">
@@ -556,6 +558,7 @@ function render(){
 /* Données communes formatées pour tous les modèles */
 function buildDocData(s,t){
   const isDevis = s.kind==='devis';
+  const isAvoir = s.kind==='avoir';
   const br = v => esc(v||'').replace(/\n/g,'<br>');
   const lines = s.lines.filter(l=>l.desc||lineHT(l)>0).map(l=>({
     desc: esc(l.desc),
@@ -564,8 +567,9 @@ function buildDocData(s,t){
     totalF: euro.format(lineHT(l))
   }));
   return {
-    s, t, isDevis,
-    kind: isDevis?'Devis':'Facture',
+    s, t, isDevis, isAvoir,
+    kind: isDevis?'Devis':(isAvoir?'Avoir':'Facture'),
+    recipientLabel: isDevis?'Devis pour':(isAvoir?'Avoir pour':'Facturé à'),
     number: esc(s.number)||'—',
     dateEmis: fmtDate(s.date),
     dueLabel: isDevis?'Valable jusqu’au':'Échéance',
@@ -599,8 +603,9 @@ function buildDocData(s,t){
 function legalText(D){
   const bits=[];
   if(D.vatExempt) bits.push('TVA non applicable, art. 293 B du CGI.');
-  if(!D.isDevis) bits.push('Pénalités de retard : 3× le taux légal · indemnité forfaitaire de recouvrement 40 €.');
-  else bits.push('Devis valable 30 jours. Bon pour accord (date &amp; signature).');
+  if(D.isAvoir) bits.push('Avoir à valoir sur une prochaine facture ou à rembourser.');
+  else if(D.isDevis) bits.push('Devis valable 30 jours. Bon pour accord (date &amp; signature).');
+  else bits.push('Pénalités de retard : 3× le taux légal · indemnité forfaitaire de recouvrement 40 €.');
   return bits.join(' · ');
 }
 
@@ -640,7 +645,7 @@ const TEMPLATES = {
           </div>
         </div>
         <div style="margin-top:22px;background:#f1f5f9;border-radius:10px;padding:15px 18px;">
-          <div style="font-size:9px;letter-spacing:.14em;color:#94a3b8;text-transform:uppercase;">${D.isDevis?'Devis pour':'Facturé à'}</div>
+          <div style="font-size:9px;letter-spacing:.14em;color:#94a3b8;text-transform:uppercase;">${D.recipientLabel}</div>
           <div style="font-size:14.5px;font-weight:700;color:#0f172a;margin-top:5px;">${D.clientName}</div>
           <div style="font-size:12px;color:#64748b;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join(' · ')}</div>
         </div>
@@ -683,7 +688,7 @@ const TEMPLATES = {
       </div>
       <div style="padding:34px 60px;flex:1;display:flex;flex-direction:column;">
         <div style="display:flex;justify-content:space-between;font-size:13px;color:#b8b2a4;">
-          <div><div style="font-size:9px;letter-spacing:.18em;color:#6b6558;text-transform:uppercase;margin-bottom:6px;">${D.isDevis?'Devis pour':'Facturé à'}</div><div style="color:#f4f1e9;font-weight:600;font-size:15px;">${D.clientName}</div><div style="margin-top:3px;line-height:1.6;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret].filter(Boolean).join('<br>')}</div></div>
+          <div><div style="font-size:9px;letter-spacing:.18em;color:#6b6558;text-transform:uppercase;margin-bottom:6px;">${D.recipientLabel}</div><div style="color:#f4f1e9;font-weight:600;font-size:15px;">${D.clientName}</div><div style="margin-top:3px;line-height:1.6;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret].filter(Boolean).join('<br>')}</div></div>
           <div style="text-align:right;"><div style="font-size:9px;letter-spacing:.18em;color:#6b6558;text-transform:uppercase;margin-bottom:6px;">Détails</div><div>N° ${D.number}</div><div style="margin-top:3px;">Émise le ${D.dateEmis}</div>${D.dueDate?`<div style="margin-top:3px;">${D.dueLabel} ${D.dueDate}</div>`:''}</div>
         </div>
         <div style="margin-top:30px;">
@@ -731,7 +736,7 @@ const TEMPLATES = {
       <div style="height:1px;background:#e2dfd5;margin:30px 0 26px;"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
         <div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">${D.isDevis?'Devis pour':'Facturé à'}</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">${D.recipientLabel}</div>
           <div style="font-size:15px;font-weight:600;color:#1a1a1a;">${D.clientName}</div>
           <div style="font-size:12.5px;color:#7a776d;line-height:1.6;margin-top:3px;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div>
         </div>
@@ -841,10 +846,11 @@ function setKind(k){
   updateKindUI(); render(); scheduleSave();
 }
 function updateKindUI(){
-  const isDevis=state.kind==='devis';
-  document.getElementById('segFacture').classList.toggle('on',!isDevis);
-  document.getElementById('segDevis').classList.toggle('on',isDevis);
-  document.getElementById('dueLabel').textContent = isDevis ? 'Date de validité' : 'Date d\'échéance';
+  const k=state.kind;
+  document.getElementById('segFacture').classList.toggle('on',k==='facture');
+  document.getElementById('segDevis').classList.toggle('on',k==='devis');
+  document.getElementById('segAvoir').classList.toggle('on',k==='avoir');
+  document.getElementById('dueLabel').textContent = k==='devis' ? 'Date de validité' : 'Date d\'échéance';
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
 }
@@ -875,7 +881,8 @@ function clientCodeFor(seq, key, name){
   seq.codes[key]=code;
   return code;
 }
-function counterKey(key,kind,year){ return key+'|'+(kind==='devis'?'D':'F')+'|'+year; }
+function kindCode(kind){ return kind==='devis'?'D':(kind==='avoir'?'AV':'F'); }
+function counterKey(key,kind,year){ return key+'|'+kindCode(kind)+'|'+year; }
 function releaseNumber(s){
   if(!s.number || !s.numKey) return;
   const seq=loadSeq(); const ck=counterKey(s.numKey, s.numKind, s.numYear);
@@ -894,7 +901,7 @@ function assignNumberFor(s){
   const ck=counterKey(key, s.kind, year);
   const n=(seq.counters[ck]||0)+1; seq.counters[ck]=n;
   saveSeq(seq);
-  s.number=(s.kind==='devis'?'D':'F')+'-'+code+'-'+year+'-'+String(n).padStart(3,'0');
+  s.number=kindCode(s.kind)+'-'+code+'-'+year+'-'+String(n).padStart(3,'0');
   s.numKey=key; s.numSeq=n; s.numYear=year; s.numKind=s.kind;
 }
 function assignNumber(){ assignNumberFor(state); }
@@ -941,6 +948,7 @@ function payInfo(d,t){
   const due=Math.max(0, t.totalTTC-paid);
   let status;
   if(d.kind==='devis') status='devis';
+  else if(d.kind==='avoir') status='avoir';
   else if(t.totalTTC>0 && due<=0.005) status='paid';
   else if(paid>0.005) status='partial';
   else if(isPastDue(d.due)) status='overdue';
@@ -962,11 +970,12 @@ function renderDrawer(){
   const box=document.getElementById('docList');
   if(!list.length){ box.innerHTML='<div class="dempty">Aucun document enregistré pour le moment.<br>Créez-en un, il apparaîtra ici automatiquement.</div>'; return; }
   box.innerHTML=list.map(d=>{
-    const t=computeTotals(d); const isDevis=d.kind==='devis'; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
-    const chip = (!isDevis && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
-    const payBtn = (!isDevis && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
+    const t=computeTotals(d); const isFacture=d.kind==='facture'; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
+    const chip = (isFacture && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
+    const payBtn = (isFacture && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
+    const kindLabel = d.kind==='devis'?'Devis':(d.kind==='avoir'?'Avoir':'Facture');
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
-      <span class="di-kind ${d.kind}">${isDevis?'Devis':'Facture'}</span>
+      <span class="di-kind ${d.kind}">${kindLabel}</span>
       <div class="di-main">
         <div class="di-no">${esc(d.number)||'Sans numéro'}</div>
         <div class="di-sub">${esc(d.client.name)||'Client non renseigné'} · ${fmtDate(d.date)}</div>
