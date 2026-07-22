@@ -355,6 +355,7 @@
     <button class="btn btn-ghost btn-sm" id="convertBtn" onclick="convertDevisToFacture()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg> Convertir en facture</button>
     <button class="btn btn-ghost btn-sm" id="acompteBtn" onclick="createAcompteFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Facture d'acompte</button>
     <button class="btn btn-ghost btn-sm" id="signBtn" onclick="openSignModal()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21s3-1 5-3 9-9 9-9M14 4l6 6M2 21l4-1"/></svg> Signer (accord)</button>
+    <button class="btn btn-ghost btn-sm" id="recurBtn" onclick="generateNextRecurrence()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg> Générer l'échéance</button>
     <button class="btn btn-emit btn-sm" id="emitBtn" onclick="emitDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Émettre</button>
     <button class="btn btn-pri btn-sm" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter PDF</button>
   </div>
@@ -465,6 +466,11 @@
         <div class="field"><label for="f-acompte-ref">N° facture d'acompte (optionnel)</label><input id="f-acompte-ref" placeholder="FA-…"></div>
       </div>
       <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-vat-exempt"> Non assujetti à la TVA (franchise en base — art. 293 B du CGI)</label>
+      <label class="check"><input type="checkbox" id="f-recur-active"> Facture récurrente (abonnement)</label>
+      <div id="recurRow" class="grid2" style="margin-top:10px" hidden>
+        <div class="field"><label for="f-recur-freq">Fréquence</label><select id="f-recur-freq"><option value="monthly">Mensuelle</option><option value="quarterly">Trimestrielle</option><option value="yearly">Annuelle</option></select></div>
+        <div class="field"><label for="f-recur-next">Prochaine échéance</label><input id="f-recur-next" type="date"></div>
+      </div>
     </div>
 
     <!-- Notes -->
@@ -570,6 +576,7 @@ function blankState(){
     devisRef: '',
     acompteRef: '',
     accepted: false, acceptedAt: '', acceptedBy: '', signature: '',
+    recur: {active:false, freq:'monthly', next:''},
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
     client: {name:'',addr:'',siret:'',email:''},
@@ -1016,6 +1023,10 @@ function fillForm(){
   document.getElementById('f-discount-type').value=s.discountType;
   document.getElementById('f-deposit').value=s.deposit;
   document.getElementById('f-acompte-ref').value=s.acompteRef||'';
+  s.recur=s.recur||{active:false,freq:'monthly',next:''};
+  document.getElementById('f-recur-active').checked=!!s.recur.active;
+  document.getElementById('f-recur-freq').value=s.recur.freq||'monthly';
+  document.getElementById('f-recur-next').value=s.recur.next||'';
   document.getElementById('f-vat-exempt').checked=s.vatExempt;
   document.getElementById('f-terms').value=s.terms;
   document.getElementById('f-notes').value=s.notes;
@@ -1149,6 +1160,42 @@ function confirmSignature(){
   persist(); fillForm(); render();
   toast('Devis accepté et signé par '+esc(name));
 }
+/* ===== Factures récurrentes (abonnements) ===== */
+function advanceDate(iso, freq){
+  const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return '';
+  let y=+m[1], mo=+m[2]-1, d=+m[3];
+  const add = freq==='yearly'?12:(freq==='quarterly'?3:1);
+  mo+=add; y+=Math.floor(mo/12); mo=((mo%12)+12)%12;
+  const dim=new Date(y, mo+1, 0).getDate(); if(d>dim) d=dim;   // borne le jour à la fin du mois
+  return y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+function applyRecurUI(){
+  const active=!!(state.recur&&state.recur.active);
+  const row=document.getElementById('recurRow'); if(row) row.hidden=!active;
+  const btn=document.getElementById('recurBtn'); if(btn) btn.hidden=!(active && state.kind==='facture');
+}
+function generateNextRecurrence(){
+  if(dirty) persist();
+  const src=JSON.parse(JSON.stringify(state));
+  if(src.kind!=='facture' || !(src.recur&&src.recur.active)){ toast('Activez la récurrence sur une facture.'); return; }
+  if(!clientKeyOf(src.client&&src.client.name)){ toast('Renseignez le client.'); return; }
+  const occDate=(src.recur.next && /^\d{4}-\d{2}-\d{2}/.test(src.recur.next))?src.recur.next:todayISO();
+  // 1) On avance l'échéance du modèle et on l'enregistre.
+  state.recur.next=advanceDate(occDate, src.recur.freq||'monthly');
+  persist();
+  // 2) On crée l'occurrence comme une nouvelle facture (brouillon), datée de l'échéance.
+  const prevEmit=loadEmit();
+  state=blankState();
+  if(prevEmit) state.emit=Object.assign(state.emit,prevEmit);
+  state.kind='facture';
+  state.client=src.client;
+  state.lines=(src.lines&&src.lines.length)?src.lines:[newLine()];
+  state.vatExempt=src.vatExempt; state.discount=src.discount; state.discountType=src.discountType;
+  state.terms=src.terms; state.notes=src.notes; state.date=occDate;
+  assignNumberFor(state);
+  fillForm(); render(); persist();
+  toast('Échéance générée au '+fmtDate(occDate)+' · '+esc(state.number));
+}
 
 /* ============ Type de document ============ */
 function setKind(k){
@@ -1170,6 +1217,7 @@ function updateKindUI(){
   const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
   const acompteBtn=document.getElementById('acompteBtn'); if(acompteBtn) acompteBtn.hidden = (k!=='devis' && k!=='facture');
   const signBtn=document.getElementById('signBtn'); if(signBtn) signBtn.hidden = !(k==='devis' && !state.accepted);
+  applyRecurUI();
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
 }
@@ -1265,6 +1313,7 @@ function duplicateDoc(id,e){
   copy.id='doc_'+Date.now().toString(36)+Math.floor(performance.now()).toString(36);
   copy.number=''; copy.numKey=''; copy.numSeq=0; copy.emitted=false; copy.emittedAt='';
   copy.accepted=false; copy.acceptedAt=''; copy.acceptedBy=''; copy.signature='';
+  copy.recur={active:false,freq:'monthly',next:''};
   assignNumberFor(copy); copy.updated=Date.now();
   list.unshift(copy); saveDocs(list);
   renderDrawer(); toast('Document dupliqué');
@@ -1442,6 +1491,13 @@ async function init(){
   bind('e-email','emit.email'); bind('e-phone','emit.phone'); bind('e-iban','emit.iban'); bind('e-bic','emit.bic');
   bind('c-name','client.name'); bind('c-addr','client.addr'); bind('c-siret','client.siret'); bind('c-email','client.email');
   bind('f-discount','discount'); bind('f-discount-type','discountType'); bind('f-deposit','deposit'); bind('f-acompte-ref','acompteRef');
+  bind('f-recur-freq','recur.freq'); bind('f-recur-next','recur.next');
+  document.getElementById('f-recur-active').addEventListener('change',function(){
+    state.recur=state.recur||{active:false,freq:'monthly',next:''};
+    state.recur.active=this.checked;
+    if(state.recur.active && !state.recur.next){ state.recur.next=state.due||state.date||todayISO(); document.getElementById('f-recur-next').value=state.recur.next; }
+    applyRecurUI(); scheduleSave();
+  });
   bind('f-vat-exempt','vatExempt'); bind('f-terms','terms'); bind('f-notes','notes');
 
   // Numéro auto : (ré)attribué dès que le nom du client est validé
