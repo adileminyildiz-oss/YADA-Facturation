@@ -98,6 +98,18 @@
   .btn-ghost{color:var(--txt);background:var(--glass);border:1px solid var(--line-2)}
   .btn-ghost:hover{background:var(--glass-2)}
   .btn-sm{padding:6px 10px;font-size:11.5px;border-radius:8px}
+  .btn-emit{color:#04120b;background:linear-gradient(135deg,#7bf0bd,#22b573);box-shadow:0 8px 22px rgba(34,181,115,.34)}
+  .btn-emit:hover{filter:brightness(1.06)}
+  .btn:disabled,.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none;filter:none}
+  .lock-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:#ffcf6d;
+    background:rgba(255,207,109,.1);border:1px solid rgba(255,207,109,.28);padding:5px 10px;border-radius:8px}
+  .lock-badge svg{width:13px;height:13px}
+  .editor.locked{position:relative}
+  .lock-note{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;margin-bottom:2px;
+    background:rgba(255,207,109,.08);border:1px solid rgba(255,207,109,.24);color:#ffcf6d;font-size:12.5px;line-height:1.45}
+  .lock-note svg{width:18px;height:18px;flex:none}
+  .editor.locked input,.editor.locked textarea,.editor.locked select{opacity:.7;pointer-events:none}
+  .editor.locked .card .seg button,.editor.locked .add-line,.editor.locked .line .rm{pointer-events:none;opacity:.5}
   .btn:focus-visible,a:focus-visible,button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--azur);outline-offset:2px}
   .btn-danger{color:var(--danger);background:rgba(255,107,125,.08);border:1px solid rgba(255,107,125,.28)}
   .btn-danger:hover{background:rgba(255,107,125,.16)}
@@ -251,6 +263,7 @@
   .doc-item .di-kind.avoir{background:rgba(255,159,90,.16);color:#ff9f5a}
   .doc-item .di-main{flex:1;min-width:0}
   .doc-item .di-no{font-family:'Inter Tight';font-weight:600;font-size:13.5px}
+  .doc-item .di-lock{display:inline-flex;vertical-align:middle;margin-left:5px;color:#ffcf6d;opacity:.85}
   .doc-item .di-sub{font-size:11.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .doc-item .di-amt{font-family:'Inter Tight';font-weight:600;font-size:13px;text-align:right;flex:none}
   .doc-item .di-del{background:none;border:none;color:var(--txt2);cursor:pointer;padding:5px;border-radius:7px;flex:none}
@@ -305,13 +318,20 @@
     <span class="save-state" id="saveState"><span class="dot"></span> Enregistré</span>
     <button class="btn btn-ghost btn-sm" onclick="newDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Nouveau</button>
     <button class="btn btn-ghost btn-sm" onclick="openDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg> Mes documents</button>
+    <span class="lock-badge" id="lockBadge" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span id="lockBadgeTxt">Émise</span></span>
+    <button class="btn btn-ghost btn-sm" id="avoirBtn" onclick="createAvoirFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v6"/></svg> Créer un avoir</button>
+    <button class="btn btn-emit btn-sm" id="emitBtn" onclick="emitDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Émettre</button>
     <button class="btn btn-pri btn-sm" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter PDF</button>
   </div>
 </div>
 
 <div class="shell">
   <!-- ÉDITEUR -->
-  <div class="editor no-print">
+  <div class="editor no-print" id="editor">
+    <div class="lock-note" id="lockNote" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span id="lockNoteTxt">Document émis et verrouillé. Il ne peut plus être modifié. Pour le corriger, créez un avoir.</span>
+    </div>
 
     <!-- Type & numérotation -->
     <div class="card">
@@ -484,6 +504,7 @@ function blankState(){
     supplyDate: '',
     due: '',
     avoirRef: '',
+    emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
     client: {name:'',addr:'',siret:'',email:''},
     lines: [ newLine() ],
@@ -875,6 +896,50 @@ function fillForm(){
   document.getElementById('tplSel').value=s.template;
   updateKindUI();
   renderLines();
+  applyLockUI();
+}
+/* ===== Émission / verrouillage (conformité : une pièce émise est inaltérable) ===== */
+function applyLockUI(){
+  const locked=!!state.emitted;
+  const ed=document.getElementById('editor'); if(ed) ed.classList.toggle('locked',locked);
+  const note=document.getElementById('lockNote'); if(note) note.hidden=!locked;
+  const emitBtn=document.getElementById('emitBtn'); if(emitBtn) emitBtn.hidden=locked;
+  const badge=document.getElementById('lockBadge');
+  const avoirBtn=document.getElementById('avoirBtn');
+  const kindLbl=state.kind==='devis'?'Validé':(state.kind==='avoir'?'Émis':'Émise');
+  if(badge){ badge.hidden=!locked; const t=document.getElementById('lockBadgeTxt'); if(t) t.textContent=locked&&state.emittedAt?(kindLbl+' le '+fmtDate(state.emittedAt)):kindLbl; }
+  if(avoirBtn) avoirBtn.hidden=!(locked && state.kind==='facture');
+  const noteTxt=document.getElementById('lockNoteTxt');
+  if(noteTxt) noteTxt.textContent = state.kind==='devis'
+    ? 'Devis validé et verrouillé. Pour le modifier, dupliquez-le en brouillon.'
+    : 'Document émis et verrouillé. Il ne peut plus être modifié ni supprimé. Pour le corriger, créez un avoir.';
+}
+function emitDoc(){
+  if(state.emitted) return;
+  if(!state.number || !clientKeyOf(state.client&&state.client.name)){ toast('Renseignez le client avant d\'émettre.'); return; }
+  const quoi=state.kind==='devis'?'ce devis':(state.kind==='avoir'?'cet avoir':'cette facture');
+  if(!confirm('Émettre '+quoi+' définitivement ?\n\nUne fois émis, le document ne pourra plus être modifié ni supprimé (obligation de conformité). Les corrections se font uniquement par un avoir.')) return;
+  state.emitted=true; state.emittedAt=todayISO();
+  persist(); render(); applyLockUI();
+  toast('Document émis · '+esc(state.number));
+}
+/* Crée un avoir en brouillon à partir de la facture émise en cours. */
+function createAvoirFromCurrent(){
+  if(dirty) persist();
+  const src=JSON.parse(JSON.stringify(state));
+  if(src.kind!=='facture' || !src.emitted){ toast('L\'avoir se crée depuis une facture émise.'); return; }
+  const prevEmit=loadEmit();
+  state=blankState();
+  if(prevEmit) state.emit=Object.assign(state.emit,prevEmit);
+  state.kind='avoir';
+  state.client=src.client;
+  state.lines=(src.lines&&src.lines.length)?src.lines:[newLine()];
+  state.vatExempt=src.vatExempt; state.discount=src.discount; state.discountType=src.discountType;
+  state.avoirRef=src.number;
+  state.terms=src.terms;
+  assignNumberFor(state);
+  fillForm(); render(); persist();
+  toast('Avoir créé pour la facture '+esc(src.number));
 }
 
 /* ============ Type de document ============ */
@@ -987,12 +1052,15 @@ function duplicateDoc(id,e){
   const list=loadDocs(); const d=list.find(x=>x.id===id); if(!d) return;
   const copy=JSON.parse(JSON.stringify(d));
   copy.id='doc_'+Date.now().toString(36)+Math.floor(performance.now()).toString(36);
-  copy.number=''; copy.numKey=''; copy.numSeq=0; assignNumberFor(copy); copy.updated=Date.now();
+  copy.number=''; copy.numKey=''; copy.numSeq=0; copy.emitted=false; copy.emittedAt='';
+  assignNumberFor(copy); copy.updated=Date.now();
   list.unshift(copy); saveDocs(list);
   renderDrawer(); toast('Document dupliqué');
 }
 function deleteDoc(id,e){
   e&&e.stopPropagation();
+  const target=loadDocs().find(d=>d.id===id);
+  if(target && target.emitted){ toast('Pièce émise : suppression interdite. Créez un avoir pour la corriger.'); return; }
   if(!confirm('Supprimer définitivement ce document ?')) return;
   let list=loadDocs().filter(d=>d.id!==id); saveDocs(list);
   if(typeof CLOUD!=='undefined') CLOUD.remove(id);
@@ -1043,14 +1111,14 @@ function renderDrawer(){
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
       <span class="di-kind ${d.kind}">${kindLabel}</span>
       <div class="di-main">
-        <div class="di-no">${esc(d.number)||'Sans numéro'}</div>
+        <div class="di-no">${esc(d.number)||'Sans numéro'}${d.emitted?' <span class="di-lock" title="Pièce émise (verrouillée)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}</div>
         <div class="di-sub">${esc(d.client.name)||'Client non renseigné'} · ${fmtDate(d.date)}</div>
       </div>
       ${chip}
       <div class="di-amt">${euro.format(t.totalTTC)}</div>
       ${payBtn}
       <button class="di-del" title="Dupliquer" onclick="duplicateDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-      <button class="di-del" title="Supprimer" onclick="deleteDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+      ${d.emitted?'':`<button class="di-del" title="Supprimer" onclick="deleteDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`}
     </div>`;
   }).join('');
 }
