@@ -125,6 +125,9 @@
   .badge.blue{background:rgba(109,134,255,.14);border:1px solid var(--line-2);color:var(--peri)}
   .badge.warn{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
   .badge.ok{background:rgba(62,233,164,.12);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+  .badge.ko{background:rgba(255,107,125,.12);border:1px solid rgba(255,107,125,.3);color:#ff8f9e}
+  .st-sel{font-size:11px;font-weight:600;color:var(--txt);background:var(--glass);border:1px solid var(--line-2);
+    border-radius:8px;padding:4px 7px;cursor:pointer;font-family:inherit}
   .iconbtn{width:32px;height:32px;border-radius:8px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt2);cursor:pointer;display:grid;place-items:center}
   .iconbtn:hover{color:#fff;background:var(--glass-2)}
   .iconbtn svg{width:15px;height:15px}
@@ -422,22 +425,41 @@
     if(!selected) return; persistMeta();
     var xml=buildCII(selected, currentMeta()); var t=totals(selected);
     var out=load(LS_OUT,[]); if(out.some(function(o){return o.docId===selected.id;})){ toast('Déjà dans la file',false); return; }
-    out.unshift({docId:selected.id, number:selected.number, client:(selected.client&&selected.client.name)||'', ttc:t.ttc, xml:xml, status:'pending', ts:Date.now()});
+    out.unshift({docId:selected.id, number:selected.number, client:(selected.client&&selected.client.name)||'', ttc:t.ttc, xml:xml, status:'deposited', ts:Date.now()});
     save(LS_OUT,out); renderOutbox(); toast('Ajoutée à la file de transmission');
   });
+  /* Statuts du cycle de vie (réforme e-facture). L'ordre suit le parcours d'une facture. */
+  var LIFECYCLE=[
+    {k:'deposited', t:'Déposée', c:'warn'},
+    {k:'received',  t:'Mise à disposition', c:'warn'},
+    {k:'approved',  t:'Approuvée', c:'ok'},
+    {k:'rejected',  t:'Rejetée', c:'ko'},
+    {k:'refused',   t:'Refusée', c:'ko'},
+    {k:'paid',      t:'Encaissée', c:'ok'}
+  ];
+  function lifecycleOf(k){ for(var i=0;i<LIFECYCLE.length;i++) if(LIFECYCLE[i].k===k) return LIFECYCLE[i]; return LIFECYCLE[0]; }
   function renderOutbox(){
     var out=load(LS_OUT,[]);
     $('outboxCard').hidden = !out.length;
     if(!out.length) return;
     $('outbox').innerHTML=out.map(function(o){
+      var st=o.status==='pending'?'deposited':(o.status||'deposited');   // compat ancien statut
+      var cur=lifecycleOf(st);
+      var opts=LIFECYCLE.map(function(l){ return '<option value="'+l.k+'"'+(l.k===st?' selected':'')+'>'+l.t+'</option>'; }).join('');
       return '<div class="item"><span class="ik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></span>'+
         '<div class="im"><div class="in">'+esc(o.number||'—')+'</div><div class="id"><span>'+esc(o.client||'—')+'</span><span>'+euro.format(o.ttc||0)+'</span></div></div>'+
-        '<div class="ir"><span class="badge warn">En attente PDP</span>'+
+        '<div class="ir"><span class="badge '+cur.c+'">'+esc(cur.t)+'</span>'+
+        '<select class="st-sel" data-st="'+esc(o.docId)+'" title="Statut du cycle de vie">'+opts+'</select>'+
         '<button class="iconbtn" title="Télécharger le XML" data-dl="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>'+
         '<button class="iconbtn" title="Retirer" data-rm="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'+
         '</div></div>';
     }).join('');
   }
+  $('outbox').addEventListener('change', function(e){
+    var sel=e.target.closest('[data-st]'); if(!sel) return;
+    var out=load(LS_OUT,[]); var o=out.find(function(x){return x.docId===sel.dataset.st;});
+    if(o){ o.status=sel.value; save(LS_OUT,out); renderOutbox(); toast('Statut : '+lifecycleOf(sel.value).t); }
+  });
   $('outbox').addEventListener('click', function(e){
     var dl=e.target.closest('[data-dl]'), rm=e.target.closest('[data-rm]');
     var out=load(LS_OUT,[]);
