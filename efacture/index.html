@@ -459,6 +459,7 @@
         '<div class="im"><div class="in">'+esc(o.number||'—')+'</div><div class="id"><span>'+esc(o.client||'—')+'</span><span>'+euro.format(o.ttc||0)+'</span></div></div>'+
         '<div class="ir"><span class="badge '+cur.c+'">'+esc(cur.t)+'</span>'+
         '<select class="st-sel" data-st="'+esc(o.docId)+'" title="Statut du cycle de vie">'+opts+'</select>'+
+        '<button class="iconbtn" title="Transmettre à la PDP" data-tx="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>'+
         '<button class="iconbtn" title="Télécharger le XML" data-dl="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>'+
         '<button class="iconbtn" title="Retirer" data-rm="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'+
         '</div></div>';
@@ -470,8 +471,9 @@
     if(o){ o.status=sel.value; save(LS_OUT,out); renderOutbox(); toast('Statut : '+lifecycleOf(sel.value).t); }
   });
   $('outbox').addEventListener('click', function(e){
-    var dl=e.target.closest('[data-dl]'), rm=e.target.closest('[data-rm]');
+    var dl=e.target.closest('[data-dl]'), rm=e.target.closest('[data-rm]'), tx=e.target.closest('[data-tx]');
     var out=load(LS_OUT,[]);
+    if(tx){ transmitOutbox(tx.dataset.tx, tx); return; }
     if(dl){ var o=out.find(function(x){return x.docId===dl.dataset.dl;}); if(o) download('facturx-'+(o.number||'facture').replace(/[^\w-]+/g,'_')+'.xml', o.xml); }
     if(rm){ save(LS_OUT, out.filter(function(x){return x.docId!==rm.dataset.rm;})); renderOutbox(); toast('Retirée de la file'); }
   });
@@ -574,6 +576,29 @@
         localStorage.setItem(LS_DOCS, JSON.stringify(Object.keys(byId).map(function(k){return byId[k];})));
       }
     }catch(e){}
+  }
+  // Appel sécurisé d'une fonction serveur (le secret PDP reste côté serveur).
+  var SB_URL='https://ammmyhtxnwyoopfxtans.supabase.co', SB_KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
+  async function callFn(name, payload){
+    if(!window.supabase) throw new Error('Service indisponible (connexion requise).');
+    var sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+    var s=await sb.auth.getSession(); if(!s.data||!s.data.session) throw new Error('Connectez-vous pour transmettre.');
+    var r=await fetch(SB_URL+'/functions/v1/'+name,{method:'POST',headers:{'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+s.data.session.access_token},body:JSON.stringify(payload)});
+    var d=null; try{ d=await r.json(); }catch(e){}
+    if(!r.ok) throw new Error((d&&d.error)||('PDP non branchée ('+r.status+').'));
+    return d;
+  }
+  async function transmitOutbox(docId, btn){
+    var out=load(LS_OUT,[]); var o=out.find(function(x){return x.docId===docId;}); if(!o) return;
+    if(btn){ btn.disabled=true; btn.classList.add('busy'); }
+    try{
+      var res=await callFn('pdp-transmit',{mode:'emit', number:o.number, xml:o.xml});
+      o.status=res&&res.status?res.status:'deposited'; save(LS_OUT,out); renderOutbox();
+      toast('Transmise à la PDP · '+lifecycleOf(o.status).t);
+    }catch(err){
+      toast(err.message||'Transmission impossible', false);
+      if(btn){ btn.disabled=false; btn.classList.remove('busy'); }
+    }
   }
   // init
   renderOutbox(); renderInbox(); loadPdp();
