@@ -360,6 +360,12 @@
         '<ram:PostalTradeAddress>'+(line1?'<ram:LineOne>'+xesc(line1)+'</ram:LineOne>':'')+(rest?'<ram:LineTwo>'+xesc(rest)+'</ram:LineTwo>':'')+'<ram:CountryID>FR</ram:CountryID></ram:PostalTradeAddress>'+
         (vat?'<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">'+xesc(vat)+'</ram:ID></ram:SpecifiedTaxRegistration>':'');
     }
+    function shipParty(name, addr){   // destinataire de livraison (BG-13) — nom + adresse
+      var lns=String(addr||'').split(/\n+/).filter(Boolean);
+      var l1=lns[0]||'', rest=lns.slice(1).join(' ');
+      return '<ram:Name>'+xesc(name||'')+'</ram:Name>'+
+        '<ram:PostalTradeAddress>'+(l1?'<ram:LineOne>'+xesc(l1)+'</ram:LineOne>':'')+(rest?'<ram:LineTwo>'+xesc(rest)+'</ram:LineTwo>':'')+'<ram:CountryID>FR</ram:CountryID></ram:PostalTradeAddress>';
+    }
     var catLabel={services:'Prestations de services',biens:'Livraison de biens',mixte:'Biens et services'}[meta.category]||meta.category;
     var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu)||Number(l.qty);});
     var linesXml=lines.map(function(l,i){
@@ -395,7 +401,10 @@
       '<ram:SellerTradeParty>'+party(d.emit&&d.emit.name, sellerId, d.emit&&d.emit.addr, d.emit&&d.emit.tva)+'</ram:SellerTradeParty>'+
       '<ram:BuyerTradeParty>'+party(d.client&&d.client.name, buyerId, d.client&&d.client.addr, '')+'</ram:BuyerTradeParty>'+
     '</ram:ApplicableHeaderTradeAgreement>\n'+
-    '<ram:ApplicableHeaderTradeDelivery/>\n'+
+    '<ram:ApplicableHeaderTradeDelivery>'+
+      '<ram:ShipToTradeParty>'+shipParty((d.client&&d.client.name), (d.deliveryAddr||(d.client&&d.client.addr)))+'</ram:ShipToTradeParty>'+
+      (d.supplyDate?'<ram:ActualDeliverySupplyChainEvent><ram:OccurrenceDateTime><udt:DateTimeString format="102">'+(d.supplyDate||'').replace(/-/g,'')+'</udt:DateTimeString></ram:OccurrenceDateTime></ram:ActualDeliverySupplyChainEvent>':'')+
+    '</ram:ApplicableHeaderTradeDelivery>\n'+
     '<ram:ApplicableHeaderTradeSettlement>'+
       '<ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>'+
       allowanceXml+ dueXml+ taxXml+
