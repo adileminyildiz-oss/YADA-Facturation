@@ -58,8 +58,14 @@
   .topbar .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
   .topbar .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
   body.embed .topbar{display:none}
-  .dash-year{margin-left:auto;font-size:12px;font-weight:600;color:var(--peri);background:rgba(109,134,255,.1);
+  .tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .dash-year{font-size:12px;font-weight:600;color:var(--peri);background:rgba(109,134,255,.1);
     border:1px solid var(--line-2);padding:5px 12px;border-radius:999px}
+  .tb-export{display:inline-flex;align-items:center;gap:7px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;
+    cursor:pointer;color:var(--txt);background:var(--glass);border:1px solid var(--line-2);padding:7px 13px;border-radius:9px;transition:.15s}
+  .tb-export svg{width:15px;height:15px}
+  .tb-export:hover{background:var(--glass-2)}
+  body.embed .tb-right{margin-left:auto}
   .dash{flex:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
     padding:14px clamp(14px,3vw,26px);border-bottom:1px solid var(--line);background:rgba(9,12,22,.35)}
   body.embed .dash{padding-top:14px}
@@ -217,7 +223,10 @@
       <img src="../assets/logo-full.png" alt="AEM CONSEIL">
       <span class="t">Mes documents<small>AEM CONSEIL</small></span>
     </div>
-    <div class="dash-year" id="dashYear"></div>
+    <div class="tb-right">
+      <button class="tb-export" id="btnExport" type="button" onclick="exportAccountingCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export comptable</button>
+      <div class="dash-year" id="dashYear"></div>
+    </div>
   </div>
 
   <div class="dash" id="dash" hidden></div>
@@ -338,6 +347,33 @@
       dcard('','Reste à encaisser', euro.format(encours), 'En attente de paiement', 'warn')+
       dcard('','En retard', euro.format(retard), 'Échéance dépassée', 'over')+
       dcard('','Devis en cours', String(nbDevis), 'À convertir / relancer', '');
+  }
+
+  /* Export du journal des ventes (CSV) pour l'expert-comptable. */
+  function csvNum(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',','); }
+  function csvCell(s){ s=String(s==null?'':s); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+  function exportAccountingCSV(){
+    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'; });
+    if(!docs.length){ toast('Aucune facture à exporter.'); return; }
+    docs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||'') || String(a.number||'').localeCompare(String(b.number||'')); });
+    var head=['Type','Numéro','Date','Date prestation','Client','SIRET client','Total HT','TVA','Total TTC','Statut','Encaissé','Reste dû'];
+    var rows=[head.join(';')];
+    docs.forEach(function(d){
+      var t=computeTotal(d), sign=d.kind==='avoir'?-1:1, st=(STATUS[t.status]||{}).t||'';
+      rows.push([
+        d.kind==='avoir'?'Avoir':'Facture', d.number||'', fmtDate(d.date),
+        d.supplyDate?fmtDate(d.supplyDate):'', (d.client&&d.client.name)||'',
+        (d.client&&d.client.siret)||'',
+        csvNum(sign*t.netHT), csvNum(sign*t.totalVAT), csvNum(sign*t.ttc),
+        d.kind==='avoir'?'Avoir':st, csvNum(sign*t.paid), csvNum(sign*t.due)
+      ].map(csvCell).join(';'));
+    });
+    var csv='﻿'+rows.join('\r\n');
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='journal-ventes.csv'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
+    toast(docs.length+' document'+(docs.length>1?'s':'')+' exporté'+(docs.length>1?'s':''));
   }
 
   var folders=[], activeKey=null, activeTab='factures', query='';
