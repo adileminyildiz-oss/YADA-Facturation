@@ -320,6 +320,7 @@
     <button class="btn btn-ghost btn-sm" onclick="openDrawer()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg> Mes documents</button>
     <span class="lock-badge" id="lockBadge" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> <span id="lockBadgeTxt">Émise</span></span>
     <button class="btn btn-ghost btn-sm" id="avoirBtn" onclick="createAvoirFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v6"/></svg> Créer un avoir</button>
+    <button class="btn btn-ghost btn-sm" id="convertBtn" onclick="convertDevisToFacture()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg> Convertir en facture</button>
     <button class="btn btn-emit btn-sm" id="emitBtn" onclick="emitDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Émettre</button>
     <button class="btn btn-pri btn-sm" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter PDF</button>
   </div>
@@ -504,6 +505,7 @@ function blankState(){
     supplyDate: '',
     due: '',
     avoirRef: '',
+    devisRef: '',
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
     client: {name:'',addr:'',siret:'',email:''},
@@ -613,6 +615,7 @@ function buildDocData(s,t){
     dateEmis: fmtDate(s.date),
     supplyDate: s.supplyDate?fmtDate(s.supplyDate):'',
     avoirRef: esc(s.avoirRef||''),
+    devisRef: esc(s.devisRef||''),
     dueLabel: isDevis?'Valable jusqu’au':'Échéance',
     dueDate: s.due?fmtDate(s.due):'',
     emitName: esc(s.emit.name)||'Votre société',
@@ -655,6 +658,7 @@ function legalText(D){
   } else if(D.isDevis){
     bits.push('Devis valable 30 jours. Bon pour accord (date &amp; signature).');
   } else {
+    if(D.devisRef) bits.push('Établie d’après le devis '+D.devisRef+'.');
     bits.push('Pénalités de retard : 3× le taux d’intérêt légal · indemnité forfaitaire de recouvrement 40 € (art. L441-10 et D441-5 du Code de commerce).');
     bits.push('Escompte pour paiement anticipé : néant.');
   }
@@ -941,6 +945,25 @@ function createAvoirFromCurrent(){
   fillForm(); render(); persist();
   toast('Avoir créé pour la facture '+esc(src.number));
 }
+/* Convertit un devis en facture : crée une facture (brouillon) reprenant le devis. */
+function convertDevisToFacture(){
+  if(dirty) persist();
+  const src=JSON.parse(JSON.stringify(state));
+  if(src.kind!=='devis'){ toast('La conversion part d\'un devis.'); return; }
+  if(!clientKeyOf(src.client&&src.client.name)){ toast('Renseignez le client sur le devis.'); return; }
+  const prevEmit=loadEmit();
+  state=blankState();
+  if(prevEmit) state.emit=Object.assign(state.emit,prevEmit);
+  state.kind='facture';
+  state.client=src.client;
+  state.lines=(src.lines&&src.lines.length)?src.lines:[newLine()];
+  state.vatExempt=src.vatExempt; state.discount=src.discount; state.discountType=src.discountType;
+  state.deposit=src.deposit; state.terms=src.terms; state.notes=src.notes; state.supplyDate=src.supplyDate;
+  state.devisRef=src.number;
+  assignNumberFor(state);
+  fillForm(); render(); persist();
+  toast('Facture créée à partir du devis '+esc(src.number));
+}
 
 /* ============ Type de document ============ */
 function setKind(k){
@@ -959,6 +982,7 @@ function updateKindUI(){
   document.getElementById('supplyLabel').textContent = k==='devis' ? 'Date de prestation prévue' : 'Date de prestation / livraison';
   const avoirWrap=document.getElementById('avoirRefWrap');
   if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
+  const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
 }
