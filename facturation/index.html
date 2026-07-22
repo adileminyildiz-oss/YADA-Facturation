@@ -176,6 +176,24 @@
 
   .add-line{margin-top:4px;width:100%;justify-content:center;border:1px dashed var(--line-2);background:transparent;color:var(--peri)}
   .add-line:hover{background:var(--glass);border-style:solid}
+  .line-actions{display:flex;gap:8px;margin-top:4px}
+  .line-actions .add-line{margin-top:0;flex:1}
+  .cat-toggle{flex:none;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);padding:10px 14px}
+  .cat-toggle:hover{background:var(--glass-2)}
+  .cat-panel{margin-top:8px;border:1px solid var(--line-2);border-radius:12px;padding:10px;background:rgba(9,12,22,.4)}
+  .cat-list{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow-y:auto}
+  .cat-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;background:var(--glass);border:1px solid var(--line)}
+  .cat-item .ci-main{flex:1;min-width:0}
+  .cat-item .ci-desc{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cat-item .ci-meta{font-size:11px;color:var(--txt2)}
+  .cat-item button{flex:none;border:none;cursor:pointer;border-radius:7px;padding:6px 9px;font-family:'Inter Tight';font-weight:600;font-size:12px}
+  .cat-item .ci-ins{background:rgba(109,134,255,.16);color:var(--peri)}
+  .cat-item .ci-ins:hover{background:rgba(109,134,255,.26)}
+  .cat-item .ci-del{background:none;color:var(--txt2)}
+  .cat-item .ci-del:hover{color:#ff8f9e}
+  .cat-empty{font-size:12px;color:var(--txt2);text-align:center;padding:10px}
+  .cat-save{width:100%;justify-content:center;margin-top:8px;border:1px dashed var(--line-2);background:transparent;color:var(--txt2);font-size:12px;padding:8px}
+  .cat-save:hover{background:var(--glass);color:var(--txt)}
 
   .row-split{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
   .row-split .field{flex:1;min-width:120px}
@@ -406,7 +424,15 @@
         <span>Désignation</span><span>Qté</span><span>P.U. HT</span><span>TVA %</span><span>Total HT</span><span></span>
       </div>
       <div id="lines"></div>
-      <button class="btn add-line" onclick="addLine()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Ajouter une ligne</button>
+      <datalist id="catalogList"></datalist>
+      <div class="line-actions">
+        <button class="btn add-line" onclick="addLine()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Ajouter une ligne</button>
+        <button class="btn cat-toggle" type="button" onclick="toggleCatalog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg> Catalogue</button>
+      </div>
+      <div class="cat-panel" id="catPanel" hidden>
+        <div class="cat-list" id="catList"></div>
+        <button class="btn cat-save" type="button" onclick="saveLinesToCatalog()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Enregistrer les lignes de ce document</button>
+      </div>
     </div>
 
     <!-- Remise / acompte / options -->
@@ -836,7 +862,7 @@ function renderLines(){
   const box=document.getElementById('lines');
   box.innerHTML = state.lines.map((l,i)=>`
     <div class="line" data-i="${i}">
-      <div class="cell desg" data-l="Désignation"><input class="ln" data-k="desc" value="${esc(l.desc)}" placeholder="Prestation de conseil…"></div>
+      <div class="cell desg" data-l="Désignation"><input class="ln" data-k="desc" list="catalogList" value="${esc(l.desc)}" placeholder="Prestation de conseil…"></div>
       <div class="cell" data-l="Qté"><input class="ln r num-t" data-k="qty" type="number" min="0" step="0.01" value="${l.qty}"></div>
       <div class="cell" data-l="P.U. HT"><input class="ln r num-t" data-k="pu" type="number" min="0" step="0.01" value="${l.pu}"></div>
       <div class="cell" data-l="TVA %"><input class="ln r num-t" data-k="vat" type="number" min="0" step="0.1" value="${l.vat}" ${state.vatExempt?'disabled':''}></div>
@@ -847,11 +873,61 @@ function renderLines(){
     inp.addEventListener('input', e=>{
       const row=e.target.closest('.line'); const i=+row.dataset.i; const k=e.target.dataset.k;
       state.lines[i][k] = (k==='desc') ? e.target.value : e.target.value;
+      // Auto-complétion depuis le catalogue : si la désignation correspond exactement à un article, on reprend son P.U. et sa TVA.
+      if(k==='desc'){
+        const hit=loadCatalog().find(a=>a.desc===e.target.value);
+        if(hit){
+          state.lines[i].pu=hit.pu; state.lines[i].vat=hit.vat;
+          const puI=row.querySelector('[data-k="pu"]'); if(puI) puI.value=hit.pu;
+          const vatI=row.querySelector('[data-k="vat"]'); if(vatI && !state.vatExempt) vatI.value=hit.vat;
+        }
+      }
       // total HT en direct sans re-render complet des inputs
       row.querySelector('[readonly]').value = nf2.format(lineHT(state.lines[i]));
       render(); scheduleSave();
     });
   });
+}
+/* ============ Catalogue produits / prestations ============ */
+const LS_CATALOG='aem_fact_catalog';
+function loadCatalog(){ try{ return JSON.parse(localStorage.getItem(LS_CATALOG)||'[]'); }catch(e){ return []; } }
+function saveCatalog(list){ localStorage.setItem(LS_CATALOG, JSON.stringify(list)); }
+function catKey(a){ return String(a.desc||'').trim().toLowerCase()+'|'+(Number(a.pu)||0)+'|'+(Number(a.vat)||0); }
+function renderCatalog(){
+  const cat=loadCatalog();
+  const dl=document.getElementById('catalogList');
+  if(dl) dl.innerHTML=cat.map(a=>`<option value="${esc(a.desc)}">`).join('');
+  const box=document.getElementById('catList'); if(!box) return;
+  if(!cat.length){ box.innerHTML='<div class="cat-empty">Aucun article enregistré. Créez des lignes puis « Enregistrer les lignes de ce document ».</div>'; return; }
+  box.innerHTML=cat.map((a,i)=>`<div class="cat-item">
+    <div class="ci-main"><div class="ci-desc">${esc(a.desc)}</div><div class="ci-meta">${euro.format(a.pu)} HT · TVA ${nf2.format(a.vat)} %</div></div>
+    <button class="ci-ins" type="button" onclick="insertFromCatalog(${i})">Insérer</button>
+    <button class="ci-del" type="button" onclick="removeCatalogItem(${i})" aria-label="Retirer">✕</button>
+  </div>`).join('');
+}
+function toggleCatalog(){ const p=document.getElementById('catPanel'); if(!p) return; p.hidden=!p.hidden; if(!p.hidden) renderCatalog(); }
+function insertFromCatalog(i){
+  const a=loadCatalog()[i]; if(!a) return;
+  if(state.emitted){ toast('Document verrouillé.'); return; }
+  const blank=state.lines.length===1 && !state.lines[0].desc && !(Number(state.lines[0].pu)>0);
+  const line={desc:a.desc,qty:1,pu:a.pu,vat:a.vat};
+  if(blank) state.lines[0]=line; else state.lines.push(line);
+  renderLines(); render(); scheduleSave(); toast('Article inséré');
+}
+function removeCatalogItem(i){
+  const cat=loadCatalog(); if(i<0||i>=cat.length) return;
+  cat.splice(i,1); saveCatalog(cat); renderCatalog();
+}
+function saveLinesToCatalog(){
+  const cat=loadCatalog(); const seen={}; cat.forEach(a=>seen[catKey(a)]=true);
+  let added=0;
+  state.lines.forEach(l=>{
+    if(!String(l.desc||'').trim() || !(Number(l.pu)>0)) return;
+    const a={desc:String(l.desc).trim(),pu:Number(l.pu)||0,vat:Number(l.vat)||0};
+    if(seen[catKey(a)]) return; seen[catKey(a)]=true; cat.push(a); added++;
+  });
+  saveCatalog(cat); renderCatalog();
+  toast(added?('Catalogue : '+added+' article'+(added>1?'s':'')+' ajouté'+(added>1?'s':'')):'Aucun nouvel article à enregistrer');
 }
 function addLine(){ state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
 function removeLine(i){ state.lines.splice(i,1); if(!state.lines.length) state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
@@ -901,6 +977,7 @@ function fillForm(){
   updateKindUI();
   renderLines();
   applyLockUI();
+  renderCatalog();
 }
 /* ===== Émission / verrouillage (conformité : une pièce émise est inaltérable) ===== */
 function applyLockUI(){
