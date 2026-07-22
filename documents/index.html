@@ -58,6 +58,18 @@
   .topbar .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
   .topbar .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
   body.embed .topbar{display:none}
+  .dash-year{margin-left:auto;font-size:12px;font-weight:600;color:var(--peri);background:rgba(109,134,255,.1);
+    border:1px solid var(--line-2);padding:5px 12px;border-radius:999px}
+  .dash{flex:none;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;
+    padding:14px clamp(14px,3vw,26px);border-bottom:1px solid var(--line);background:rgba(9,12,22,.35)}
+  body.embed .dash{padding-top:14px}
+  .dcard{background:var(--glass);border:1px solid var(--line);border-radius:14px;padding:13px 15px;display:flex;flex-direction:column;gap:3px}
+  .dcard .dl{font-size:11px;color:var(--txt2);font-weight:600;display:flex;align-items:center;gap:6px}
+  .dcard .dl .di{width:8px;height:8px;border-radius:99px;flex:none}
+  .dcard .dv{font-family:'Inter Tight';font-weight:700;font-size:21px;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .dcard .dsub{font-size:10.5px;color:var(--txt2)}
+  .dcard.accent{background:linear-gradient(135deg,rgba(109,134,255,.14),rgba(43,69,255,.08));border-color:var(--line-2)}
+  .dcard .dv.pos{color:var(--pos)} .dcard .dv.warn{color:var(--warn)} .dcard .dv.over{color:#ff8f9e}
 
   .shell{flex:1;min-height:0;display:grid;grid-template-columns:296px minmax(0,1fr);gap:0}
   @media(max-width:860px){ .shell{grid-template-columns:1fr} .shell.detail-open .folders{display:none} .shell:not(.detail-open) .detail{display:none} }
@@ -205,7 +217,10 @@
       <img src="../assets/logo-full.png" alt="AEM CONSEIL">
       <span class="t">Mes documents<small>AEM CONSEIL</small></span>
     </div>
+    <div class="dash-year" id="dashYear"></div>
   </div>
+
+  <div class="dash" id="dash" hidden></div>
 
   <div class="shell" id="shell">
     <!-- Colonne dossiers clients -->
@@ -295,6 +310,36 @@
   function isPast(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return false; var d=new Date(+m[1],+m[2]-1,+m[3]); var t=new Date(); t.setHours(0,0,0,0); return d<t; }
   var STATUS={paid:{t:'Payée',c:'paid'},partial:{t:'Partielle',c:'partial'},overdue:{t:'En retard',c:'overdue'},pending:{t:'En attente',c:'facture'},devis:{t:'Devis',c:'devis'}};
 
+  function dcard(cls,label,val,sub,vcls){
+    return '<div class="dcard'+(cls?' '+cls:'')+'"><div class="dl">'+esc(label)+'</div>'+
+      '<div class="dv'+(vcls?' '+vcls:'')+'">'+esc(val)+'</div>'+
+      (sub?'<div class="dsub">'+esc(sub)+'</div>':'')+'</div>';
+  }
+  function renderDashboard(){
+    var docs=loadDocs(), dash=document.getElementById('dash'), yEl=document.getElementById('dashYear');
+    if(!dash) return;
+    if(!docs.length){ dash.hidden=true; if(yEl) yEl.textContent=''; return; }
+    var year=String(new Date().getFullYear());
+    var caTTC=0, encaisse=0, encours=0, retard=0, avoirTTC=0, nbFact=0, nbDevis=0;
+    docs.forEach(function(d){
+      var dy=(d.date&&/^\d{4}/.test(d.date))?d.date.slice(0,4):year;
+      if(dy!==year) return;
+      var t=computeTotal(d);
+      if(d.kind==='devis'){ if(t.status==='devis') nbDevis++; return; }
+      if(d.kind==='avoir'){ avoirTTC+=t.ttc; return; }
+      nbFact++; caTTC+=t.ttc; encaisse+=t.paid; encours+=t.due;
+      if(t.status==='overdue') retard+=t.due;
+    });
+    if(yEl) yEl.textContent='Année '+year;
+    dash.hidden=false;
+    dash.innerHTML=
+      dcard('accent','CA facturé', euro.format(caTTC-avoirTTC), nbFact+' facture'+(nbFact>1?'s':'')+(avoirTTC>0?' · '+euro.format(avoirTTC)+' d\'avoirs':''), '')+
+      dcard('','Encaissé', euro.format(encaisse), 'Règlements reçus', 'pos')+
+      dcard('','Reste à encaisser', euro.format(encours), 'En attente de paiement', 'warn')+
+      dcard('','En retard', euro.format(retard), 'Échéance dépassée', 'over')+
+      dcard('','Devis en cours', String(nbDevis), 'À convertir / relancer', '');
+  }
+
   var folders=[], activeKey=null, activeTab='factures', query='';
 
   function clientKey(d){ var n=((d.client&&d.client.name)||'').trim(); return n? n.toLowerCase() : '__sans__'; }
@@ -316,6 +361,7 @@
   }
 
   function renderFolders(){
+    renderDashboard();
     var list=document.getElementById('folList');
     var q=query.trim().toLowerCase();
     var shown=folders.filter(function(f){ return !q || f.name.toLowerCase().indexOf(q)>=0 || (f.email||'').toLowerCase().indexOf(q)>=0; });
