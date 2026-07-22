@@ -52,6 +52,7 @@
     --doc-ink:#0d1220; --doc-mut:#5a6478; --doc-line:#e3e7f0; --doc-accent:#2b45ff;
   }
   *{box-sizing:border-box;margin:0}
+  [hidden]{display:none!important}
   html{scroll-behavior:smooth}
   body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);background:var(--noir);-webkit-font-smoothing:antialiased;line-height:1.5;
     height:100vh;height:100dvh;overflow:hidden;display:flex;flex-direction:column}
@@ -194,6 +195,19 @@
   .cat-empty{font-size:12px;color:var(--txt2);text-align:center;padding:10px}
   .cat-save{width:100%;justify-content:center;margin-top:8px;border:1px dashed var(--line-2);background:transparent;color:var(--txt2);font-size:12px;padding:8px}
   .cat-save:hover{background:var(--glass);color:var(--txt)}
+  .sign-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(4,5,11,.72);backdrop-filter:blur(6px);padding:18px}
+  .sign-modal[hidden]{display:none}
+  .sign-card{width:100%;max-width:520px;background:linear-gradient(180deg,rgba(15,19,32,.98),rgba(9,11,20,.99));
+    border:1px solid var(--line-2);border-radius:16px;padding:22px 22px 18px;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .sign-card h3{font-family:'Inter Tight';font-weight:700;font-size:17px;margin-bottom:5px}
+  .sign-hint{font-size:12.5px;color:var(--txt2);margin-bottom:16px;line-height:1.5}
+  .sign-card label{display:block;font-size:12px;color:var(--txt2);font-weight:600;margin-bottom:5px}
+  .sign-card input{width:100%;background:var(--glass);border:1px solid var(--line-2);border-radius:10px;color:var(--txt);
+    padding:10px 12px;font-size:14px;margin-bottom:14px;font-family:inherit}
+  .sign-pad-wrap{position:relative;border:1px dashed var(--line-2);border-radius:12px;background:#fbfcff;overflow:hidden}
+  #signPad{display:block;width:100%;height:200px;touch-action:none;cursor:crosshair}
+  .sign-placeholder{position:absolute;inset:0;display:grid;place-items:center;color:#aab;font-size:14px;pointer-events:none}
+  .sign-actions{display:flex;align-items:center;gap:8px;margin-top:14px}
 
   .row-split{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
   .row-split .field{flex:1;min-width:120px}
@@ -340,6 +354,7 @@
     <button class="btn btn-ghost btn-sm" id="avoirBtn" onclick="createAvoirFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v6"/></svg> Créer un avoir</button>
     <button class="btn btn-ghost btn-sm" id="convertBtn" onclick="convertDevisToFacture()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg> Convertir en facture</button>
     <button class="btn btn-ghost btn-sm" id="acompteBtn" onclick="createAcompteFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Facture d'acompte</button>
+    <button class="btn btn-ghost btn-sm" id="signBtn" onclick="openSignModal()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21s3-1 5-3 9-9 9-9M14 4l6 6M2 21l4-1"/></svg> Signer (accord)</button>
     <button class="btn btn-emit btn-sm" id="emitBtn" onclick="emitDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Émettre</button>
     <button class="btn btn-pri btn-sm" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter PDF</button>
   </div>
@@ -511,6 +526,25 @@
 <input type="file" id="fileInput" accept="application/json" style="display:none">
 <div class="toast" id="toast"><span class="dot"></span><span id="toastMsg"></span></div>
 
+<div class="sign-modal no-print" id="signModal" hidden>
+  <div class="sign-card">
+    <h3>Signature du devis — bon pour accord</h3>
+    <p class="sign-hint">Le client signe ci-dessous et confirme son accord. Signature horodatée et jointe au devis.</p>
+    <label for="signName">Nom du signataire</label>
+    <input id="signName" type="text" placeholder="Nom et prénom du client" autocomplete="name">
+    <div class="sign-pad-wrap">
+      <canvas id="signPad" width="600" height="200"></canvas>
+      <span class="sign-placeholder" id="signPh">Signez ici</span>
+    </div>
+    <div class="sign-actions">
+      <button class="btn btn-ghost btn-sm" type="button" onclick="clearSignature()">Effacer</button>
+      <span style="flex:1"></span>
+      <button class="btn btn-ghost btn-sm" type="button" onclick="closeSignModal()">Annuler</button>
+      <button class="btn btn-emit btn-sm" type="button" onclick="confirmSignature()">Valider l'accord</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============ État ============ */
 const LS_DOCS = 'aem_fact_docs';
@@ -535,6 +569,7 @@ function blankState(){
     avoirRef: '',
     devisRef: '',
     acompteRef: '',
+    accepted: false, acceptedAt: '', acceptedBy: '', signature: '',
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:''},
     client: {name:'',addr:'',siret:'',email:''},
@@ -674,6 +709,12 @@ function buildDocData(s,t){
     ttcLabel: s.vatExempt?'Total net':'Total TTC',
     deposit: t.deposit>0?euro.format(t.deposit):'',
     acompteRef: esc(s.acompteRef||''),
+    signBlock: (s.accepted && s.kind==='devis')
+      ? `<div style="margin-top:24px;display:flex;justify-content:flex-end;"><div style="border:1px solid rgba(120,130,160,.35);border-radius:9px;padding:11px 16px;min-width:210px;text-align:center;background:rgba(255,255,255,.04);">
+           <div style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a94ad;">Bon pour accord</div>
+           ${s.signature?`<img src="${s.signature}" alt="Signature" style="max-height:58px;max-width:190px;margin:7px auto 4px;display:block;">`:'<div style="height:34px"></div>'}
+           <div style="font-size:11px;color:#7c86a0;">${esc(s.acceptedBy)||'Client'}${s.acceptedAt?' · '+fmtDate(s.acceptedAt):''}</div>
+         </div></div>` : '',
     due: euro.format(t.due),
     lines: lines
   };
@@ -747,7 +788,7 @@ const TEMPLATES = {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#3b82f6;color:#fff;border-radius:8px;padding:12px 15px;"><span style="font-weight:600;">${D.ttcLabel}</span><span style="font-size:19px;font-weight:800;">${D.totalTTC}</span></div>${dep}
           </div>
         </div>
-        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#64748b;line-height:1.6;"><span style="color:#475569;font-weight:600;">Notes — </span>${D.notes}</div>`:''}
+        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#64748b;line-height:1.6;"><span style="color:#475569;font-weight:600;">Notes — </span>${D.notes}</div>`:''}${D.signBlock}
         <div style="margin-top:auto;padding-top:28px;font-size:10.5px;color:#94a3b8;line-height:1.7;">${D.terms?esc(D.terms)+' · ':''}${legalText(D)}</div>
       </div>
     </div>`;
@@ -790,7 +831,7 @@ const TEMPLATES = {
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:13px;border-top:1px solid #c8a35b;"><span style="font-family:'Fraunces',serif;font-size:16px;color:#f4f1e9;">${D.ttcLabel}</span><span style="font-family:'Fraunces',serif;font-size:25px;color:#c8a35b;">${D.totalTTC}</span></div>${dep}
           </div>
         </div>
-        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#8f8a7e;line-height:1.6;text-align:center;">${D.notes}</div>`:''}
+        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#8f8a7e;line-height:1.6;text-align:center;">${D.notes}</div>`:''}${D.signBlock}
         <div style="margin-top:auto;padding-top:40px;font-size:11px;color:#6b6558;line-height:1.8;text-align:center;">${D.emitRegLine?D.emitRegLine+'<br>':''}${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}</div>
       </div>
     </div>`;
@@ -847,6 +888,7 @@ const TEMPLATES = {
           <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Fraunces',serif;font-size:16px;color:#1a1a1a;">${D.ttcLabel}</span><span style="font-family:'Fraunces',serif;font-size:23px;color:#c0392b;font-variant-numeric:tabular-nums;">${D.totalTTC}</span></div>${dep}
         </div>
       </div>
+      ${D.signBlock}
       <div style="margin-top:auto;padding-top:38px;display:grid;grid-template-columns:1fr 1fr;gap:28px;">
         <div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">Paiement</div>
@@ -992,12 +1034,12 @@ function applyLockUI(){
   const emitBtn=document.getElementById('emitBtn'); if(emitBtn) emitBtn.hidden=locked;
   const badge=document.getElementById('lockBadge');
   const avoirBtn=document.getElementById('avoirBtn');
-  const kindLbl=state.kind==='devis'?'Validé':(state.kind==='avoir'?'Émis':'Émise');
+  const kindLbl=state.kind==='devis'?(state.accepted?'Accepté':'Validé'):(state.kind==='avoir'?'Émis':'Émise');
   if(badge){ badge.hidden=!locked; const t=document.getElementById('lockBadgeTxt'); if(t) t.textContent=locked&&state.emittedAt?(kindLbl+' le '+fmtDate(state.emittedAt)):kindLbl; }
   if(avoirBtn) avoirBtn.hidden=!(locked && state.kind==='facture');
   const noteTxt=document.getElementById('lockNoteTxt');
   if(noteTxt) noteTxt.textContent = state.kind==='devis'
-    ? 'Devis validé et verrouillé. Pour le modifier, dupliquez-le en brouillon.'
+    ? (state.accepted ? ('Devis accepté et signé'+(state.acceptedBy?' par '+state.acceptedBy:'')+'. Verrouillé.') : 'Devis validé et verrouillé. Pour le modifier, dupliquez-le en brouillon.')
     : 'Document émis et verrouillé. Il ne peut plus être modifié ni supprimé. Pour le corriger, créez un avoir.';
 }
 function emitDoc(){
@@ -1075,6 +1117,38 @@ function createAcompteFromCurrent(){
   fillForm(); render(); persist();
   toast('Facture d\'acompte créée ('+nf2.format(pct)+' %) · '+esc(state.number));
 }
+/* ===== Signature du devis (bon pour accord) ===== */
+let _signCtx=null, _signing=false, _signHasInk=false;
+function openSignModal(){
+  if(state.kind!=='devis'){ return; }
+  if(!clientKeyOf(state.client&&state.client.name)){ toast('Renseignez le client d\'abord.'); return; }
+  const m=document.getElementById('signModal'); m.hidden=false;
+  document.getElementById('signName').value=state.acceptedBy||(state.client&&state.client.name)||'';
+  const c=document.getElementById('signPad');
+  // Cale la résolution du canvas sur sa taille affichée (netteté + coordonnées correctes).
+  const r=c.getBoundingClientRect(); c.width=Math.round(r.width); c.height=200;
+  _signCtx=c.getContext('2d'); _signCtx.lineWidth=2.2; _signCtx.lineCap='round'; _signCtx.lineJoin='round'; _signCtx.strokeStyle='#12203a';
+  _signHasInk=false; document.getElementById('signPh').style.display='';
+  const pos=e=>{ const b=c.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-b.left, y:t.clientY-b.top}; };
+  const start=e=>{ e.preventDefault(); _signing=true; _signHasInk=true; document.getElementById('signPh').style.display='none'; const p=pos(e); _signCtx.beginPath(); _signCtx.moveTo(p.x,p.y); };
+  const move=e=>{ if(!_signing) return; e.preventDefault(); const p=pos(e); _signCtx.lineTo(p.x,p.y); _signCtx.stroke(); };
+  const end=()=>{ _signing=false; };
+  c.onpointerdown=start; c.onpointermove=move; window.onpointerup=end;
+}
+function clearSignature(){ const c=document.getElementById('signPad'); if(_signCtx){ _signCtx.clearRect(0,0,c.width,c.height); } _signHasInk=false; document.getElementById('signPh').style.display=''; }
+function closeSignModal(){ const m=document.getElementById('signModal'); if(m) m.hidden=true; window.onpointerup=null; }
+function confirmSignature(){
+  const name=String(document.getElementById('signName').value||'').trim();
+  if(!name){ toast('Indiquez le nom du signataire.'); return; }
+  if(!_signHasInk){ toast('La signature est vide.'); return; }
+  const c=document.getElementById('signPad');
+  state.accepted=true; state.acceptedAt=todayISO(); state.acceptedBy=name;
+  try{ state.signature=c.toDataURL('image/png'); }catch(e){ state.signature=''; }
+  state.emitted=true; state.emittedAt=state.acceptedAt;   // un devis accepté est figé
+  closeSignModal();
+  persist(); fillForm(); render();
+  toast('Devis accepté et signé par '+esc(name));
+}
 
 /* ============ Type de document ============ */
 function setKind(k){
@@ -1095,6 +1169,7 @@ function updateKindUI(){
   if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
   const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
   const acompteBtn=document.getElementById('acompteBtn'); if(acompteBtn) acompteBtn.hidden = (k!=='devis' && k!=='facture');
+  const signBtn=document.getElementById('signBtn'); if(signBtn) signBtn.hidden = !(k==='devis' && !state.accepted);
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
 }
@@ -1189,6 +1264,7 @@ function duplicateDoc(id,e){
   const copy=JSON.parse(JSON.stringify(d));
   copy.id='doc_'+Date.now().toString(36)+Math.floor(performance.now()).toString(36);
   copy.number=''; copy.numKey=''; copy.numSeq=0; copy.emitted=false; copy.emittedAt='';
+  copy.accepted=false; copy.acceptedAt=''; copy.acceptedBy=''; copy.signature='';
   assignNumberFor(copy); copy.updated=Date.now();
   list.unshift(copy); saveDocs(list);
   renderDrawer(); toast('Document dupliqué');
