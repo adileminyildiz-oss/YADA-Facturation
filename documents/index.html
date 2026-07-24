@@ -80,6 +80,16 @@
   .chartband{position:relative;flex:none;padding:14px clamp(14px,3vw,26px) 18px;border-bottom:1px solid var(--line);background:rgba(9,12,22,.28)}
   .chart-hd{display:flex;align-items:baseline;gap:12px;font-family:'Inter Tight';font-weight:600;font-size:13px;color:var(--txt);margin-bottom:12px}
   .chart-hd .chart-sub{font-family:'Inter';font-weight:400;font-size:11.5px;color:var(--txt2)}
+  .cb-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:24px;align-items:stretch}
+  @media(max-width:760px){.cb-grid{grid-template-columns:1fr;gap:18px}}
+  .cb-panel{min-width:0;display:flex;flex-direction:column}
+  .toplist{display:flex;flex-direction:column;gap:9px;justify-content:center;flex:1}
+  .tc-row{display:grid;grid-template-columns:1fr auto;gap:3px 10px;align-items:baseline}
+  .tc-name{font-size:12.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tc-amt{font-size:12.5px;font-weight:700;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tc-track{grid-column:1/3;height:6px;border-radius:99px;background:rgba(150,168,255,.1);overflow:hidden}
+  .tc-track>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--azur),var(--peri))}
+  .tc-empty{font-size:12px;color:var(--txt2);text-align:center;padding:14px}
   .chart{display:flex;align-items:flex-end;gap:2.2%;height:132px}
   .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;cursor:default}
   .chart .barwrap{width:100%;display:flex;align-items:flex-end;justify-content:center;flex:1;min-height:0}
@@ -266,8 +276,16 @@
 
   <div class="dash" id="dash" hidden></div>
   <div class="chartband" id="chartband" hidden>
-    <div class="chart-hd"><span>Chiffre d'affaires par mois</span><span class="chart-sub" id="chartSub"></span></div>
-    <div class="chart" id="caChart"></div>
+    <div class="cb-grid">
+      <div class="cb-panel">
+        <div class="chart-hd"><span>Chiffre d'affaires par mois</span><span class="chart-sub" id="chartSub"></span></div>
+        <div class="chart" id="caChart"></div>
+      </div>
+      <div class="cb-panel" id="topPanel" hidden>
+        <div class="chart-hd"><span>Top clients</span><span class="chart-sub" id="topSub"></span></div>
+        <div class="toplist" id="topList"></div>
+      </div>
+    </div>
     <div class="chart-tip" id="chartTip" hidden></div>
   </div>
 
@@ -393,7 +411,29 @@
       dcard('','En retard', euro.format(retard), 'Échéance dépassée', 'over')+
       dcard('','Devis en cours', String(nbDevis), 'À convertir / relancer', '');
     renderCaChart(year);
+    renderTopClients(year);
     renderRelances();
+  }
+  function renderTopClients(year){
+    var panel=document.getElementById('topPanel'), list=document.getElementById('topList');
+    if(!panel||!list) return;
+    var byClient={};
+    loadDocs().forEach(function(d){
+      if(d.kind!=='facture'&&d.kind!=='avoir') return;
+      var m=/^(\d{4})/.exec(String(d.date||'')); if(!m||m[1]!==year) return;
+      var name=((d.client&&d.client.name)||'').trim()||'Sans client';
+      byClient[name]=(byClient[name]||0)+(d.kind==='avoir'?-1:1)*computeTotal(d).ttc;
+    });
+    var rows=Object.keys(byClient).map(function(k){return {name:k, v:byClient[k]};})
+      .filter(function(r){return r.v>0;}).sort(function(a,b){return b.v-a.v;});
+    if(!rows.length){ panel.hidden=true; return; }
+    panel.hidden=false;
+    var top=rows.slice(0,5), max=top[0].v||1;
+    document.getElementById('topSub').textContent=rows.length+' client'+(rows.length>1?'s':'');
+    list.innerHTML=top.map(function(r){
+      return '<div class="tc-row"><span class="tc-name">'+esc(r.name)+'</span><span class="tc-amt">'+euro.format(r.v)+'</span>'+
+        '<div class="tc-track"><i style="width:'+Math.max(3,(r.v/max*100)).toFixed(1)+'%"></i></div></div>';
+    }).join('');
   }
   function daysLate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return 0;
     var due=new Date(+m[1],+m[2]-1,+m[3]), t=new Date(); t.setHours(0,0,0,0);
