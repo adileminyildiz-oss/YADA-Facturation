@@ -77,6 +77,22 @@
   .dcard .dsub{font-size:10.5px;color:var(--txt2)}
   .dcard.accent{background:linear-gradient(135deg,rgba(109,134,255,.14),rgba(43,69,255,.08));border-color:var(--line-2)}
   .dcard .dv.pos{color:var(--pos)} .dcard .dv.warn{color:var(--warn)} .dcard .dv.over{color:#ff8f9e}
+  .chartband{position:relative;flex:none;padding:14px clamp(14px,3vw,26px) 18px;border-bottom:1px solid var(--line);background:rgba(9,12,22,.28)}
+  .chart-hd{display:flex;align-items:baseline;gap:12px;font-family:'Inter Tight';font-weight:600;font-size:13px;color:var(--txt);margin-bottom:12px}
+  .chart-hd .chart-sub{font-family:'Inter';font-weight:400;font-size:11.5px;color:var(--txt2)}
+  .chart{display:flex;align-items:flex-end;gap:2.2%;height:132px}
+  .chart .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;cursor:default}
+  .chart .barwrap{width:100%;display:flex;align-items:flex-end;justify-content:center;flex:1;min-height:0}
+  .chart .bar{width:74%;max-width:34px;min-height:2px;border-radius:5px 5px 2px 2px;
+    background:linear-gradient(180deg,var(--azur),rgba(43,69,255,.55));transition:filter .15s, transform .15s}
+  .chart .bar.cur{background:linear-gradient(180deg,#8ffbcf,var(--pos))}
+  .chart .col:hover .bar{filter:brightness(1.18)}
+  .chart .ml{font-size:9.5px;color:var(--txt2);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+  .chart .col.max .ml{color:var(--peri);font-weight:600}
+  .chart-tip{position:absolute;pointer-events:none;transform:translate(-50%,-118%);background:#0b0e1a;border:1px solid var(--line-2);
+    border-radius:9px;padding:6px 10px;font-size:11.5px;white-space:nowrap;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  .chart-tip b{color:var(--txt);font-variant-numeric:tabular-nums} .chart-tip span{color:var(--txt2)}
+  body.embed .chartband{padding-top:14px}
 
   .shell{flex:1;min-height:0;display:grid;grid-template-columns:296px minmax(0,1fr);gap:0}
   @media(max-width:860px){ .shell{grid-template-columns:1fr} .shell.detail-open .folders{display:none} .shell:not(.detail-open) .detail{display:none} }
@@ -231,6 +247,11 @@
   </div>
 
   <div class="dash" id="dash" hidden></div>
+  <div class="chartband" id="chartband" hidden>
+    <div class="chart-hd"><span>Chiffre d'affaires par mois</span><span class="chart-sub" id="chartSub"></span></div>
+    <div class="chart" id="caChart"></div>
+    <div class="chart-tip" id="chartTip" hidden></div>
+  </div>
 
   <div class="shell" id="shell">
     <!-- Colonne dossiers clients -->
@@ -348,7 +369,49 @@
       dcard('','Reste à encaisser', euro.format(encours), 'En attente de paiement', 'warn')+
       dcard('','En retard', euro.format(retard), 'Échéance dépassée', 'over')+
       dcard('','Devis en cours', String(nbDevis), 'À convertir / relancer', '');
+    renderCaChart(year);
   }
+  var MONTHS=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
+  function renderCaChart(year){
+    var band=document.getElementById('chartband'), box=document.getElementById('caChart');
+    if(!band||!box) return;
+    var monthly=new Array(12).fill(0);
+    loadDocs().forEach(function(d){
+      if(d.kind!=='facture'&&d.kind!=='avoir') return;
+      var m=/^(\d{4})-(\d{2})/.exec(String(d.date||'')); if(!m||m[1]!==year) return;
+      var idx=(+m[2])-1; if(idx<0||idx>11) return;
+      var t=computeTotal(d); monthly[idx]+=(d.kind==='avoir'?-1:1)*t.ttc;
+    });
+    var total=monthly.reduce(function(a,b){return a+b;},0);
+    if(total<=0){ band.hidden=true; return; }
+    band.hidden=false;
+    var max=Math.max.apply(null, monthly.map(function(v){return Math.max(v,0);}))||1;
+    var maxIdx=monthly.indexOf(Math.max.apply(null,monthly));
+    var nowM=(new Date()).getMonth(), nowY=String((new Date()).getFullYear());
+    document.getElementById('chartSub').textContent='Total '+year+' · '+euro.format(total);
+    box.innerHTML=monthly.map(function(v,i){
+      var h=Math.max(0, v)/max*100;
+      var cls=(i===maxIdx&&v>0?' max':'');
+      var barcls=(year===nowY&&i===nowM?' cur':'');
+      return '<div class="col'+cls+'" data-m="'+i+'" data-v="'+v+'">'+
+        '<div class="barwrap"><div class="bar'+barcls+'" style="height:'+h.toFixed(1)+'%"></div></div>'+
+        '<div class="ml">'+MONTHS[i]+'</div></div>';
+    }).join('');
+  }
+  (function(){
+    var box=document.getElementById('caChart'), tip=document.getElementById('chartTip'), band=document.getElementById('chartband');
+    if(!box) return;
+    box.addEventListener('mousemove', function(e){
+      var col=e.target.closest('.col'); if(!col){ tip.hidden=true; return; }
+      var v=Number(col.dataset.v)||0, m=+col.dataset.m;
+      tip.innerHTML='<b>'+euro.format(v)+'</b> <span>· '+MONTHS[m]+'</span>';
+      var br=band.getBoundingClientRect(), cr=col.getBoundingClientRect();
+      tip.style.left=(cr.left-br.left+cr.width/2)+'px';
+      tip.style.top=(cr.top-br.top)+'px';
+      tip.hidden=false;
+    });
+    box.addEventListener('mouseleave', function(){ tip.hidden=true; });
+  })();
 
   /* Export du journal des ventes (CSV) pour l'expert-comptable. */
   function csvNum(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',','); }
