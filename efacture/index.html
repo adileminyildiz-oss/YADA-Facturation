@@ -128,6 +128,25 @@
   .badge.ko{background:rgba(255,107,125,.12);border:1px solid rgba(255,107,125,.3);color:#ff8f9e}
   .st-sel{font-size:11px;font-weight:600;color:var(--txt);background:var(--glass);border:1px solid var(--line-2);
     border-radius:8px;padding:4px 7px;cursor:pointer;font-family:inherit}
+  .ready{margin-bottom:18px;border:1px solid var(--line-2);border-radius:16px;background:linear-gradient(180deg,rgba(11,14,26,.55),rgba(7,9,18,.4));overflow:hidden}
+  .ready-hd{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .ready-hd .rico{width:40px;height:40px;flex:none;border-radius:11px;display:grid;place-items:center}
+  .ready-hd.on .rico{background:rgba(62,233,164,.14);border:1px solid rgba(62,233,164,.3);color:var(--pos)}
+  .ready-hd.off .rico{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.3);color:var(--warn)}
+  .ready-hd .rt{font-family:'Inter Tight';font-weight:700;font-size:15px}
+  .ready-hd .rs{font-size:12.5px;color:var(--txt2);margin-top:2px}
+  .ready-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:640px){.ready-grid{grid-template-columns:1fr}}
+  .ready-col{padding:14px 18px}
+  .ready-col+.ready-col{border-left:1px solid var(--line)}
+  @media(max-width:640px){.ready-col+.ready-col{border-left:0;border-top:1px solid var(--line)}}
+  .ready-col h4{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--txt2);font-weight:700;margin:0 0 10px}
+  .rline{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--txt);padding:4px 0}
+  .rline .rk{width:17px;height:17px;flex:none;border-radius:5px;display:grid;place-items:center;margin-top:1px}
+  .rline .rk.ok{background:rgba(62,233,164,.16);color:var(--pos)} .rline .rk.no{background:rgba(255,207,109,.16);color:var(--warn)}
+  .rline .rk svg{width:11px;height:11px}
+  .rline small{display:block;color:var(--txt2);font-size:11.5px}
+  .rline .dt{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--peri);margin-left:auto;flex:none;white-space:nowrap}
   .iconbtn{width:32px;height:32px;border-radius:8px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt2);cursor:pointer;display:grid;place-items:center}
   .iconbtn:hover{color:#fff;background:var(--glass-2)}
   .iconbtn svg{width:15px;height:15px}
@@ -162,6 +181,7 @@
 
   <!-- ÉMETTRE -->
   <div class="panel" id="panel-emit">
+    <div class="ready" id="readiness"></div>
     <div class="grid">
       <div class="card">
         <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg> Facture à convertir</h2>
@@ -447,6 +467,38 @@
     {k:'paid',      t:'Encaissée', c:'ok'}
   ];
   function lifecycleOf(k){ for(var i=0;i<LIFECYCLE.length;i++) if(LIFECYCLE[i].k===k) return LIFECYCLE[i]; return LIFECYCLE[0]; }
+
+  /* Panneau « êtes-vous couvert ? » — différenciateur : la réforme angoisse, on rassure clairement. */
+  var OK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  var NO_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/></svg>';
+  function rline(ok, t, sub, dt){
+    return '<div class="rline"><span class="rk '+(ok?'ok':'no')+'">'+(ok?OK_SVG:NO_SVG)+'</span>'+
+      '<span>'+esc(t)+(sub?'<small>'+esc(sub)+'</small>':'')+'</span>'+(dt?'<span class="dt">'+esc(dt)+'</span>':'')+'</div>';
+  }
+  function renderReadiness(){
+    var box=$('readiness'); if(!box) return;
+    var pdp=load(LS_PDP,{}); var pdpOk=!!(pdp.name&&pdp.endpoint);
+    var docs=load(LS_DOCS,[]).filter(function(d){return d.kind==='facture'||d.kind==='avoir';});
+    var facturxOk=docs.length>0;   // l'espace génère nativement du Factur-X
+    // « Couvert pour la réception 2026 » = une PDP est raccordée.
+    var coveredReception=pdpOk;
+    box.innerHTML=
+      '<div class="ready-hd '+(coveredReception?'on':'off')+'">'+
+        '<span class="rico">'+(coveredReception?OK_SVG:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>')+'</span>'+
+        '<div><div class="rt">'+(coveredReception?'Vous êtes prêt pour la facturation électronique':'Presque prêt — il reste à raccorder votre PDP')+'</div>'+
+        '<div class="rs">'+(coveredReception?'PDP raccordée. Vous pouvez recevoir et transmettre vos factures.':'Le logiciel génère déjà des factures conformes ; branchez une plateforme agréée pour la réception obligatoire de septembre 2026.')+'</div></div>'+
+      '</div>'+
+      '<div class="ready-grid">'+
+        '<div class="ready-col"><h4>Vos échéances</h4>'+
+          rline(true, 'Réception des factures', 'Obligatoire — toutes les entreprises', '01/09/2026')+
+          rline(true, 'Émission + e-reporting', 'Obligatoire pour les TPE / PME', '01/09/2027')+
+        '</div>'+
+        '<div class="ready-col"><h4>Votre préparation</h4>'+
+          rline(facturxOk, 'Factures au format Factur-X', facturxOk?'Généré nativement (EN 16931 / CII)':'Créez une facture pour l\'activer')+
+          rline(pdpOk, 'Plateforme agréée (PDP) raccordée', pdpOk?('Configurée : '+esc(pdp.name)):'À configurer dans l\'onglet « Réglages PDP »')+
+        '</div>'+
+      '</div>';
+  }
   function renderOutbox(){
     var out=load(LS_OUT,[]);
     $('outboxCard').hidden = !out.length;
@@ -556,7 +608,7 @@
   function updatePdpBadge(c){ var on=!!(c.name&&c.endpoint); $('pdpBadge').innerHTML='<span class="status-dot '+(on?'on':'off')+'"></span> '+(on?'Configurée (connexion à activer)':'Non connectée'); }
   $('savePdp').addEventListener('click', function(){
     var c={name:$('pName').value.trim(), siren:digits($('pSiren').value), endpoint:$('pEndpoint').value.trim()};
-    save(LS_PDP,c); updatePdpBadge(c); toast('Réglages PDP enregistrés');
+    save(LS_PDP,c); updatePdpBadge(c); renderReadiness(); toast('Réglages PDP enregistrés');
   });
 
   // Récupère les documents du compte (cloud) avant l'affichage
@@ -601,7 +653,7 @@
     }
   }
   // init
-  renderOutbox(); renderInbox(); loadPdp();
+  renderOutbox(); renderInbox(); loadPdp(); renderReadiness();
   cloudPull().then(function(){ refreshPick(); });
   window.addEventListener('storage', function(e){ if(e.key===LS_DOCS) refreshPick(); });
 </script>
