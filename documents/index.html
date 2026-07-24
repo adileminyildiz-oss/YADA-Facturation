@@ -93,6 +93,24 @@
     border-radius:9px;padding:6px 10px;font-size:11.5px;white-space:nowrap;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.5)}
   .chart-tip b{color:var(--txt);font-variant-numeric:tabular-nums} .chart-tip span{color:var(--txt2)}
   body.embed .chartband{padding-top:14px}
+  .relband{flex:none;padding:14px clamp(14px,3vw,26px) 16px;border-bottom:1px solid var(--line);background:rgba(255,207,109,.05)}
+  .rel-hd{display:flex;align-items:baseline;gap:12px;margin-bottom:10px}
+  .rel-t{display:inline-flex;align-items:center;gap:7px;font-family:'Inter Tight';font-weight:700;font-size:13px;color:var(--warn)}
+  .rel-t svg{width:15px;height:15px}
+  .rel-sub{font-size:11.5px;color:var(--txt2)}
+  .rel-list{display:flex;flex-direction:column;gap:6px;max-height:190px;overflow-y:auto}
+  .rel-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;background:var(--glass);border:1px solid var(--line)}
+  .rel-item .ri-main{flex:1;min-width:0}
+  .rel-item .ri-cli{font-family:'Inter Tight';font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rel-item .ri-no{font-size:11px;color:var(--txt2)}
+  .rel-item .ri-late{flex:none;font-size:11px;font-weight:600;color:#ff8f9e;background:rgba(255,107,125,.12);border:1px solid rgba(255,107,125,.28);padding:3px 9px;border-radius:999px;white-space:nowrap}
+  .rel-item .ri-amt{flex:none;font-family:'Inter Tight';font-weight:700;font-size:13.5px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .rel-item .ri-btn{flex:none;display:inline-flex;align-items:center;gap:6px;font-family:'Inter Tight';font-weight:600;font-size:11.5px;cursor:pointer;
+    color:var(--warn);background:rgba(255,207,109,.1);border:1px solid rgba(255,207,109,.3);border-radius:8px;padding:6px 11px}
+  .rel-item .ri-btn:hover{background:rgba(255,207,109,.2)}
+  .rel-item .ri-btn svg{width:13px;height:13px}
+  .rel-item .ri-btn[disabled]{opacity:.5;cursor:default}
+  @media(max-width:640px){.rel-item .ri-no{display:none}}
 
   .shell{flex:1;min-height:0;display:grid;grid-template-columns:296px minmax(0,1fr);gap:0}
   @media(max-width:860px){ .shell{grid-template-columns:1fr} .shell.detail-open .folders{display:none} .shell:not(.detail-open) .detail{display:none} }
@@ -253,6 +271,11 @@
     <div class="chart-tip" id="chartTip" hidden></div>
   </div>
 
+  <div class="relband" id="relband" hidden>
+    <div class="rel-hd"><span class="rel-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg> À relancer</span><span class="rel-sub" id="relSub"></span></div>
+    <div class="rel-list" id="relList"></div>
+  </div>
+
   <div class="shell" id="shell">
     <!-- Colonne dossiers clients -->
     <aside class="folders">
@@ -370,7 +393,38 @@
       dcard('','En retard', euro.format(retard), 'Échéance dépassée', 'over')+
       dcard('','Devis en cours', String(nbDevis), 'À convertir / relancer', '');
     renderCaChart(year);
+    renderRelances();
   }
+  function daysLate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return 0;
+    var due=new Date(+m[1],+m[2]-1,+m[3]), t=new Date(); t.setHours(0,0,0,0);
+    return Math.max(0, Math.round((t-due)/86400000)); }
+  function renderRelances(){
+    var band=document.getElementById('relband'), list=document.getElementById('relList');
+    if(!band||!list) return;
+    var late=loadDocs().filter(function(d){ return d.kind==='facture' && computeTotal(d).status==='overdue'; })
+      .map(function(d){ return {d:d, late:daysLate(d.due), due:computeTotal(d).due}; })
+      .sort(function(a,b){ return b.late-a.late; });
+    if(!late.length){ band.hidden=true; return; }
+    band.hidden=false;
+    var tot=late.reduce(function(s,x){return s+x.due;},0);
+    document.getElementById('relSub').textContent=late.length+' facture'+(late.length>1?'s':'')+' en retard · '+euro.format(tot)+' à recouvrer';
+    list.innerHTML=late.map(function(x){
+      var d=x.d, hasEmail=!!((d.client&&d.client.email)||'').trim();
+      return '<div class="rel-item" data-open="'+esc(d.id)+'">'+
+        '<div class="ri-main"><div class="ri-cli">'+(esc(d.client&&d.client.name)||'Client')+'</div>'+
+        '<div class="ri-no">'+esc(d.number||'—')+' · échéance '+fmtDate(d.due)+'</div></div>'+
+        '<span class="ri-late">'+x.late+' j de retard</span>'+
+        '<span class="ri-amt">'+euro.format(x.due)+'</span>'+
+        '<button class="ri-btn" data-relance="'+esc(d.id)+'" title="'+(hasEmail?'Relancer par e-mail':'Aucun e-mail client — ouvre le rappel')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6M21 12a9 9 0 1 1-3-6.7L21 8"/></svg> Relancer</button>'+
+      '</div>';
+    }).join('');
+  }
+  document.getElementById('relList').addEventListener('click', function(e){
+    var rel=e.target.closest('[data-relance]');
+    if(rel){ e.stopPropagation(); sendInvoice(rel.dataset.relance, rel, 'reminder'); return; }
+    var open=e.target.closest('[data-open]');
+    if(open){ openDoc(open.dataset.open); }
+  });
   var MONTHS=['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Aoû','Sep','Oct','Nov','Déc'];
   function renderCaChart(year){
     var band=document.getElementById('chartband'), box=document.getElementById('caChart');
