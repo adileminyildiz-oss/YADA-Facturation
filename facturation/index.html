@@ -538,6 +538,13 @@
           <option value="fr">FR</option>
           <option value="en">EN</option>
         </select>
+        <select id="curSel" onchange="setCurrency(this.value)" title="Devise du document" style="width:auto;font-size:12.5px;padding:6px 26px 6px 10px;border-radius:9px">
+          <option value="EUR">€ EUR</option>
+          <option value="USD">$ USD</option>
+          <option value="GBP">£ GBP</option>
+          <option value="CHF">CHF</option>
+          <option value="CAD">$ CAD</option>
+        </select>
       </span>
       <div style="display:flex;gap:10px;align-items:center">
         <span class="zoom">
@@ -598,6 +605,11 @@ const LS_EMIT = 'aem_fact_emit';
 const LS_CUR  = 'aem_fact_current';
 
 const euro = new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2});
+const CURRENCIES=['EUR','USD','GBP','CHF','CAD'];
+function moneyFmt(cur, lang){
+  try{ return new Intl.NumberFormat(lang==='en'?'en-US':'fr-FR',{style:'currency',currency:cur||'EUR',minimumFractionDigits:2}); }
+  catch(e){ return euro; }
+}
 const nf2  = new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 let state = null;
@@ -608,6 +620,7 @@ function blankState(){
     kind: 'facture',
     template: '2C',
     lang: 'fr',
+    currency: 'EUR',
     number: '',
     numKey: '', numSeq: 0, numYear: '', numKind: '',
     date: todayISO(),
@@ -712,11 +725,12 @@ function buildDocData(s,t){
   const isLivraison = s.kind==='livraison';
   const recipMap={devis:'Devis pour',avoir:'Avoir pour',commande:'Commande de',livraison:'Livré à'};
   const br = v => esc(v||'').replace(/\n/g,'<br>');
+  const money = moneyFmt(s.currency, s.lang);
   const lines = s.lines.filter(l=>l.desc||lineHT(l)>0).map(l=>({
     desc: esc(l.desc),
     qtyF: nf2.format(Number(l.qty)||0),
-    puF: euro.format(Number(l.pu)||0),
-    totalF: euro.format(lineHT(l))
+    puF: money.format(Number(l.pu)||0),
+    totalF: money.format(lineHT(l))
   }));
   const L=labelsFor(s.lang);
   const capBits=[]; if(s.emit.legalForm) capBits.push(esc(s.emit.legalForm));
@@ -761,13 +775,13 @@ function buildDocData(s,t){
     notes: br(s.notes),
     vatExempt: s.vatExempt,
     vatRate: (t.vatRows.length===1)?nf2.format(t.vatRows[0].rate):null,
-    subHT: euro.format(t.subHT),
-    discAmt: t.discAmt>0?euro.format(t.discAmt):'',
+    subHT: money.format(t.subHT),
+    discAmt: t.discAmt>0?money.format(t.discAmt):'',
     discLabel: L.remise+(s.discountType==='pct'?' ('+nf2.format(s.discount)+' %)':''),
-    totalVAT: euro.format(t.totalVAT),
-    totalTTC: euro.format(t.totalTTC),
+    totalVAT: money.format(t.totalVAT),
+    totalTTC: money.format(t.totalTTC),
     ttcLabel: s.vatExempt?L.totalNet:L.totalTTC,
-    deposit: t.deposit>0?euro.format(t.deposit):'',
+    deposit: t.deposit>0?money.format(t.deposit):'',
     acompteRef: esc(s.acompteRef||''),
     situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : '',
     signBlock: (s.accepted && s.kind==='devis')
@@ -776,7 +790,7 @@ function buildDocData(s,t){
            ${s.signature?`<img src="${s.signature}" alt="Signature" style="max-height:58px;max-width:190px;margin:7px auto 4px;display:block;">`:'<div style="height:34px"></div>'}
            <div style="font-size:11px;color:#7c86a0;">${esc(s.acceptedBy)||L.client}${s.acceptedAt?' · '+fmtDate(s.acceptedAt):''}</div>
          </div></div>` : '',
-    due: euro.format(t.due),
+    due: money.format(t.due),
     lines: lines
   };
 }
@@ -1102,6 +1116,7 @@ function fillForm(){
   if(!s.template) s.template='2C';
   document.getElementById('tplSel').value=s.template;
   { const ls=document.getElementById('langSel'); if(ls) ls.value=s.lang||'fr'; }
+  { const cs=document.getElementById('curSel'); if(cs) cs.value=s.currency||'EUR'; }
   updateKindUI();
   renderLines();
   applyLockUI();
@@ -1207,18 +1222,18 @@ function recomputeSituation(){
   const en=state.lang==='en';
   const desc=(en?'Progress payment':'Situation')+(M.num?(' n°'+M.num):'')+' — '+(en?'progress':'avancement')+' '+nf2.format(prog)+' %';
   state.lines=[{desc:desc, qty:1, pu:amount, vat:Number(M.vat)||0}];
-  const amtEl=document.getElementById('m-amount'); if(amtEl) amtEl.value=euro.format(amount);
+  const amtEl=document.getElementById('m-amount'); if(amtEl) amtEl.value=moneyFmt(state.currency,state.lang).format(amount);
 }
 function buildSituationRecap(s, L){
   const M=s.marche||{}; const total=Number(M.total)||0, prog=Number(M.progress)||0, prev=Number(M.prev)||0;
-  const en=s.lang==='en';
+  const en=s.lang==='en'; const money=moneyFmt(s.currency,s.lang);
   const row=(k,v)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="color:#94a3b8;">${k}</span><span style="font-weight:600;">${v}</span></div>`;
   return `<div style="margin-top:22px;border:1px solid rgba(120,130,160,.3);border-radius:9px;padding:13px 16px;font-size:12px;color:#334155;">
     <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">${en?'Contract progress':'Avancement du marché'}</div>
-    ${row(en?'Contract amount (excl. tax)':'Montant du marché HT', euro.format(total))}
-    ${row(en?'Previously invoiced':'Déjà facturé', nf2.format(prev)+' % · '+euro.format(total*prev/100))}
-    ${row(en?'Cumulative progress':'Avancement cumulé', nf2.format(prog)+' % · '+euro.format(total*prog/100))}
-    ${row('<b>'+(en?'This progress payment':'Présente situation')+'</b>', '<b>'+nf2.format(Math.max(0,prog-prev))+' % · '+euro.format(total*Math.max(0,prog-prev)/100)+'</b>')}
+    ${row(en?'Contract amount (excl. tax)':'Montant du marché HT', money.format(total))}
+    ${row(en?'Previously invoiced':'Déjà facturé', nf2.format(prev)+' % · '+money.format(total*prev/100))}
+    ${row(en?'Cumulative progress':'Avancement cumulé', nf2.format(prog)+' % · '+money.format(total*prog/100))}
+    ${row('<b>'+(en?'This progress payment':'Présente situation')+'</b>', '<b>'+nf2.format(Math.max(0,prog-prev))+' % · '+money.format(total*Math.max(0,prog-prev)/100)+'</b>')}
   </div>`;
 }
 /* ===== Signature du devis (bon pour accord) ===== */
@@ -1498,7 +1513,7 @@ function renderDrawer(){
         <div class="di-sub">${esc(d.client.name)||'Client non renseigné'} · ${fmtDate(d.date)}</div>
       </div>
       ${chip}
-      <div class="di-amt">${euro.format(t.totalTTC)}</div>
+      <div class="di-amt">${moneyFmt(d.currency,'fr').format(t.totalTTC)}</div>
       ${payBtn}
       <button class="di-del" title="Dupliquer" onclick="duplicateDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
       ${d.emitted?'':`<button class="di-del" title="Supprimer" onclick="deleteDoc('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`}
@@ -1560,6 +1575,7 @@ function zoomStep(d){
 function zoomFit(){ manualZoom=null; applyZoom(); }
 function setTemplate(v){ state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
 function setLang(v){ state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
+function setCurrency(v){ state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
 window.addEventListener('resize', function(){ if(manualZoom==null) applyZoom(); });
 
 /* ============ Toast ============ */
