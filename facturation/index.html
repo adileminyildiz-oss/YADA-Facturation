@@ -298,6 +298,7 @@
   .doc-item .di-kind.facture{background:rgba(43,69,255,.18);color:var(--peri)}
   .doc-item .di-kind.devis{background:rgba(62,233,164,.14);color:var(--pos)}
   .doc-item .di-kind.avoir{background:rgba(255,159,90,.16);color:#ff9f5a}
+  .doc-item .di-kind.situation{background:rgba(255,207,109,.14);color:#ffcf6d}
   .doc-item .di-kind.commande{background:rgba(139,201,255,.14);color:#8bc9ff}
   .doc-item .di-kind.livraison{background:rgba(180,160,255,.14);color:#b4a0ff}
   .doc-item .di-main{flex:1;min-width:0}
@@ -385,6 +386,7 @@
           <option value="facture">Facture</option>
           <option value="devis">Devis</option>
           <option value="avoir">Avoir</option>
+          <option value="situation">Facture de situation (BTP)</option>
           <option value="commande">Bon de commande</option>
           <option value="livraison">Bon de livraison</option>
         </select>
@@ -453,8 +455,22 @@
       </div>
     </div>
 
+    <!-- Marché (facture de situation BTP) -->
+    <div class="card" id="marcheCard" hidden>
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span> Marché &amp; avancement</h3>
+      <p class="hint">Facturation d'avancement : le montant de la situation = montant du marché × (avancement cumulé − déjà facturé).</p>
+      <div class="grid2">
+        <div class="field"><label for="m-num">N° de situation</label><input id="m-num" placeholder="ex. 3"></div>
+        <div class="field"><label for="m-total">Montant du marché HT (€)</label><input id="m-total" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="m-prev">Avancement déjà facturé (%)</label><input id="m-prev" type="number" min="0" max="100" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="m-progress">Avancement cumulé (%)</label><input id="m-progress" type="number" min="0" max="100" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="m-vat">Taux de TVA (%)</label><input id="m-vat" type="number" min="0" step="0.1" placeholder="20"></div>
+        <div class="field"><label>Montant de la situation</label><input id="m-amount" readonly tabindex="-1" class="locked" style="font-weight:700"></div>
+      </div>
+    </div>
+
     <!-- Lignes -->
-    <div class="card">
+    <div class="card" id="linesCard">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span> Prestations &amp; produits</h3>
       <p class="hint">Ajoutez vos lignes. Les totaux se calculent automatiquement.</p>
       <div class="lines-head">
@@ -602,6 +618,7 @@ function blankState(){
     acompteRef: '',
     accepted: false, acceptedAt: '', acceptedBy: '', signature: '',
     recur: {active:false, freq:'monthly', next:''},
+    marche: {total:'', progress:'', prev:'', num:'', vat:20},
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:'',decAssureur:'',decContrat:'',decZone:''},
     client: {name:'',addr:'',siret:'',email:''},
@@ -752,6 +769,7 @@ function buildDocData(s,t){
     ttcLabel: s.vatExempt?L.totalNet:L.totalTTC,
     deposit: t.deposit>0?euro.format(t.deposit):'',
     acompteRef: esc(s.acompteRef||''),
+    situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : '',
     signBlock: (s.accepted && s.kind==='devis')
       ? `<div style="margin-top:24px;display:flex;justify-content:flex-end;"><div style="border:1px solid rgba(120,130,160,.35);border-radius:9px;padding:11px 16px;min-width:210px;text-align:center;background:rgba(255,255,255,.04);">
            <div style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a94ad;">${L.bonAccord}</div>
@@ -836,7 +854,7 @@ const TEMPLATES = {
             <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#3b82f6;color:#fff;border-radius:8px;padding:12px 15px;"><span style="font-weight:600;">${D.ttcLabel}</span><span style="font-size:19px;font-weight:800;">${D.totalTTC}</span></div>${dep}
           </div>
         </div>
-        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#64748b;line-height:1.6;"><span style="color:#475569;font-weight:600;">Notes — </span>${D.notes}</div>`:''}${D.signBlock}
+        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#64748b;line-height:1.6;"><span style="color:#475569;font-weight:600;">Notes — </span>${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
         <div style="margin-top:auto;padding-top:28px;font-size:10.5px;color:#94a3b8;line-height:1.7;">${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
       </div>
     </div>`;
@@ -879,7 +897,7 @@ const TEMPLATES = {
             <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;padding-top:13px;border-top:1px solid #c8a35b;"><span style="font-family:'Fraunces',serif;font-size:16px;color:#f4f1e9;">${D.ttcLabel}</span><span style="font-family:'Fraunces',serif;font-size:25px;color:#c8a35b;">${D.totalTTC}</span></div>${dep}
           </div>
         </div>
-        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#8f8a7e;line-height:1.6;text-align:center;">${D.notes}</div>`:''}${D.signBlock}
+        ${D.notes?`<div style="margin-top:22px;font-size:11.5px;color:#8f8a7e;line-height:1.6;text-align:center;">${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
         <div style="margin-top:auto;padding-top:40px;font-size:11px;color:#6b6558;line-height:1.8;text-align:center;">${D.emitRegLine?D.emitRegLine+'<br>':''}${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
       </div>
     </div>`;
@@ -936,7 +954,7 @@ const TEMPLATES = {
           <div style="display:flex;justify-content:space-between;align-items:baseline;"><span style="font-family:'Fraunces',serif;font-size:16px;color:#1a1a1a;">${D.ttcLabel}</span><span style="font-family:'Fraunces',serif;font-size:23px;color:#c0392b;font-variant-numeric:tabular-nums;">${D.totalTTC}</span></div>${dep}
         </div>
       </div>
-      ${D.signBlock}
+      ${D.situationRecap}${D.signBlock}
       <div style="margin-top:auto;padding-top:38px;display:grid;grid-template-columns:1fr 1fr;gap:28px;">
         <div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">${D.L.payment}</div>
@@ -1068,6 +1086,12 @@ function fillForm(){
   document.getElementById('f-discount-type').value=s.discountType;
   document.getElementById('f-deposit').value=s.deposit;
   document.getElementById('f-acompte-ref').value=s.acompteRef||'';
+  s.marche=s.marche||{total:'',progress:'',prev:'',num:'',vat:20};
+  document.getElementById('m-num').value=s.marche.num||'';
+  document.getElementById('m-total').value=s.marche.total||'';
+  document.getElementById('m-prev').value=s.marche.prev||'';
+  document.getElementById('m-progress').value=s.marche.progress||'';
+  document.getElementById('m-vat').value=(s.marche.vat!=null?s.marche.vat:20);
   s.recur=s.recur||{active:false,freq:'monthly',next:''};
   document.getElementById('f-recur-active').checked=!!s.recur.active;
   document.getElementById('f-recur-freq').value=s.recur.freq||'monthly';
@@ -1174,6 +1198,29 @@ function createAcompteFromCurrent(){
   fillForm(); render(); persist();
   toast('Facture d\'acompte créée ('+nf2.format(pct)+' %) · '+esc(state.number));
 }
+/* ===== Factures de situation (avancement BTP) ===== */
+function recomputeSituation(){
+  const M=state.marche||(state.marche={total:'',progress:'',prev:'',num:'',vat:20});
+  const total=Number(M.total)||0, prog=Number(M.progress)||0, prev=Number(M.prev)||0;
+  const delta=Math.max(0, prog-prev);
+  const amount=Math.round(total*delta/100*100)/100;
+  const en=state.lang==='en';
+  const desc=(en?'Progress payment':'Situation')+(M.num?(' n°'+M.num):'')+' — '+(en?'progress':'avancement')+' '+nf2.format(prog)+' %';
+  state.lines=[{desc:desc, qty:1, pu:amount, vat:Number(M.vat)||0}];
+  const amtEl=document.getElementById('m-amount'); if(amtEl) amtEl.value=euro.format(amount);
+}
+function buildSituationRecap(s, L){
+  const M=s.marche||{}; const total=Number(M.total)||0, prog=Number(M.progress)||0, prev=Number(M.prev)||0;
+  const en=s.lang==='en';
+  const row=(k,v)=>`<div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="color:#94a3b8;">${k}</span><span style="font-weight:600;">${v}</span></div>`;
+  return `<div style="margin-top:22px;border:1px solid rgba(120,130,160,.3);border-radius:9px;padding:13px 16px;font-size:12px;color:#334155;">
+    <div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">${en?'Contract progress':'Avancement du marché'}</div>
+    ${row(en?'Contract amount (excl. tax)':'Montant du marché HT', euro.format(total))}
+    ${row(en?'Previously invoiced':'Déjà facturé', nf2.format(prev)+' % · '+euro.format(total*prev/100))}
+    ${row(en?'Cumulative progress':'Avancement cumulé', nf2.format(prog)+' % · '+euro.format(total*prog/100))}
+    ${row('<b>'+(en?'This progress payment':'Présente situation')+'</b>', '<b>'+nf2.format(Math.max(0,prog-prev))+' % · '+euro.format(total*Math.max(0,prog-prev)/100)+'</b>')}
+  </div>`;
+}
 /* ===== Signature du devis (bon pour accord) ===== */
 let _signCtx=null, _signing=false, _signHasInk=false;
 function openSignModal(){
@@ -1259,6 +1306,10 @@ function updateKindUI(){
   const avoirWrap=document.getElementById('avoirRefWrap');
   if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
   const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
+  const isSit=k==='situation';
+  const mc=document.getElementById('marcheCard'); if(mc) mc.hidden=!isSit;
+  const lc=document.getElementById('linesCard'); if(lc) lc.hidden=isSit;
+  if(isSit) recomputeSituation();
   const acompteBtn=document.getElementById('acompteBtn'); if(acompteBtn) acompteBtn.hidden = (k!=='devis' && k!=='facture');
   const signBtn=document.getElementById('signBtn'); if(signBtn) signBtn.hidden = !(k==='devis' && !state.accepted);
   applyRecurUI();
@@ -1303,13 +1354,14 @@ function clientCodeFor(seq, key, name){
   seq.codes[key]=code;
   return code;
 }
-function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL'}[kind]||'F'; }
-const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',commande:'Bon de commande',livraison:'Bon de livraison'};
+function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL',situation:'FS'}[kind]||'F'; }
+const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'};
+const PAYABLE_KINDS={facture:1,situation:1};   // documents fiscaux suivis en paiement / comptés en CA
 /* Traductions des libellés fixes des modèles (multi-langue FR/EN). */
 const LABELS={
   fr:{
-    kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',commande:'Bon de commande',livraison:'Bon de livraison'},
-    recip:{facture:'Facturé à',devis:'Devis pour',avoir:'Avoir pour',commande:'Commande de',livraison:'Livré à'},
+    kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'},
+    recip:{facture:'Facturé à',devis:'Devis pour',avoir:'Avoir pour',situation:'Facturé à',commande:'Commande de',livraison:'Livré à'},
     desc:'Désignation', item:'Prestation', qty:'Qté', unit:'P.U. HT', unitShort:'P.U.', lineTotal:'Total HT', lineTotalShort:'Total',
     subtotal:'Sous-total HT', vat:'TVA', totalTTC:'Total TTC', totalNet:'Total net', remise:'Remise',
     depositInvoiced:'Acompte facturé', balanceDue:'Net à payer',
@@ -1319,8 +1371,8 @@ const LABELS={
     descPh:'Désignation…', bonAccord:'Bon pour accord', client:'Client'
   },
   en:{
-    kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',commande:'Purchase order',livraison:'Delivery note'},
-    recip:{facture:'Bill to',devis:'Quote for',avoir:'Credit to',commande:'Order for',livraison:'Deliver to'},
+    kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',commande:'Purchase order',livraison:'Delivery note'},
+    recip:{facture:'Bill to',devis:'Quote for',avoir:'Credit to',situation:'Bill to',commande:'Order for',livraison:'Deliver to'},
     desc:'Description', item:'Item', qty:'Qty', unit:'Unit price', unitShort:'Unit', lineTotal:'Total', lineTotalShort:'Total',
     subtotal:'Subtotal', vat:'VAT', totalTTC:'Total', totalNet:'Net total', remise:'Discount',
     depositInvoiced:'Deposit invoiced', balanceDue:'Balance due',
@@ -1413,7 +1465,7 @@ function payInfo(d,t){
   const paid=Math.min(t.totalTTC, (t.deposit||0)+extra);
   const due=Math.max(0, t.totalTTC-paid);
   let status;
-  if(d.kind!=='facture' && d.kind) status=d.kind;   // devis, avoir, commande, livraison : non suivis en paiement
+  if(d.kind && !PAYABLE_KINDS[d.kind]) status=d.kind;   // devis, avoir, commande, livraison : non suivis en paiement
   else if(t.totalTTC>0 && due<=0.005) status='paid';
   else if(paid>0.005) status='partial';
   else if(isPastDue(d.due)) status='overdue';
@@ -1435,10 +1487,10 @@ function renderDrawer(){
   const box=document.getElementById('docList');
   if(!list.length){ box.innerHTML='<div class="dempty">Aucun document enregistré pour le moment.<br>Créez-en un, il apparaîtra ici automatiquement.</div>'; return; }
   box.innerHTML=list.map(d=>{
-    const t=computeTotals(d); const isFacture=d.kind==='facture'; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
-    const chip = (isFacture && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
-    const payBtn = (isFacture && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
-    const kindLabel = {devis:'Devis',avoir:'Avoir',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
+    const t=computeTotals(d); const isPayable=!!PAYABLE_KINDS[d.kind]; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
+    const chip = (isPayable && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
+    const payBtn = (isPayable && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
+    const kindLabel = {devis:'Devis',avoir:'Avoir',situation:'Situation',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
       <span class="di-kind ${d.kind}">${kindLabel}</span>
       <div class="di-main">
@@ -1507,7 +1559,7 @@ function zoomStep(d){
 }
 function zoomFit(){ manualZoom=null; applyZoom(); }
 function setTemplate(v){ state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
-function setLang(v){ state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; render(); scheduleSave(); }
+function setLang(v){ state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
 window.addEventListener('resize', function(){ if(manualZoom==null) applyZoom(); });
 
 /* ============ Toast ============ */
@@ -1564,6 +1616,12 @@ async function init(){
   bind('c-name','client.name'); bind('c-addr','client.addr'); bind('c-siret','client.siret'); bind('c-email','client.email');
   bind('f-discount','discount'); bind('f-discount-type','discountType'); bind('f-deposit','deposit'); bind('f-acompte-ref','acompteRef');
   bind('f-recur-freq','recur.freq'); bind('f-recur-next','recur.next');
+  [['m-num','num'],['m-total','total'],['m-prev','prev'],['m-progress','progress'],['m-vat','vat']].forEach(function(pair){
+    document.getElementById(pair[0]).addEventListener('input',function(){
+      state.marche=state.marche||{total:'',progress:'',prev:'',num:'',vat:20};
+      state.marche[pair[1]]=this.value; recomputeSituation(); render(); scheduleSave();
+    });
+  });
   document.getElementById('f-recur-active').addEventListener('change',function(){
     state.recur=state.recur||{active:false,freq:'monthly',next:''};
     state.recur.active=this.checked;

@@ -372,7 +372,7 @@
     var paid=Math.min(ttc, deposit+extra);
     var due=Math.max(0, ttc-paid);
     var status;
-    if(s.kind && s.kind!=='facture') status=s.kind;   // devis, avoir, commande, livraison : non suivis en paiement
+    if(s.kind && s.kind!=='facture' && s.kind!=='situation') status=s.kind;   // devis, avoir, BC, BL : non suivis en paiement
     else if(ttc>0 && due<=0.005) status='paid';
     else if(paid>0.005) status='partial';
     else if(isPast(s.due)) status='overdue';
@@ -420,7 +420,7 @@
     if(!panel||!list) return;
     var byClient={};
     loadDocs().forEach(function(d){
-      if(d.kind!=='facture'&&d.kind!=='avoir') return;
+      if(d.kind!=='facture'&&d.kind!=='avoir'&&d.kind!=='situation') return;
       var m=/^(\d{4})/.exec(String(d.date||'')); if(!m||m[1]!==year) return;
       var name=((d.client&&d.client.name)||'').trim()||'Sans client';
       byClient[name]=(byClient[name]||0)+(d.kind==='avoir'?-1:1)*computeTotal(d).ttc;
@@ -442,7 +442,7 @@
   function renderRelances(){
     var band=document.getElementById('relband'), list=document.getElementById('relList');
     if(!band||!list) return;
-    var late=loadDocs().filter(function(d){ return d.kind==='facture' && computeTotal(d).status==='overdue'; })
+    var late=loadDocs().filter(function(d){ return (d.kind==='facture'||d.kind==='situation') && computeTotal(d).status==='overdue'; })
       .map(function(d){ return {d:d, late:daysLate(d.due), due:computeTotal(d).due}; })
       .sort(function(a,b){ return b.late-a.late; });
     if(!late.length){ band.hidden=true; return; }
@@ -472,7 +472,7 @@
     if(!band||!box) return;
     var monthly=new Array(12).fill(0);
     loadDocs().forEach(function(d){
-      if(d.kind!=='facture'&&d.kind!=='avoir') return;
+      if(d.kind!=='facture'&&d.kind!=='avoir'&&d.kind!=='situation') return;
       var m=/^(\d{4})-(\d{2})/.exec(String(d.date||'')); if(!m||m[1]!==year) return;
       var idx=(+m[2])-1; if(idx<0||idx>11) return;
       var t=computeTotal(d); monthly[idx]+=(d.kind==='avoir'?-1:1)*t.ttc;
@@ -512,7 +512,7 @@
   function csvNum(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',','); }
   function csvCell(s){ s=String(s==null?'':s); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
   function exportAccountingCSV(){
-    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'; });
+    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'; });
     if(!docs.length){ toast('Aucune facture à exporter.'); return; }
     docs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||'') || String(a.number||'').localeCompare(String(b.number||'')); });
     var head=['Type','Numéro','Date','Date prestation','Client','SIRET client','Total HT','TVA','Total TTC','Statut','Encaissé','Reste dû'];
