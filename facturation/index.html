@@ -448,7 +448,7 @@
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span> Client</h3>
       <p class="hint">Le destinataire du document.</p>
       <div class="grid2">
-        <div class="field col-2"><label for="c-name">Nom / Société</label><input id="c-name" placeholder="Société Cliente SARL"></div>
+        <div class="field col-2"><label for="c-name">Nom / Société</label><input id="c-name" list="clientList" autocomplete="off" placeholder="Société Cliente SARL"><datalist id="clientList"></datalist></div>
         <div class="field col-2"><label for="c-addr">Adresse</label><textarea id="c-addr" placeholder="3 avenue du Client&#10;69000 Lyon"></textarea></div>
         <div class="field"><label for="c-siret">SIRET (optionnel)</label><input id="c-siret" placeholder="000 000 000 00000"></div>
         <div class="field"><label for="c-email">Email (optionnel)</label><input id="c-email" placeholder="client@exemple.fr"></div>
@@ -1055,6 +1055,30 @@ function saveLinesToCatalog(){
   saveCatalog(cat); renderCatalog();
   toast(added?('Catalogue : '+added+' article'+(added>1?'s':'')+' ajouté'+(added>1?'s':'')):'Aucun nouvel article à enregistrer');
 }
+/* ============ Annuaire client (mini-CRM) ============ */
+function clientDir(){
+  const map={};
+  loadDocs().forEach(d=>{
+    const c=d.client||{}; const name=String(c.name||'').trim(); if(!name) return;
+    const key=name.toLowerCase(); const cur=map[key];
+    if(!cur || (d.updated||0)>=(cur.updated||0)) map[key]={name:name, addr:c.addr||'', email:c.email||'', siret:c.siret||'', updated:d.updated||0};
+  });
+  return Object.keys(map).map(k=>map[k]).sort((a,b)=>b.updated-a.updated);
+}
+function renderClientList(){
+  const dl=document.getElementById('clientList'); if(!dl) return;
+  dl.innerHTML=clientDir().map(c=>`<option value="${esc(c.name)}">`).join('');
+}
+/* Auto-remplit adresse / e-mail / SIRET quand on choisit un client déjà facturé. */
+function autofillClient(name){
+  const key=String(name||'').trim().toLowerCase(); if(!key) return false;
+  const c=clientDir().find(x=>x.name.toLowerCase()===key); if(!c) return false;
+  state.client.addr=c.addr; state.client.email=c.email; state.client.siret=c.siret;
+  const a=document.getElementById('c-addr'); if(a) a.value=c.addr;
+  const e=document.getElementById('c-email'); if(e) e.value=c.email;
+  const s=document.getElementById('c-siret'); if(s) s.value=c.siret;
+  return true;
+}
 function addLine(){ state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
 function removeLine(i){ state.lines.splice(i,1); if(!state.lines.length) state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
 
@@ -1121,6 +1145,7 @@ function fillForm(){
   renderLines();
   applyLockUI();
   renderCatalog();
+  renderClientList();
 }
 /* ===== Émission / verrouillage (conformité : une pièce émise est inaltérable) ===== */
 function applyLockUI(){
@@ -1630,6 +1655,7 @@ async function init(){
   bind('e-email','emit.email'); bind('e-phone','emit.phone'); bind('e-iban','emit.iban'); bind('e-bic','emit.bic');
   bind('e-dec-assureur','emit.decAssureur'); bind('e-dec-contrat','emit.decContrat'); bind('e-dec-zone','emit.decZone');
   bind('c-name','client.name'); bind('c-addr','client.addr'); bind('c-siret','client.siret'); bind('c-email','client.email');
+  document.getElementById('c-name').addEventListener('input', function(){ if(autofillClient(this.value)){ render(); scheduleSave(); } });
   bind('f-discount','discount'); bind('f-discount-type','discountType'); bind('f-deposit','deposit'); bind('f-acompte-ref','acompteRef');
   bind('f-recur-freq','recur.freq'); bind('f-recur-next','recur.next');
   [['m-num','num'],['m-total','total'],['m-prev','prev'],['m-progress','progress'],['m-vat','vat']].forEach(function(pair){
