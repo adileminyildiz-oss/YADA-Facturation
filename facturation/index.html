@@ -298,6 +298,8 @@
   .doc-item .di-kind.facture{background:rgba(43,69,255,.18);color:var(--peri)}
   .doc-item .di-kind.devis{background:rgba(62,233,164,.14);color:var(--pos)}
   .doc-item .di-kind.avoir{background:rgba(255,159,90,.16);color:#ff9f5a}
+  .doc-item .di-kind.commande{background:rgba(139,201,255,.14);color:#8bc9ff}
+  .doc-item .di-kind.livraison{background:rgba(180,160,255,.14);color:#b4a0ff}
   .doc-item .di-main{flex:1;min-width:0}
   .doc-item .di-no{font-family:'Inter Tight';font-weight:600;font-size:13.5px}
   .doc-item .di-lock{display:inline-flex;vertical-align:middle;margin-left:5px;color:#ffcf6d;opacity:.85}
@@ -378,10 +380,14 @@
     <div class="card">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span> Type de document</h3>
       <p class="hint">Choisissez le type et les dates. Le numéro est attribué automatiquement, dans une séquence unique et continue.</p>
-      <div class="seg" style="width:100%;margin-bottom:14px">
-        <button type="button" id="segFacture" class="on" onclick="setKind('facture')">Facture</button>
-        <button type="button" id="segDevis" onclick="setKind('devis')">Devis</button>
-        <button type="button" id="segAvoir" onclick="setKind('avoir')">Avoir</button>
+      <div class="field" style="margin-bottom:14px">
+        <select id="f-kind" onchange="setKind(this.value)">
+          <option value="facture">Facture</option>
+          <option value="devis">Devis</option>
+          <option value="avoir">Avoir</option>
+          <option value="commande">Bon de commande</option>
+          <option value="livraison">Bon de livraison</option>
+        </select>
       </div>
       <div class="field" id="avoirRefWrap" style="display:none;margin-bottom:14px">
         <label for="f-avoir-ref">Facture d'origine (créditée par cet avoir)</label>
@@ -680,6 +686,9 @@ function render(){
 function buildDocData(s,t){
   const isDevis = s.kind==='devis';
   const isAvoir = s.kind==='avoir';
+  const isCommande = s.kind==='commande';
+  const isLivraison = s.kind==='livraison';
+  const recipMap={devis:'Devis pour',avoir:'Avoir pour',commande:'Commande de',livraison:'Livré à'};
   const br = v => esc(v||'').replace(/\n/g,'<br>');
   const lines = s.lines.filter(l=>l.desc||lineHT(l)>0).map(l=>({
     desc: esc(l.desc),
@@ -699,9 +708,9 @@ function buildDocData(s,t){
       +(s.emit.decZone?' — '+esc(s.emit.decZone):'');
   }
   return {
-    s, t, isDevis, isAvoir,
-    kind: isDevis?'Devis':(isAvoir?'Avoir':'Facture'),
-    recipientLabel: isDevis?'Devis pour':(isAvoir?'Avoir pour':'Facturé à'),
+    s, t, isDevis, isAvoir, isCommande, isLivraison,
+    kind: KIND_LABEL[s.kind]||'Facture',
+    recipientLabel: recipMap[s.kind]||'Facturé à',
     number: esc(s.number)||'—',
     dateEmis: fmtDate(s.date),
     supplyDate: s.supplyDate?fmtDate(s.supplyDate):'',
@@ -756,6 +765,10 @@ function legalText(D){
     bits.push('À valoir sur une prochaine facture ou à rembourser.');
   } else if(D.isDevis){
     bits.push('Devis valable 30 jours. Bon pour accord (date &amp; signature).');
+  } else if(D.isCommande){
+    bits.push('Bon de commande — vaut engagement des deux parties après acceptation.');
+  } else if(D.isLivraison){
+    bits.push('Bon de livraison — à retourner signé, valant réception des marchandises ou prestations.');
   } else {
     if(D.devisRef) bits.push('Établie d’après le devis '+D.devisRef+'.');
     bits.push('Pénalités de retard : 3× le taux d’intérêt légal · indemnité forfaitaire de recouvrement 40 € (art. L441-10 et D441-5 du Code de commerce).');
@@ -1232,11 +1245,9 @@ function setKind(k){
 }
 function updateKindUI(){
   const k=state.kind;
-  document.getElementById('segFacture').classList.toggle('on',k==='facture');
-  document.getElementById('segDevis').classList.toggle('on',k==='devis');
-  document.getElementById('segAvoir').classList.toggle('on',k==='avoir');
-  document.getElementById('dueLabel').textContent = k==='devis' ? 'Date de validité' : 'Date d\'échéance';
-  document.getElementById('supplyLabel').textContent = k==='devis' ? 'Date de prestation prévue' : 'Date de prestation / livraison';
+  const ksel=document.getElementById('f-kind'); if(ksel) ksel.value=k;
+  document.getElementById('dueLabel').textContent = (k==='devis'||k==='commande') ? 'Date de validité' : 'Date d\'échéance';
+  document.getElementById('supplyLabel').textContent = k==='livraison' ? 'Date de livraison' : (k==='devis' ? 'Date de prestation prévue' : 'Date de prestation / livraison');
   const avoirWrap=document.getElementById('avoirRefWrap');
   if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
   const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
@@ -1284,7 +1295,8 @@ function clientCodeFor(seq, key, name){
   seq.codes[key]=code;
   return code;
 }
-function kindCode(kind){ return kind==='devis'?'D':(kind==='avoir'?'AV':'F'); }
+function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL'}[kind]||'F'; }
+const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',commande:'Bon de commande',livraison:'Bon de livraison'};
 /* Conformité (BOI-TVA-DECLA-30-20-20) : une séquence chronologique CONTINUE, sans rupture
    ni doublon, par type de document et par année — indépendante du client. Le code client
    n'est qu'un préfixe lisible ; il ne réinitialise jamais le compteur. */
@@ -1367,8 +1379,7 @@ function payInfo(d,t){
   const paid=Math.min(t.totalTTC, (t.deposit||0)+extra);
   const due=Math.max(0, t.totalTTC-paid);
   let status;
-  if(d.kind==='devis') status='devis';
-  else if(d.kind==='avoir') status='avoir';
+  if(d.kind!=='facture' && d.kind) status=d.kind;   // devis, avoir, commande, livraison : non suivis en paiement
   else if(t.totalTTC>0 && due<=0.005) status='paid';
   else if(paid>0.005) status='partial';
   else if(isPastDue(d.due)) status='overdue';
@@ -1393,7 +1404,7 @@ function renderDrawer(){
     const t=computeTotals(d); const isFacture=d.kind==='facture'; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
     const chip = (isFacture && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
     const payBtn = (isFacture && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
-    const kindLabel = d.kind==='devis'?'Devis':(d.kind==='avoir'?'Avoir':'Facture');
+    const kindLabel = {devis:'Devis',avoir:'Avoir',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
       <span class="di-kind ${d.kind}">${kindLabel}</span>
       <div class="di-main">
