@@ -502,6 +502,7 @@
         <div class="field"><label for="f-acompte-ref">N° facture d'acompte (optionnel)</label><input id="f-acompte-ref" placeholder="FA-…"></div>
       </div>
       <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-vat-exempt"> Non assujetti à la TVA (franchise en base — art. 293 B du CGI)</label>
+      <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-autoliq"> Autoliquidation (sous-traitance BTP / intra-UE — art. 283-2 du CGI)</label>
       <label class="check"><input type="checkbox" id="f-recur-active"> Facture récurrente (abonnement)</label>
       <div id="recurRow" class="grid2" style="margin-top:10px" hidden>
         <div class="field"><label for="f-recur-freq">Fréquence</label><select id="f-recur-freq"><option value="monthly">Mensuelle</option><option value="quarterly">Trimestrielle</option><option value="yearly">Annuelle</option></select></div>
@@ -639,6 +640,7 @@ function blankState(){
     discount: 0, discountType: 'pct',
     deposit: 0,
     vatExempt: false,
+    autoliq: false,
     terms: 'Paiement à réception · Virement bancaire',
     notes: '',
     updated: Date.now()
@@ -679,10 +681,11 @@ function persist(){
 /* ============ Calculs ============ */
 function lineHT(l){ return (Number(l.qty)||0) * (Number(l.pu)||0); }
 function computeTotals(s){
+  const noVat = s.vatExempt || s.autoliq;
   let subHT=0; const vatMap={};
   s.lines.forEach(l=>{
     const ht=lineHT(l); subHT+=ht;
-    const rate = s.vatExempt ? 0 : (Number(l.vat)||0);
+    const rate = noVat ? 0 : (Number(l.vat)||0);
     vatMap[rate]=(vatMap[rate]||0)+ht;
   });
   // remise
@@ -695,7 +698,7 @@ function computeTotals(s){
   let totalVAT=0; const vatRows=[];
   Object.keys(vatMap).map(Number).sort((a,b)=>a-b).forEach(rate=>{
     const baseAfter = vatMap[rate]*factor;
-    const v = s.vatExempt ? 0 : baseAfter*rate/100;
+    const v = noVat ? 0 : baseAfter*rate/100;
     totalVAT+=v;
     if(rate>0 && v>0) vatRows.push({rate, amount:v});
   });
@@ -774,13 +777,15 @@ function buildDocData(s,t){
     terms: esc(s.terms||''),
     notes: br(s.notes),
     vatExempt: s.vatExempt,
+    autoliq: s.autoliq,
+    noVat: s.vatExempt||s.autoliq,
     vatRate: (t.vatRows.length===1)?nf2.format(t.vatRows[0].rate):null,
     subHT: money.format(t.subHT),
     discAmt: t.discAmt>0?money.format(t.discAmt):'',
     discLabel: L.remise+(s.discountType==='pct'?' ('+nf2.format(s.discount)+' %)':''),
     totalVAT: money.format(t.totalVAT),
     totalTTC: money.format(t.totalTTC),
-    ttcLabel: s.vatExempt?L.totalNet:L.totalTTC,
+    ttcLabel: (s.vatExempt||s.autoliq)?L.totalNet:L.totalTTC,
     deposit: t.deposit>0?money.format(t.deposit):'',
     acompteRef: esc(s.acompteRef||''),
     situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : '',
@@ -799,6 +804,7 @@ function legalText(D){
   const en = D.s && D.s.lang==='en';
   const bits=[];
   if(D.vatExempt) bits.push(en?'VAT not applicable, art. 293 B of the French Tax Code.':'TVA non applicable, art. 293 B du CGI.');
+  if(D.autoliq) bits.push(en?'Reverse charge — VAT to be accounted for by the customer (art. 283-2 French Tax Code).':'Autoliquidation — TVA due par le preneur (art. 283-2 du CGI).');
   if(D.isAvoir){
     if(en){ bits.push(D.avoirRef?('Credit note relating to invoice '+D.avoirRef+'.'):'Credit note.'); bits.push('To be offset against a future invoice or refunded.'); }
     else { bits.push(D.avoirRef ? ('Avoir se rapportant à la facture '+D.avoirRef+'.') : 'Facture d’avoir.'); bits.push('À valoir sur une prochaine facture ou à rembourser.'); }
@@ -829,7 +835,7 @@ const TEMPLATES = {
     const tot = [
       `<div style="display:flex;justify-content:space-between;padding:6px 0;color:#64748b;"><span>${D.L.subtotal}</span><span>${D.subHT}</span></div>`,
       D.discAmt?`<div style="display:flex;justify-content:space-between;padding:6px 0;color:#64748b;"><span>${D.discLabel}</span><span>− ${D.discAmt}</span></div>`:'',
-      !D.vatExempt?`<div style="display:flex;justify-content:space-between;padding:6px 0;color:#64748b;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
+      !D.noVat?`<div style="display:flex;justify-content:space-between;padding:6px 0;color:#64748b;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
     ].join('');
     const dep = D.deposit?`<div style="display:flex;justify-content:space-between;padding:9px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div><div style="display:flex;justify-content:space-between;padding:4px 2px 0;font-weight:700;color:#0f172a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
     return `<div style="width:100%;min-height:297mm;background:#fff;display:flex;font-family:'Inter',sans-serif;color:#1e293b;">
@@ -886,7 +892,7 @@ const TEMPLATES = {
     const tot=[
       `<div style="display:flex;justify-content:space-between;padding:7px 0;color:#8f8a7e;"><span>${D.L.subtotal}</span><span style="color:#eae6dd;">${D.subHT}</span></div>`,
       D.discAmt?`<div style="display:flex;justify-content:space-between;padding:7px 0;color:#8f8a7e;"><span>${D.discLabel}</span><span style="color:#eae6dd;">− ${D.discAmt}</span></div>`:'',
-      !D.vatExempt?`<div style="display:flex;justify-content:space-between;padding:7px 0;color:#8f8a7e;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span style="color:#eae6dd;">${D.totalVAT}</span></div>`:''
+      !D.noVat?`<div style="display:flex;justify-content:space-between;padding:7px 0;color:#8f8a7e;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span style="color:#eae6dd;">${D.totalVAT}</span></div>`:''
     ].join('');
     const dep = D.deposit?`<div style="display:flex;justify-content:space-between;padding:9px 0 0;color:#8f8a7e;font-size:12.5px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div><div style="display:flex;justify-content:space-between;color:#f4f1e9;font-weight:600;padding-top:3px;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
     return `<div style="width:100%;min-height:297mm;background:#12110f;color:#eae6dd;font-family:'Inter Tight',sans-serif;display:flex;flex-direction:column;box-sizing:border-box;">
@@ -929,7 +935,7 @@ const TEMPLATES = {
     const tot=[
       `<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:#7a776d;">${D.L.subtotal}</span><span style="font-variant-numeric:tabular-nums;">${D.subHT}</span></div>`,
       D.discAmt?`<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:#7a776d;">${D.discLabel}</span><span style="font-variant-numeric:tabular-nums;">− ${D.discAmt}</span></div>`:'',
-      !D.vatExempt?`<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:#7a776d;">${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span style="font-variant-numeric:tabular-nums;">${D.totalVAT}</span></div>`:''
+      !D.noVat?`<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:#7a776d;">${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span style="font-variant-numeric:tabular-nums;">${D.totalVAT}</span></div>`:''
     ].join('');
     const dep = D.deposit?`<div style="display:flex;justify-content:space-between;font-size:13px;color:#7a776d;padding-top:2px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div><div style="display:flex;justify-content:space-between;font-weight:600;color:#1a1a1a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
     return `<div style="width:100%;min-height:297mm;background:#faf9f6;padding:60px 58px;box-sizing:border-box;color:#26241d;font-family:'Inter Tight',sans-serif;display:flex;flex-direction:column;">
@@ -991,7 +997,7 @@ function renderLines(){
       <div class="cell desg" data-l="Désignation"><input class="ln" data-k="desc" list="catalogList" value="${esc(l.desc)}" placeholder="Prestation de conseil…"></div>
       <div class="cell" data-l="Qté"><input class="ln r num-t" data-k="qty" type="number" min="0" step="0.01" value="${l.qty}"></div>
       <div class="cell" data-l="P.U. HT"><input class="ln r num-t" data-k="pu" type="number" min="0" step="0.01" value="${l.pu}"></div>
-      <div class="cell" data-l="TVA %"><input class="ln r num-t" data-k="vat" type="number" min="0" step="0.1" value="${l.vat}" ${state.vatExempt?'disabled':''}></div>
+      <div class="cell" data-l="TVA %"><input class="ln r num-t" data-k="vat" type="number" min="0" step="0.1" value="${l.vat}" ${(state.vatExempt||state.autoliq)?'disabled':''}></div>
       <div class="cell" data-l="Total HT"><input class="r num-t" value="${nf2.format(lineHT(l))}" readonly tabindex="-1" style="opacity:.7;background:transparent;border-color:transparent"></div>
       <button class="del" onclick="removeLine(${i})" aria-label="Supprimer la ligne" ${state.lines.length<=1?'style="visibility:hidden"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
     </div>`).join('');
@@ -1005,7 +1011,7 @@ function renderLines(){
         if(hit){
           state.lines[i].pu=hit.pu; state.lines[i].vat=hit.vat;
           const puI=row.querySelector('[data-k="pu"]'); if(puI) puI.value=hit.pu;
-          const vatI=row.querySelector('[data-k="vat"]'); if(vatI && !state.vatExempt) vatI.value=hit.vat;
+          const vatI=row.querySelector('[data-k="vat"]'); if(vatI && !(state.vatExempt||state.autoliq)) vatI.value=hit.vat;
         }
       }
       // total HT en direct sans re-render complet des inputs
@@ -1089,7 +1095,7 @@ function bind(id, path){
   el.addEventListener(ev, ()=>{
     const val = el.type==='checkbox' ? el.checked : (el.type==='number' ? el.value : el.value);
     setPath(state, path, val);
-    if(id==='f-vat-exempt'){ renderLines(); }
+    if(id==='f-vat-exempt'||id==='f-autoliq'){ renderLines(); }
     render(); scheduleSave();
   });
 }
@@ -1135,6 +1141,7 @@ function fillForm(){
   document.getElementById('f-recur-freq').value=s.recur.freq||'monthly';
   document.getElementById('f-recur-next').value=s.recur.next||'';
   document.getElementById('f-vat-exempt').checked=s.vatExempt;
+  document.getElementById('f-autoliq').checked=!!s.autoliq;
   document.getElementById('f-terms').value=s.terms;
   document.getElementById('f-notes').value=s.notes;
   if(!s.template) s.template='2C';
@@ -1333,6 +1340,7 @@ function generateNextRecurrence(){
 /* ============ Type de document ============ */
 function setKind(k){
   if(state.kind===k) return;
+  if(state.emitted){ const ks=document.getElementById('f-kind'); if(ks) ks.value=state.kind; toast('Pièce émise : non modifiable.'); return; }
   state.kind=k;
   assignNumber();                 // le numéro dépend du type (F/D) et du client
   document.getElementById('f-number').value=state.number;
@@ -1599,8 +1607,8 @@ function zoomStep(d){
 }
 function zoomFit(){ manualZoom=null; applyZoom(); }
 function setTemplate(v){ state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
-function setLang(v){ state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
-function setCurrency(v){ state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
+function setLang(v){ if(state.emitted){ document.getElementById('langSel').value=state.lang; toast('Pièce émise : non modifiable.'); return; } state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
+function setCurrency(v){ if(state.emitted){ document.getElementById('curSel').value=state.currency; toast('Pièce émise : non modifiable.'); return; } state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
 window.addEventListener('resize', function(){ if(manualZoom==null) applyZoom(); });
 
 /* ============ Toast ============ */
@@ -1670,7 +1678,7 @@ async function init(){
     if(state.recur.active && !state.recur.next){ state.recur.next=state.due||state.date||todayISO(); document.getElementById('f-recur-next').value=state.recur.next; }
     applyRecurUI(); scheduleSave();
   });
-  bind('f-vat-exempt','vatExempt'); bind('f-terms','terms'); bind('f-notes','notes');
+  bind('f-vat-exempt','vatExempt'); bind('f-autoliq','autoliq'); bind('f-terms','terms'); bind('f-notes','notes');
 
   // Numéro auto : (ré)attribué dès que le nom du client est validé
   document.getElementById('c-name').addEventListener('change', ()=>{
