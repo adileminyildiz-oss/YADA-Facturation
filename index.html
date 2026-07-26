@@ -7,6 +7,11 @@
 <meta name="description" content="Espace en ligne AEM-CONSEIL.">
 <meta name="theme-color" content="#04050b">
 <meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AEM Facturation">
 <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon-512.png">
 <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -414,6 +419,14 @@
     try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
   }
   initAuth();
+</script>
+<script>
+  /* PWA : installation « ajouter à l'écran d'accueil » + cache de la coquille. */
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
 </script>
 </body>
 </html>
