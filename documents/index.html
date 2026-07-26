@@ -269,7 +269,8 @@
       <span class="t">Mes documents<small>AEM CONSEIL</small></span>
     </div>
     <div class="tb-right">
-      <button class="tb-export" id="btnExport" type="button" onclick="exportAccountingCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Export comptable</button>
+      <button class="tb-export" id="btnExport" type="button" onclick="exportAccountingCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Journal (CSV)</button>
+      <button class="tb-export" id="btnFec" type="button" onclick="exportFEC()" title="Fichier des Écritures Comptables (format DGFiP)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" opacity=".0"/><path d="M9 3v18M4 8h16M4 3h16v18H4z"/></svg> Export FEC</button>
       <div class="dash-year" id="dashYear"></div>
     </div>
   </div>
@@ -530,11 +531,45 @@
       ].map(csvCell).join(';'));
     });
     var csv='﻿'+rows.join('\r\n');
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    downloadFile('journal-ventes.csv', csv, 'text/csv;charset=utf-8;');
+  }
+  function downloadFile(name, content, type){
+    var blob=new Blob([content],{type:type||'text/plain;charset=utf-8;'});
     var url=URL.createObjectURL(blob), a=document.createElement('a');
-    a.href=url; a.download='journal-ventes.csv'; document.body.appendChild(a); a.click();
+    a.href=url; a.download=name; document.body.appendChild(a); a.click();
     setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
-    toast(docs.length+' document'+(docs.length>1?'s':'')+' exporté'+(docs.length>1?'s':''));
+  }
+  /* Export FEC (Fichier des Écritures Comptables) — format DGFiP, tabulé, 18 colonnes.
+     Écritures du journal des ventes : 411 Clients / 706 Ventes / 44571 TVA collectée.
+     Comptes standard (PCG) que l'expert-comptable peut remapper. */
+  function fecNum(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',','); }
+  function fecDate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); return m?(m[1]+m[2]+m[3]):''; }
+  function auxNum(name){ return 'C'+String(name||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); }
+  function exportFEC(){
+    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'; });
+    if(!docs.length){ toast('Aucune écriture à exporter.'); return; }
+    docs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||'') || String(a.number||'').localeCompare(String(b.number||'')); });
+    var cols=['JournalCode','JournalLib','EcritureNum','EcritureDate','CompteNum','CompteLib','CompAuxNum','CompAuxLib','PieceRef','PieceDate','EcritureLib','Debit','Credit','EcritureLet','DateLet','ValidDate','Montantdevise','Idevise'];
+    var out=[cols.join('\t')];
+    var ecr=0;
+    docs.forEach(function(d){
+      var t=computeTotal(d); ecr++;
+      var isAv=d.kind==='avoir', dt=fecDate(d.date), num=d.number||('AUTO'+ecr);
+      var name=((d.client&&d.client.name)||'Client').trim(), aux=auxNum(name);
+      var cur=d.currency||'EUR', dev=(cur!=='EUR')?fecNum(t.ttc):'', idev=(cur!=='EUR')?cur:'';
+      var lib=(isAv?'Avoir ':(d.kind==='situation'?'Situation ':'Facture '))+num+' - '+name;
+      function line(compte,complib,aux1,auxlib,debit,credit){
+        out.push(['VT','Ventes',ecr,dt,compte,complib,aux1||'',auxlib||'',num,dt,lib,fecNum(debit),fecNum(credit),'','',dt,dev,idev].join('\t'));
+      }
+      // Client (411) : débit si facture, crédit si avoir
+      line('411000','Clients',aux,name, isAv?0:t.ttc, isAv?t.ttc:0);
+      // Vente (706) : crédit si facture, débit si avoir
+      line('706000','Prestations de services','','', isAv?t.netHT:0, isAv?0:t.netHT);
+      // TVA collectée (44571)
+      if(t.totalVAT>0.005) line('445710','TVA collectée','','', isAv?t.totalVAT:0, isAv?0:t.totalVAT);
+    });
+    downloadFile('FEC-'+(new Date().getFullYear())+'.txt', out.join('\r\n'), 'text/plain;charset=utf-8;');
+    toast(ecr+' écriture'+(ecr>1?'s':'')+' exportée'+(ecr>1?'s':'')+' (FEC)');
   }
 
   var folders=[], activeKey=null, activeTab='factures', query='';
