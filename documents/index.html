@@ -350,6 +350,7 @@
 
   var LS_DOCS='aem_fact_docs', LS_CUR='aem_fact_current';
   var euro=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2});
+  function dmoney(d){ try{ return new Intl.NumberFormat('fr-FR',{style:'currency',currency:(d&&d.currency)||'EUR',minimumFractionDigits:2}); }catch(e){ return euro; } }
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function fmtDate(iso){ if(!iso) return '—'; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso)); return m? m[3]+'/'+m[2]+'/'+m[1] : '—'; }
   function loadDocs(){ try{ return JSON.parse(localStorage.getItem(LS_DOCS)||'[]'); }catch(e){ return []; } }
@@ -455,7 +456,7 @@
         '<div class="ri-main"><div class="ri-cli">'+(esc(d.client&&d.client.name)||'Client')+'</div>'+
         '<div class="ri-no">'+esc(d.number||'—')+' · échéance '+fmtDate(d.due)+'</div></div>'+
         '<span class="ri-late">'+x.late+' j de retard</span>'+
-        '<span class="ri-amt">'+euro.format(x.due)+'</span>'+
+        '<span class="ri-amt">'+dmoney(d).format(x.due)+'</span>'+
         '<button class="ri-btn" data-relance="'+esc(d.id)+'" title="'+(hasEmail?'Relancer par e-mail':'Aucun e-mail client — ouvre le rappel')+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6M21 12a9 9 0 1 1-3-6.7L21 8"/></svg> Relancer</button>'+
       '</div>';
     }).join('');
@@ -515,14 +516,15 @@
     var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'; });
     if(!docs.length){ toast('Aucune facture à exporter.'); return; }
     docs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||'') || String(a.number||'').localeCompare(String(b.number||'')); });
-    var head=['Type','Numéro','Date','Date prestation','Client','SIRET client','Total HT','TVA','Total TTC','Statut','Encaissé','Reste dû'];
+    var head=['Type','Numéro','Date','Date prestation','Client','SIRET client','Devise','Total HT','TVA','Total TTC','Statut','Encaissé','Reste dû'];
     var rows=[head.join(';')];
     docs.forEach(function(d){
       var t=computeTotal(d), sign=d.kind==='avoir'?-1:1, st=(STATUS[t.status]||{}).t||'';
+      var typ=d.kind==='avoir'?'Avoir':(d.kind==='situation'?'Facture de situation':'Facture');
       rows.push([
-        d.kind==='avoir'?'Avoir':'Facture', d.number||'', fmtDate(d.date),
+        typ, d.number||'', fmtDate(d.date),
         d.supplyDate?fmtDate(d.supplyDate):'', (d.client&&d.client.name)||'',
-        (d.client&&d.client.siret)||'',
+        (d.client&&d.client.siret)||'', d.currency||'EUR',
         csvNum(sign*t.netHT), csvNum(sign*t.totalVAT), csvNum(sign*t.ttc),
         d.kind==='avoir'?'Avoir':st, csvNum(sign*t.paid), csvNum(sign*t.due)
       ].map(csvCell).join(';'));
@@ -631,7 +633,7 @@
     return '<div class="doc" data-id="'+esc(d.id)+'">'+
       '<span class="dk">'+svg+'</span>'+
       '<div class="dm"><div class="dn">'+esc(num)+'</div><div class="dd"><span>'+fmtDate(d.date)+'</span>'+(d.due&&!isDevis?'<span>Échéance '+fmtDate(d.due)+'</span>':'')+'</div></div>'+
-      '<div class="dr"><div class="amt">'+euro.format(t.ttc)+'</div>'+badge+'</div>'+
+      '<div class="dr"><div class="amt">'+dmoney(d).format(t.ttc)+'</div>'+badge+'</div>'+
       '</div>';
   }
 
@@ -676,23 +678,23 @@
     var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu)||Number(l.qty)!==1;});
     var linesHtml=lines.length? lines.map(function(l){
       var ht=(Number(l.qty)||0)*(Number(l.pu)||0);
-      return '<div class="dw-line"><span class="dl-d">'+esc(l.desc||'—')+'</span><span class="dl-q">'+(Number(l.qty)||0)+' × '+euro.format(Number(l.pu)||0)+'</span><span>'+euro.format(ht)+'</span></div>';
+      return '<div class="dw-line"><span class="dl-d">'+esc(l.desc||'—')+'</span><span class="dl-q">'+(Number(l.qty)||0)+' × '+dmoney(d).format(Number(l.pu)||0)+'</span><span>'+dmoney(d).format(ht)+'</span></div>';
     }).join('') : '<div class="dw-line"><span class="dl-d" style="color:var(--txt2)">Aucune ligne renseignée</span></div>';
     var body='<div class="dw-sec"><h4>Prestations</h4>'+linesHtml+'</div>';
     body+='<div class="dw-sec"><h4>Totaux</h4>';
-    body+='<div class="dw-tot"><span style="color:var(--txt2)">Total HT</span><span>'+euro.format(t.netHT)+'</span></div>';
-    body+='<div class="dw-tot"><span style="color:var(--txt2)">TVA</span><span>'+euro.format(t.totalVAT)+'</span></div>';
-    if(t.deposit>0.005) body+='<div class="dw-tot"><span style="color:var(--txt2)">Acompte</span><span>−'+euro.format(t.deposit)+'</span></div>';
-    body+='<div class="dw-tot big"><span>Total TTC</span><span>'+euro.format(t.ttc)+'</span></div>';
+    body+='<div class="dw-tot"><span style="color:var(--txt2)">Total HT</span><span>'+dmoney(d).format(t.netHT)+'</span></div>';
+    body+='<div class="dw-tot"><span style="color:var(--txt2)">TVA</span><span>'+dmoney(d).format(t.totalVAT)+'</span></div>';
+    if(t.deposit>0.005) body+='<div class="dw-tot"><span style="color:var(--txt2)">Acompte</span><span>−'+dmoney(d).format(t.deposit)+'</span></div>';
+    body+='<div class="dw-tot big"><span>Total TTC</span><span>'+dmoney(d).format(t.ttc)+'</span></div>';
     body+='</div>';
     if(!isDevis){
       var st=STATUS[t.status]||STATUS.pending;
       body+='<div class="dw-sec"><h4>Règlement</h4>';
       body+='<div class="dw-tot"><span style="color:var(--txt2)">Statut</span><span class="badge '+st.c+'">'+st.t+'</span></div>';
-      body+='<div class="dw-tot"><span style="color:var(--txt2)">Encaissé</span><span>'+euro.format(t.paid)+'</span></div>';
-      body+='<div class="dw-tot"><span style="color:var(--txt2)">Reste dû</span><span'+(t.due>0.005?' style="color:var(--warn);font-weight:700"':'')+'>'+euro.format(t.due)+'</span></div>';
+      body+='<div class="dw-tot"><span style="color:var(--txt2)">Encaissé</span><span>'+dmoney(d).format(t.paid)+'</span></div>';
+      body+='<div class="dw-tot"><span style="color:var(--txt2)">Reste dû</span><span'+(t.due>0.005?' style="color:var(--warn);font-weight:700"':'')+'>'+dmoney(d).format(t.due)+'</span></div>';
       var pays=(d.payments||[]).filter(function(p){return Number(p.amount)>0;});
-      if(pays.length) body+='<div style="margin-top:6px">'+pays.map(function(p){ return '<div class="dw-line"><span class="dl-d" style="color:var(--txt2)">Encaissement '+fmtDate(p.date)+'</span><span>'+euro.format(Number(p.amount)||0)+'</span></div>'; }).join('')+'</div>';
+      if(pays.length) body+='<div style="margin-top:6px">'+pays.map(function(p){ return '<div class="dw-line"><span class="dl-d" style="color:var(--txt2)">Encaissement '+fmtDate(p.date)+'</span><span>'+dmoney(d).format(Number(p.amount)||0)+'</span></div>'; }).join('')+'</div>';
       if(t.due>0.005){
         body+='<div class="pay-actions"><button class="btn-pay full" data-payfull="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Marquer payée</button><button class="btn-pay part" data-paypart="'+esc(d.id)+'">Encaissement partiel</button></div>';
       } else {
@@ -709,7 +711,7 @@
       if(rem.length) body+='<div class="dw-tot"><span style="color:var(--txt2)">Relances</span><span class="badge overdue">'+rem.length+' · dernière '+fmtDate(rem[rem.length-1].date)+'</span></div>';
       body+='<div class="pay-actions"><button class="btn-pay send" data-send="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> '+(d.sentAt?'Renvoyer':'Envoyer au client')+'</button>'+
         (late?'<button class="btn-pay relance" data-relance="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6M21 12a9 9 0 1 1-3-6.7L21 8"/></svg> Relancer</button>':'')+'</div>';
-      if(late) body+='<div style="font-size:11.5px;color:var(--warn);margin-top:6px">Facture en retard — reste dû '+euro.format(t.due)+'.</div>';
+      if(late) body+='<div style="font-size:11.5px;color:var(--warn);margin-top:6px">Facture en retard — reste dû '+dmoney(d).format(t.due)+'.</div>';
       if(t.due>0.005){
         body+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">';
         if(d.payLink){
@@ -794,7 +796,7 @@
       ? 'Sauf erreur de notre part, la facture '+(d.number||'')+(d.due?' (échéance du '+fmtDate(d.due)+')':'')+' reste impayée. Merci de bien vouloir procéder à son règlement.'
       : 'Veuillez trouver le récapitulatif de votre facture '+(d.number||')')+'.';
     var body='Bonjour '+((d.client&&d.client.name)||'')+',\n\n'+intro+'\n\n'+
-      'Total TTC : '+euro.format(t.ttc)+'\nMontant dû : '+euro.format(t.due>0.005?t.due:t.ttc)+(d.due?'\nÉchéance : '+fmtDate(d.due):'')+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'');
+      'Total TTC : '+dmoney(d).format(t.ttc)+'\nMontant dû : '+dmoney(d).format(t.due>0.005?t.due:t.ttc)+(d.due?'\nÉchéance : '+fmtDate(d.due):'')+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'');
     window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body), '_blank');
   }
   async function sendInvoice(id, btn, mode){
