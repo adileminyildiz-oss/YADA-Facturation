@@ -625,7 +625,8 @@
     var svg = isDevis
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
-    var num = d.number ? (isDevis?'Devis ':'Facture ')+d.number : (isDevis?'Devis':'Facture')+' (brouillon)';
+    var kn={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'}[d.kind]||'Facture';
+    var num = d.number ? kn+' '+d.number : kn+' (brouillon)';
     var st=STATUS[t.status]||STATUS.pending; var badge='<span class="badge '+st.c+'">'+st.t+'</span>';
     return '<div class="doc" data-id="'+esc(d.id)+'">'+
       '<span class="dk">'+svg+'</span>'+
@@ -670,7 +671,7 @@
     document.getElementById('dwK').innerHTML= isDevis
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
-    document.getElementById('dwTitle').textContent=(isDevis?'Devis ':'Facture ')+(d.number||'(brouillon)');
+    document.getElementById('dwTitle').textContent=({facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'}[d.kind]||'Facture')+' '+(d.number||'(brouillon)');
     document.getElementById('dwSub').textContent=fmtDate(d.date)+' · '+((d.client&&d.client.name)||'Sans client');
     var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu)||Number(l.qty)!==1;});
     var linesHtml=lines.length? lines.map(function(l){

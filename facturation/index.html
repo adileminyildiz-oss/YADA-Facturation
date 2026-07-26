@@ -489,24 +489,28 @@
     </div>
 
     <!-- Remise / acompte / options -->
-    <div class="card">
+    <div class="card" id="reglCard">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span> Remise &amp; règlement</h3>
       <p class="hint">Optionnel. Laissez à zéro si non applicable.</p>
-      <div class="row-split" style="margin-bottom:14px">
+      <div class="row-split" id="discountWrap" style="margin-bottom:14px">
         <div class="field"><label for="f-discount">Remise globale</label><input id="f-discount" type="number" min="0" step="0.01" value="0"></div>
         <div class="field" style="flex:none;width:120px">
           <label for="f-discount-type">Type</label>
           <select id="f-discount-type"><option value="pct">%</option><option value="eur">€ (HT)</option></select>
         </div>
+      </div>
+      <div class="row-split" id="acompteWrap" style="margin-bottom:14px">
         <div class="field"><label for="f-deposit">Acompte déjà versé / facturé (€)</label><input id="f-deposit" type="number" min="0" step="0.01" value="0"></div>
         <div class="field"><label for="f-acompte-ref">N° facture d'acompte (optionnel)</label><input id="f-acompte-ref" placeholder="FA-…"></div>
       </div>
       <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-vat-exempt"> Non assujetti à la TVA (franchise en base — art. 293 B du CGI)</label>
       <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-autoliq"> Autoliquidation (sous-traitance BTP / intra-UE — art. 283-2 du CGI)</label>
-      <label class="check"><input type="checkbox" id="f-recur-active"> Facture récurrente (abonnement)</label>
-      <div id="recurRow" class="grid2" style="margin-top:10px" hidden>
-        <div class="field"><label for="f-recur-freq">Fréquence</label><select id="f-recur-freq"><option value="monthly">Mensuelle</option><option value="quarterly">Trimestrielle</option><option value="yearly">Annuelle</option></select></div>
-        <div class="field"><label for="f-recur-next">Prochaine échéance</label><input id="f-recur-next" type="date"></div>
+      <div id="recurWrap">
+        <label class="check"><input type="checkbox" id="f-recur-active"> Facture récurrente (abonnement)</label>
+        <div id="recurRow" class="grid2" style="margin-top:10px" hidden>
+          <div class="field"><label for="f-recur-freq">Fréquence</label><select id="f-recur-freq"><option value="monthly">Mensuelle</option><option value="quarterly">Trimestrielle</option><option value="yearly">Annuelle</option></select></div>
+          <div class="field"><label for="f-recur-next">Prochaine échéance</label><input id="f-recur-next" type="date"></div>
+        </div>
       </div>
     </div>
 
@@ -758,7 +762,7 @@ function buildDocData(s,t){
     devisRef: esc(s.devisRef||''),
     dueLabel: (isDevis||isCommande)?L.validUntil:L.due,
     dueDate: s.due?fmtDate(s.due):'',
-    emitName: esc(s.emit.name)||'Votre société',
+    emitName: esc(s.emit.name)||L.yourCompany,
     emitLegalForm: esc(s.emit.legalForm||''),
     emitCapital: esc(s.emit.capital||''),
     emitRcs: esc(s.emit.rcs||''),
@@ -770,7 +774,7 @@ function buildDocData(s,t){
     decennale: decLine,
     emitContact: esc([s.emit.email,s.emit.phone].filter(Boolean).join(' · ')),
     iban: esc(s.emit.iban||''), bic: esc(s.emit.bic||''),
-    clientName: esc(s.client.name)||'Nom du client',
+    clientName: esc(s.client.name)||L.clientNamePh,
     clientAddr: br(s.client.addr),
     clientSiret: esc(s.client.siret||''),
     clientEmail: esc(s.client.email||''),
@@ -827,7 +831,7 @@ const TEMPLATES = {
   '2C': function(D){
     const rows = D.lines.length ? D.lines.map(l=>`
       <div style="display:grid;grid-template-columns:1fr 50px 92px 108px;gap:10px;padding:13px 0;border-bottom:1px solid #eef2f6;font-size:12.5px;align-items:baseline;">
-        <div style="font-weight:600;color:#0f172a;">${l.desc||'<span style="color:#cbd5e1;font-style:italic;">${D.L.descPh}</span>'}</div>
+        <div style="font-weight:600;color:#0f172a;">${l.desc||('<span style="color:#cbd5e1;font-style:italic;">'+D.L.descPh+'</span>')}</div>
         <div style="text-align:right;color:#475569;">${l.qtyF}</div>
         <div style="text-align:right;color:#475569;">${l.puF}</div>
         <div style="text-align:right;font-weight:700;color:#0f172a;">${l.totalF}</div>
@@ -884,7 +888,7 @@ const TEMPLATES = {
   '2B': function(D){
     const rows = D.lines.length ? D.lines.map(l=>`
       <div style="display:grid;grid-template-columns:1fr 54px 100px 116px;gap:12px;padding:15px 0;border-bottom:1px solid #26241f;font-size:13.5px;align-items:baseline;">
-        <div style="color:#f4f1e9;font-weight:600;">${l.desc||'<span style="color:#6b6558;font-style:italic;">${D.L.descPh}</span>'}</div>
+        <div style="color:#f4f1e9;font-weight:600;">${l.desc||('<span style="color:#6b6558;font-style:italic;">'+D.L.descPh+'</span>')}</div>
         <div style="text-align:right;color:#b8b2a4;">${l.qtyF}</div>
         <div style="text-align:right;color:#b8b2a4;">${l.puF}</div>
         <div style="text-align:right;color:#f4f1e9;font-weight:600;">${l.totalF}</div>
@@ -927,7 +931,7 @@ const TEMPLATES = {
   '1A': function(D){
     const rows = D.lines.length ? D.lines.map(l=>`
       <div style="display:grid;grid-template-columns:1fr 58px 100px 112px;gap:12px;padding:15px 0;border-bottom:1px solid #eae7dd;font-size:14px;align-items:baseline;">
-        <div style="font-weight:600;color:#1a1a1a;">${l.desc||'<span style="color:#c9c5b8;font-style:italic;">${D.L.descPh}</span>'}</div>
+        <div style="font-weight:600;color:#1a1a1a;">${l.desc||('<span style="color:#c9c5b8;font-style:italic;">'+D.L.descPh+'</span>')}</div>
         <div style="text-align:right;font-variant-numeric:tabular-nums;color:#26241d;">${l.qtyF}</div>
         <div style="text-align:right;font-variant-numeric:tabular-nums;color:#26241d;">${l.puF}</div>
         <div style="text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:#1a1a1a;">${l.totalF}</div>
@@ -978,7 +982,7 @@ const TEMPLATES = {
       <div style="margin-top:auto;padding-top:38px;display:grid;grid-template-columns:1fr 1fr;gap:28px;">
         <div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">${D.L.payment}</div>
-          <div style="font-size:12px;color:#7a776d;line-height:1.7;">${D.terms||'Par virement'}${D.iban?'<br>IBAN '+D.iban:''}${D.bic?'<br>BIC '+D.bic:''}</div>
+          <div style="font-size:12px;color:#7a776d;line-height:1.7;">${D.terms||D.L.byTransfer}${D.iban?'<br>IBAN '+D.iban:''}${D.bic?'<br>BIC '+D.bic:''}</div>
         </div>
         <div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">${D.L.mentions}</div>
@@ -1164,7 +1168,7 @@ function applyLockUI(){
   const avoirBtn=document.getElementById('avoirBtn');
   const kindLbl=state.kind==='devis'?(state.accepted?'Accepté':'Validé'):(state.kind==='avoir'?'Émis':'Émise');
   if(badge){ badge.hidden=!locked; const t=document.getElementById('lockBadgeTxt'); if(t) t.textContent=locked&&state.emittedAt?(kindLbl+' le '+fmtDate(state.emittedAt)):kindLbl; }
-  if(avoirBtn) avoirBtn.hidden=!(locked && state.kind==='facture');
+  if(avoirBtn) avoirBtn.hidden=!(locked && PAYABLE_KINDS[state.kind]);
   const noteTxt=document.getElementById('lockNoteTxt');
   if(noteTxt) noteTxt.textContent = state.kind==='devis'
     ? (state.accepted ? ('Devis accepté et signé'+(state.acceptedBy?' par '+state.acceptedBy:'')+'. Verrouillé.') : 'Devis validé et verrouillé. Pour le modifier, dupliquez-le en brouillon.')
@@ -1183,14 +1187,15 @@ function emitDoc(){
 function createAvoirFromCurrent(){
   if(dirty) persist();
   const src=JSON.parse(JSON.stringify(state));
-  if(src.kind!=='facture' || !src.emitted){ toast('L\'avoir se crée depuis une facture émise.'); return; }
+  if(!PAYABLE_KINDS[src.kind] || !src.emitted){ toast('L\'avoir se crée depuis une facture émise.'); return; }
   const prevEmit=loadEmit();
   state=blankState();
   if(prevEmit) state.emit=Object.assign(state.emit,prevEmit);
   state.kind='avoir';
   state.client=src.client;
   state.lines=(src.lines&&src.lines.length)?src.lines:[newLine()];
-  state.vatExempt=src.vatExempt; state.discount=src.discount; state.discountType=src.discountType;
+  state.vatExempt=src.vatExempt; state.autoliq=src.autoliq; state.discount=src.discount; state.discountType=src.discountType;
+  state.currency=src.currency; state.lang=src.lang; state.template=src.template;
   state.avoirRef=src.number;
   state.terms=src.terms;
   assignNumberFor(state);
@@ -1209,7 +1214,8 @@ function convertDevisToFacture(){
   state.kind='facture';
   state.client=src.client;
   state.lines=(src.lines&&src.lines.length)?src.lines:[newLine()];
-  state.vatExempt=src.vatExempt; state.discount=src.discount; state.discountType=src.discountType;
+  state.vatExempt=src.vatExempt; state.autoliq=src.autoliq; state.discount=src.discount; state.discountType=src.discountType;
+  state.currency=src.currency; state.lang=src.lang; state.template=src.template;
   state.deposit=src.deposit; state.terms=src.terms; state.notes=src.notes; state.supplyDate=src.supplyDate;
   state.devisRef=src.number;
   assignNumberFor(state);
@@ -1237,7 +1243,8 @@ function createAcompteFromCurrent(){
   if(prevEmit) state.emit=Object.assign(state.emit,prevEmit);
   state.kind='facture';
   state.client=src.client;
-  state.vatExempt=src.vatExempt;
+  state.vatExempt=src.vatExempt; state.autoliq=src.autoliq;
+  state.currency=src.currency; state.lang=src.lang; state.template=src.template;
   state.devisRef=src.kind==='devis'?src.number:(src.devisRef||'');
   state.terms=src.terms;
   state.lines=[{desc:'Acompte '+nf2.format(pct)+' % sur '+origin, qty:1, pu:amountHT, vat:vat}];
@@ -1330,7 +1337,8 @@ function generateNextRecurrence(){
   state.kind='facture';
   state.client=src.client;
   state.lines=(src.lines&&src.lines.length)?src.lines:[newLine()];
-  state.vatExempt=src.vatExempt; state.discount=src.discount; state.discountType=src.discountType;
+  state.vatExempt=src.vatExempt; state.autoliq=src.autoliq; state.discount=src.discount; state.discountType=src.discountType;
+  state.currency=src.currency; state.lang=src.lang; state.template=src.template;
   state.terms=src.terms; state.notes=src.notes; state.date=occDate;
   assignNumberFor(state);
   fillForm(); render(); persist();
@@ -1360,6 +1368,14 @@ function updateKindUI(){
   if(isSit) recomputeSituation();
   const acompteBtn=document.getElementById('acompteBtn'); if(acompteBtn) acompteBtn.hidden = (k!=='devis' && k!=='facture');
   const signBtn=document.getElementById('signBtn'); if(signBtn) signBtn.hidden = !(k==='devis' && !state.accepted);
+  // Formulaire dédié : n'afficher que les champs pertinents pour ce type de document.
+  const showEl=(id,on)=>{ const el=document.getElementById(id); if(el) el.hidden=!on; };
+  showEl('supplyWrap', k!=='avoir');                                  // pas de date de prestation sur un avoir
+  showEl('dueWrap', k!=='avoir' && k!=='livraison');                  // échéance/validité : ni avoir ni BL
+  showEl('reglCard', k!=='livraison');                               // un bon de livraison n'a pas de règlement
+  showEl('acompteWrap', k==='facture' || k==='situation');          // acompte : docs fiscaux payables
+  showEl('discountWrap', k!=='livraison');
+  showEl('recurWrap', k==='facture');                               // récurrence : facture seule
   applyRecurUI();
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
@@ -1416,7 +1432,8 @@ const LABELS={
     date:'Date', due:'Échéance', validUntil:'Valable jusqu’au', delivery:'Prestation', deliveryDate:'Prestation',
     issuer:'Émetteur', payment:'Paiement', mentions:'Mentions', details:'Détails', notes:'Notes', number:'N°',
     issuedOn:'Émise le', capital:'au capital de', linesEmpty:'Ajoutez des prestations pour les voir apparaître ici.',
-    descPh:'Désignation…', bonAccord:'Bon pour accord', client:'Client'
+    descPh:'Désignation…', bonAccord:'Bon pour accord', client:'Client',
+    yourCompany:'Votre société', clientNamePh:'Nom du client', byTransfer:'Par virement'
   },
   en:{
     kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',commande:'Purchase order',livraison:'Delivery note'},
@@ -1427,7 +1444,8 @@ const LABELS={
     date:'Date', due:'Due date', validUntil:'Valid until', delivery:'Delivery', deliveryDate:'Delivery',
     issuer:'From', payment:'Payment', mentions:'Notes', details:'Details', notes:'Notes', number:'No.',
     issuedOn:'Issued on', capital:'share capital', linesEmpty:'Add items to see them here.',
-    descPh:'Description…', bonAccord:'Approved', client:'Client'
+    descPh:'Description…', bonAccord:'Approved', client:'Client',
+    yourCompany:'Your company', clientNamePh:'Client name', byTransfer:'By bank transfer'
   }
 };
 function labelsFor(lang){ return LABELS[lang]||LABELS.fr; }
@@ -1494,6 +1512,7 @@ function deleteDoc(id,e){
   const target=loadDocs().find(d=>d.id===id);
   if(target && target.emitted){ toast('Pièce émise : suppression interdite. Créez un avoir pour la corriger.'); return; }
   if(!confirm('Supprimer définitivement ce document ?')) return;
+  if(target) releaseNumber(target);   // brouillon supprimé : on rend son numéro s'il était le dernier de la série
   let list=loadDocs().filter(d=>d.id!==id); saveDocs(list);
   if(typeof CLOUD!=='undefined') CLOUD.remove(id);
   if(state.id===id){ state=blankState(); const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em); fillForm(); render(); persist(); }
@@ -1606,7 +1625,7 @@ function zoomStep(d){
   applyZoom();
 }
 function zoomFit(){ manualZoom=null; applyZoom(); }
-function setTemplate(v){ state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
+function setTemplate(v){ if(state.emitted){ document.getElementById('tplSel').value=state.template; toast('Pièce émise : non modifiable.'); return; } state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
 function setLang(v){ if(state.emitted){ document.getElementById('langSel').value=state.lang; toast('Pièce émise : non modifiable.'); return; } state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
 function setCurrency(v){ if(state.emitted){ document.getElementById('curSel').value=state.currency; toast('Pièce émise : non modifiable.'); return; } state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
 window.addEventListener('resize', function(){ if(manualZoom==null) applyZoom(); });
