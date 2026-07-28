@@ -299,6 +299,7 @@
   .doc-item .di-kind.devis{background:rgba(62,233,164,.14);color:var(--pos)}
   .doc-item .di-kind.avoir{background:rgba(255,159,90,.16);color:#ff9f5a}
   .doc-item .di-kind.situation{background:rgba(255,207,109,.14);color:#ffcf6d}
+  .doc-item .di-kind.dgd{background:rgba(62,233,164,.14);color:#3ee9a4}
   .doc-item .di-kind.commande{background:rgba(139,201,255,.14);color:#8bc9ff}
   .doc-item .di-kind.livraison{background:rgba(180,160,255,.14);color:#b4a0ff}
   .doc-item .di-main{flex:1;min-width:0}
@@ -387,6 +388,7 @@
           <option value="devis">Devis</option>
           <option value="avoir">Avoir</option>
           <option value="situation">Facture de situation (BTP)</option>
+          <option value="dgd">Décompte général définitif (BTP)</option>
           <option value="commande">Bon de commande</option>
           <option value="livraison">Bon de livraison</option>
         </select>
@@ -455,6 +457,13 @@
       </div>
     </div>
 
+    <!-- Chantier (rattachement BTP) -->
+    <div class="card" id="chantierCard" hidden>
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span> Chantier / Marché</h3>
+      <p class="hint">Rattachez ce document à un chantier pour regrouper ses situations et établir le décompte général définitif.</p>
+      <div class="field"><label for="f-chantier">Nom / référence du chantier</label><input id="f-chantier" list="chantierList" autocomplete="off" placeholder="ex. Réhabilitation École Jean-Jaurès"><datalist id="chantierList"></datalist></div>
+    </div>
+
     <!-- Marché (facture de situation BTP) -->
     <div class="card" id="marcheCard" hidden>
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span> Marché &amp; avancement</h3>
@@ -467,6 +476,18 @@
         <div class="field"><label for="m-vat">Taux de TVA (%)</label><input id="m-vat" type="number" min="0" step="0.1" placeholder="20"></div>
         <div class="field"><label>Montant de la situation</label><input id="m-amount" readonly tabindex="-1" class="locked" style="font-weight:700"></div>
       </div>
+    </div>
+
+    <!-- Décompte général définitif (BTP) -->
+    <div class="card" id="dgdCard" hidden>
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Décompte général définitif</h3>
+      <p class="hint">Solde de clôture du marché : montant final (révision comprise) − situations déjà facturées sur le chantier. Rattachez d'abord ce décompte à un chantier ci-dessus.</p>
+      <div class="grid3">
+        <div class="field col-2"><label for="f-dgd-final">Montant final du marché HT (€)</label><input id="f-dgd-final" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="f-dgd-vat">Taux de TVA (%)</label><input id="f-dgd-vat" type="number" min="0" step="0.1" value="20"></div>
+        <div class="field"><label for="f-dgd-rev">Révision de prix (%)</label><input id="f-dgd-rev" type="number" step="0.01" value="0"></div>
+      </div>
+      <div id="dgdSummary" style="margin-top:10px"></div>
     </div>
 
     <!-- Lignes -->
@@ -642,7 +663,9 @@ function blankState(){
     acompteRef: '',
     accepted: false, acceptedAt: '', acceptedBy: '', signature: '',
     recur: {active:false, freq:'monthly', next:''},
+    chantier: '',
     marche: {total:'', progress:'', prev:'', num:'', vat:20},
+    dgd: {marcheFinal:'', revisionPct:0, vat:20},
     retenue: {active:false, pct:5, released:false, releasedAt:''},
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:'',decAssureur:'',decContrat:'',decZone:''},
@@ -805,7 +828,7 @@ function buildDocData(s,t){
     retenueAmt: t.retenueHeld>0?money.format(t.retenueHeld):'',
     retenuePct: nf2.format(t.retPct||0),
     acompteRef: esc(s.acompteRef||''),
-    situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : '',
+    situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : (s.kind==='dgd' ? buildDgdRecap(s, L) : ''),
     signBlock: (s.accepted && s.kind==='devis')
       ? `<div style="margin-top:24px;display:flex;justify-content:flex-end;"><div style="border:1px solid rgba(120,130,160,.35);border-radius:9px;padding:11px 16px;min-width:210px;text-align:center;background:rgba(255,255,255,.04);">
            <div style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a94ad;">${L.bonAccord}</div>
@@ -1153,12 +1176,17 @@ function fillForm(){
   document.getElementById('f-discount-type').value=s.discountType;
   document.getElementById('f-deposit').value=s.deposit;
   document.getElementById('f-acompte-ref').value=s.acompteRef||'';
+  document.getElementById('f-chantier').value=s.chantier||'';
   s.marche=s.marche||{total:'',progress:'',prev:'',num:'',vat:20};
   document.getElementById('m-num').value=s.marche.num||'';
   document.getElementById('m-total').value=s.marche.total||'';
   document.getElementById('m-prev').value=s.marche.prev||'';
   document.getElementById('m-progress').value=s.marche.progress||'';
   document.getElementById('m-vat').value=(s.marche.vat!=null?s.marche.vat:20);
+  s.dgd=s.dgd||{marcheFinal:'',revisionPct:0,vat:20};
+  document.getElementById('f-dgd-final').value=s.dgd.marcheFinal||'';
+  document.getElementById('f-dgd-vat').value=(s.dgd.vat!=null?s.dgd.vat:20);
+  document.getElementById('f-dgd-rev').value=(s.dgd.revisionPct!=null?s.dgd.revisionPct:0);
   s.retenue=s.retenue||{active:false,pct:5,released:false,releasedAt:''};
   document.getElementById('f-retenue-active').checked=!!s.retenue.active;
   document.getElementById('f-retenue-pct').value=(s.retenue.pct!=null?s.retenue.pct:5);
@@ -1179,6 +1207,13 @@ function fillForm(){
   applyLockUI();
   renderCatalog();
   renderClientList();
+  renderChantierList();
+}
+/* Liste des chantiers déjà utilisés (auto-complétion du champ chantier). */
+function renderChantierList(){
+  const dl=document.getElementById('chantierList'); if(!dl) return;
+  const set={}; loadDocs().forEach(function(d){ const c=String(d.chantier||'').trim(); if(c) set[c.toLowerCase()]=c; });
+  dl.innerHTML=Object.keys(set).map(function(k){ return '<option value="'+esc(set[k])+'">'; }).join('');
 }
 /* ===== Émission / verrouillage (conformité : une pièce émise est inaltérable) ===== */
 function applyLockUI(){
@@ -1297,6 +1332,64 @@ function buildSituationRecap(s, L){
     ${row('<b>'+(en?'This progress payment':'Présente situation')+'</b>', '<b>'+nf2.format(Math.max(0,prog-prev))+' % · '+money.format(total*Math.max(0,prog-prev)/100)+'</b>')}
   </div>`;
 }
+/* ===== Décompte général définitif (clôture de marché BTP) ===== */
+/* Situations et factures ÉMISES rattachées au même chantier (hors document courant). */
+function dgdRattached(s){
+  const key=String(s.chantier||'').trim().toLowerCase();
+  if(!key) return [];
+  return loadDocs().filter(function(d){
+    return d.id!==s.id && d.emitted && (d.kind==='situation'||d.kind==='facture')
+      && String(d.chantier||'').trim().toLowerCase()===key;
+  }).sort(function(a,b){ return String(a.number||'').localeCompare(String(b.number||'')); });
+}
+/* Le solde du DGD = montant final du marché (+ révision) − cumul déjà facturé. */
+function recomputeDGD(){
+  const s=state; const D=s.dgd||(s.dgd={marcheFinal:'',revisionPct:0,vat:20});
+  const marche=Number(D.marcheFinal)||0, revPct=Number(D.revisionPct)||0, vat=Number(D.vat!=null?D.vat:20)||0;
+  const docs=dgdRattached(s);
+  let cumulHT=0; docs.forEach(function(d){ cumulHT+=computeTotals(d).netHT; });
+  const revAmt=Math.round(marche*revPct/100*100)/100;
+  const soldeTravaux=Math.round((marche-cumulHT)*100)/100;
+  const en=s.lang==='en';
+  const lines=[{desc:(en?'Contract balance — final statement (DGD)':'Solde du marché — décompte général définitif'), qty:1, pu:soldeTravaux, vat:vat}];
+  if(Math.abs(revAmt)>0.005) lines.push({desc:(en?'Price revision':'Révision de prix')+' ('+nf2.format(revPct)+' %)', qty:1, pu:revAmt, vat:vat});
+  s.lines=lines;
+  const sum=document.getElementById('dgdSummary');
+  if(sum){
+    const money=moneyFmt(s.currency,s.lang);
+    const row=function(k,v,b){ return '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11.5px;">'+(b?'<b>'+k+'</b><b>'+v+'</b>':'<span style="color:var(--txt2)">'+k+'</span><span style="font-weight:600">'+v+'</span>')+'</div>'; };
+    sum.innerHTML='<div style="border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;background:rgba(9,12,22,.4)">'
+      +row('Situations rattachées', docs.length+' pièce'+(docs.length>1?'s':''))
+      +row('Déjà facturé HT', money.format(cumulHT))
+      +row('Montant final du marché HT', money.format(marche))
+      +(Math.abs(revAmt)>0.005?row('Révision de prix', money.format(revAmt)):'')
+      +row('Solde HT (présent décompte)', money.format(soldeTravaux+revAmt), true)
+      +'</div>';
+  }
+}
+/* Récapitulatif imprimé du DGD : liste des situations rattachées + solde final. */
+function buildDgdRecap(s, L){
+  const en=s.lang==='en'; const money=moneyFmt(s.currency,s.lang);
+  const docs=dgdRattached(s);
+  const D=s.dgd||{}; const marche=Number(D.marcheFinal)||0, revPct=Number(D.revisionPct)||0;
+  const revAmt=Math.round(marche*revPct/100*100)/100;
+  let cumul=0;
+  const rows=docs.map(function(d){
+    const ht=computeTotals(d).netHT; cumul+=ht;
+    return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:14px;padding:4px 0;border-bottom:1px solid #eef0f4;"><span>'+esc(d.number||'—')+'</span><span style="color:#94a3b8;">'+fmtDate(d.date)+'</span><span style="font-weight:600;font-variant-numeric:tabular-nums;">'+money.format(ht)+'</span></div>';
+  }).join('');
+  const solde=marche+revAmt-cumul;
+  const tot=function(k,v,b){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;">'+(b?'<b>'+k+'</b><b>'+v+'</b>':'<span style="color:#94a3b8;">'+k+'</span><span style="font-weight:600;">'+v+'</span>')+'</div>'; };
+  return '<div style="margin-top:22px;border:1px solid rgba(120,130,160,.3);border-radius:9px;padding:13px 16px;font-size:12px;color:#334155;">'
+    +'<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">'+(en?'Final contract statement':'Récapitulatif du marché')+(s.chantier?' — '+esc(s.chantier):'')+'</div>'
+    +(rows?'<div style="margin-bottom:8px;">'+rows+'</div>':'<div style="color:#94a3b8;margin-bottom:8px;">'+(en?'No linked progress invoices.':'Aucune situation rattachée à ce chantier.')+'</div>')
+    +tot(en?'Total previously invoiced (excl. tax)':'Total déjà facturé HT', money.format(cumul))
+    +tot(en?'Final contract amount (excl. tax)':'Montant final du marché HT', money.format(marche))
+    +(Math.abs(revAmt)>0.005?tot(en?'Price revision':'Révision de prix', money.format(revAmt)):'')
+    +'<div style="border-top:1px solid #dfe3ea;margin:4px 0;"></div>'
+    +tot(en?'Balance — this statement':'Solde du présent décompte', money.format(solde), true)
+    +'</div>';
+}
 /* ===== Signature du devis (bon pour accord) ===== */
 let _signCtx=null, _signing=false, _signHasInk=false;
 function openSignModal(){
@@ -1389,9 +1482,12 @@ function updateKindUI(){
   if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
   const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
   const isSit=k==='situation';
+  const isDgd=k==='dgd';
   const mc=document.getElementById('marcheCard'); if(mc) mc.hidden=!isSit;
-  const lc=document.getElementById('linesCard'); if(lc) lc.hidden=isSit;
+  const dc=document.getElementById('dgdCard'); if(dc) dc.hidden=!isDgd;
+  const lc=document.getElementById('linesCard'); if(lc) lc.hidden=isSit||isDgd;
   if(isSit) recomputeSituation();
+  if(isDgd) recomputeDGD();
   const acompteBtn=document.getElementById('acompteBtn'); if(acompteBtn) acompteBtn.hidden = (k!=='devis' && k!=='facture');
   const signBtn=document.getElementById('signBtn'); if(signBtn) signBtn.hidden = !(k==='devis' && !state.accepted);
   // Formulaire dédié : n'afficher que les champs pertinents pour ce type de document.
@@ -1399,9 +1495,10 @@ function updateKindUI(){
   showEl('supplyWrap', k!=='avoir');                                  // pas de date de prestation sur un avoir
   showEl('dueWrap', k!=='avoir' && k!=='livraison');                  // échéance/validité : ni avoir ni BL
   showEl('reglCard', k!=='livraison');                               // un bon de livraison n'a pas de règlement
-  showEl('acompteWrap', k==='facture' || k==='situation');          // acompte : docs fiscaux payables
-  showEl('retenueWrap', k==='facture' || k==='situation');          // retenue de garantie : BTP
-  showEl('discountWrap', k!=='livraison');
+  showEl('chantierCard', k==='facture' || k==='situation' || k==='dgd'); // rattachement chantier : BTP
+  showEl('acompteWrap', k==='facture' || k==='situation' || k==='dgd'); // acompte : docs fiscaux payables
+  showEl('retenueWrap', k==='facture' || k==='situation' || k==='dgd'); // retenue de garantie : BTP
+  showEl('discountWrap', k!=='livraison' && k!=='dgd');
   showEl('recurWrap', k==='facture');                               // récurrence : facture seule
   applyRecurUI(); applyRetenueUI();
   const ph=document.getElementById('f-number');
@@ -1445,14 +1542,14 @@ function clientCodeFor(seq, key, name){
   seq.codes[key]=code;
   return code;
 }
-function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL',situation:'FS'}[kind]||'F'; }
-const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'};
-const PAYABLE_KINDS={facture:1,situation:1};   // documents fiscaux suivis en paiement / comptés en CA
+function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL',situation:'FS',dgd:'DGD'}[kind]||'F'; }
+const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'};
+const PAYABLE_KINDS={facture:1,situation:1,dgd:1};   // documents fiscaux suivis en paiement / comptés en CA
 /* Traductions des libellés fixes des modèles (multi-langue FR/EN). */
 const LABELS={
   fr:{
-    kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'},
-    recip:{facture:'Facturé à',devis:'Devis pour',avoir:'Avoir pour',situation:'Facturé à',commande:'Commande de',livraison:'Livré à'},
+    kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'},
+    recip:{facture:'Facturé à',devis:'Devis pour',avoir:'Avoir pour',situation:'Facturé à',dgd:'Facturé à',commande:'Commande de',livraison:'Livré à'},
     desc:'Désignation', item:'Prestation', qty:'Qté', unit:'P.U. HT', unitShort:'P.U.', lineTotal:'Total HT', lineTotalShort:'Total',
     subtotal:'Sous-total HT', vat:'TVA', totalTTC:'Total TTC', totalNet:'Total net', remise:'Remise',
     depositInvoiced:'Acompte facturé', balanceDue:'Net à payer',
@@ -1464,8 +1561,8 @@ const LABELS={
     retenue:'Retenue de garantie'
   },
   en:{
-    kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',commande:'Purchase order',livraison:'Delivery note'},
-    recip:{facture:'Bill to',devis:'Quote for',avoir:'Credit to',situation:'Bill to',commande:'Order for',livraison:'Deliver to'},
+    kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',dgd:'Final statement',commande:'Purchase order',livraison:'Delivery note'},
+    recip:{facture:'Bill to',devis:'Quote for',avoir:'Credit to',situation:'Bill to',dgd:'Bill to',commande:'Order for',livraison:'Deliver to'},
     desc:'Description', item:'Item', qty:'Qty', unit:'Unit price', unitShort:'Unit', lineTotal:'Total', lineTotalShort:'Total',
     subtotal:'Subtotal', vat:'VAT', totalTTC:'Total', totalNet:'Net total', remise:'Discount',
     depositInvoiced:'Deposit invoiced', balanceDue:'Balance due',
@@ -1587,7 +1684,7 @@ function renderDrawer(){
     const t=computeTotals(d); const isPayable=!!PAYABLE_KINDS[d.kind]; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
     const chip = (isPayable && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
     const payBtn = (isPayable && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
-    const kindLabel = {devis:'Devis',avoir:'Avoir',situation:'Situation',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
+    const kindLabel = {devis:'Devis',avoir:'Avoir',situation:'Situation',dgd:'DGD',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
       <span class="di-kind ${d.kind}">${kindLabel}</span>
       <div class="di-main">
@@ -1656,8 +1753,8 @@ function zoomStep(d){
 }
 function zoomFit(){ manualZoom=null; applyZoom(); }
 function setTemplate(v){ if(state.emitted){ document.getElementById('tplSel').value=state.template; toast('Pièce émise : non modifiable.'); return; } state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
-function setLang(v){ if(state.emitted){ document.getElementById('langSel').value=state.lang; toast('Pièce émise : non modifiable.'); return; } state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
-function setCurrency(v){ if(state.emitted){ document.getElementById('curSel').value=state.currency; toast('Pièce émise : non modifiable.'); return; } state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
+function setLang(v){ if(state.emitted){ document.getElementById('langSel').value=state.lang; toast('Pièce émise : non modifiable.'); return; } state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); if(state.kind==='dgd') recomputeDGD(); render(); scheduleSave(); }
+function setCurrency(v){ if(state.emitted){ document.getElementById('curSel').value=state.currency; toast('Pièce émise : non modifiable.'); return; } state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); if(state.kind==='dgd') recomputeDGD(); render(); scheduleSave(); }
 window.addEventListener('resize', function(){ if(manualZoom==null) applyZoom(); });
 
 /* ============ Toast ============ */
@@ -1724,6 +1821,15 @@ async function init(){
     document.getElementById(pair[0]).addEventListener('input',function(){
       state.marche=state.marche||{total:'',progress:'',prev:'',num:'',vat:20};
       state.marche[pair[1]]=this.value; recomputeSituation(); render(); scheduleSave();
+    });
+  });
+  document.getElementById('f-chantier').addEventListener('input',function(){
+    state.chantier=this.value; if(state.kind==='dgd') recomputeDGD(); render(); scheduleSave();
+  });
+  [['f-dgd-final','marcheFinal'],['f-dgd-rev','revisionPct'],['f-dgd-vat','vat']].forEach(function(pair){
+    document.getElementById(pair[0]).addEventListener('input',function(){
+      state.dgd=state.dgd||{marcheFinal:'',revisionPct:0,vat:20};
+      state.dgd[pair[1]]=this.value; recomputeDGD(); render(); scheduleSave();
     });
   });
   document.getElementById('f-recur-active').addEventListener('change',function(){

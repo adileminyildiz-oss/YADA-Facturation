@@ -295,6 +295,11 @@
     <div class="rel-list" id="relList"></div>
   </div>
 
+  <div class="relband" id="chantierband" hidden style="background:rgba(109,134,255,.05)">
+    <div class="rel-hd"><span class="rel-t" style="color:var(--peri)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg> Chantiers (BTP)</span><span class="rel-sub" id="chSub"></span></div>
+    <div class="rel-list" id="chList"></div>
+  </div>
+
   <div class="shell" id="shell">
     <!-- Colonne dossiers clients -->
     <aside class="folders">
@@ -378,7 +383,7 @@
     var paid=Math.min(base, deposit+extra);
     var due=Math.max(0, base-paid);
     var status;
-    if(s.kind && s.kind!=='facture' && s.kind!=='situation') status=s.kind;   // devis, avoir, BC, BL : non suivis en paiement
+    if(s.kind && s.kind!=='facture' && s.kind!=='situation' && s.kind!=='dgd') status=s.kind;   // devis, avoir, BC, BL : non suivis en paiement
     else if(base>0 && due<=0.005) status='paid';
     else if(paid>0.005) status='partial';
     else if(isPast(s.due)) status='overdue';
@@ -421,13 +426,47 @@
     renderCaChart(year);
     renderTopClients(year);
     renderRelances();
+    renderChantiers();
+  }
+  /* Synthèse par chantier (BTP) : facturé, restant, retenue en cours, clôture (DGD). */
+  function renderChantiers(){
+    var band=document.getElementById('chantierband'), list=document.getElementById('chList');
+    if(!band||!list) return;
+    var map={};
+    loadDocs().forEach(function(d){
+      var c=String(d.chantier||'').trim(); if(!c) return;
+      var k=c.toLowerCase();
+      if(!map[k]) map[k]={name:c, client:'', factTTC:0, due:0, retenue:0, hasDGD:false, docs:0};
+      var m=map[k], t=computeTotal(d);
+      if(d.kind==='devis'||d.kind==='commande'||d.kind==='livraison'){ /* hors montants fiscaux */ }
+      else if(d.kind==='avoir'){ m.factTTC-=t.ttc; }
+      else { m.factTTC+=t.ttc; m.due+=t.due; m.retenue+=(t.retenueHeld||0); }
+      if(d.kind==='dgd') m.hasDGD=true;
+      if(!m.client && d.client && d.client.name) m.client=d.client.name;
+      m.docs++;
+    });
+    var rows=Object.keys(map).map(function(k){return map[k];}).sort(function(a,b){return b.factTTC-a.factTTC;});
+    if(!rows.length){ band.hidden=true; return; }
+    band.hidden=false;
+    document.getElementById('chSub').textContent=rows.length+' chantier'+(rows.length>1?'s':'');
+    list.innerHTML=rows.map(function(m){
+      var badge = m.hasDGD
+        ? '<span class="ri-late" style="color:var(--pos);background:rgba(62,233,164,.12);border-color:rgba(62,233,164,.28)">Clôturé (DGD)</span>'
+        : (m.retenue>0.005?'<span class="ri-late" style="color:var(--warn);background:rgba(255,207,109,.12);border-color:rgba(255,207,109,.28)">Retenue '+euro.format(m.retenue)+'</span>':'');
+      var sub=esc(m.client||'—')+' · '+m.docs+' document'+(m.docs>1?'s':'')+(m.due>0.005?' · reste '+euro.format(m.due):'');
+      return '<div class="rel-item">'+
+        '<div class="ri-main"><div class="ri-cli">'+esc(m.name)+'</div><div class="ri-no">'+sub+'</div></div>'+
+        badge+
+        '<span class="ri-amt">'+euro.format(m.factTTC)+'</span>'+
+      '</div>';
+    }).join('');
   }
   function renderTopClients(year){
     var panel=document.getElementById('topPanel'), list=document.getElementById('topList');
     if(!panel||!list) return;
     var byClient={};
     loadDocs().forEach(function(d){
-      if(d.kind!=='facture'&&d.kind!=='avoir'&&d.kind!=='situation') return;
+      if(d.kind!=='facture'&&d.kind!=='avoir'&&d.kind!=='situation'&&d.kind!=='dgd') return;
       var m=/^(\d{4})/.exec(String(d.date||'')); if(!m||m[1]!==year) return;
       var name=((d.client&&d.client.name)||'').trim()||'Sans client';
       byClient[name]=(byClient[name]||0)+(d.kind==='avoir'?-1:1)*computeTotal(d).ttc;
@@ -449,7 +488,7 @@
   function renderRelances(){
     var band=document.getElementById('relband'), list=document.getElementById('relList');
     if(!band||!list) return;
-    var late=loadDocs().filter(function(d){ return (d.kind==='facture'||d.kind==='situation') && computeTotal(d).status==='overdue'; })
+    var late=loadDocs().filter(function(d){ return (d.kind==='facture'||d.kind==='situation'||d.kind==='dgd') && computeTotal(d).status==='overdue'; })
       .map(function(d){ return {d:d, late:daysLate(d.due), due:computeTotal(d).due}; })
       .sort(function(a,b){ return b.late-a.late; });
     if(!late.length){ band.hidden=true; return; }
@@ -479,7 +518,7 @@
     if(!band||!box) return;
     var monthly=new Array(12).fill(0);
     loadDocs().forEach(function(d){
-      if(d.kind!=='facture'&&d.kind!=='avoir'&&d.kind!=='situation') return;
+      if(d.kind!=='facture'&&d.kind!=='avoir'&&d.kind!=='situation'&&d.kind!=='dgd') return;
       var m=/^(\d{4})-(\d{2})/.exec(String(d.date||'')); if(!m||m[1]!==year) return;
       var idx=(+m[2])-1; if(idx<0||idx>11) return;
       var t=computeTotal(d); monthly[idx]+=(d.kind==='avoir'?-1:1)*t.ttc;
@@ -519,14 +558,14 @@
   function csvNum(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',','); }
   function csvCell(s){ s=String(s==null?'':s); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
   function exportAccountingCSV(){
-    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'; });
+    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'||d.kind==='dgd'; });
     if(!docs.length){ toast('Aucune facture à exporter.'); return; }
     docs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||'') || String(a.number||'').localeCompare(String(b.number||'')); });
     var head=['Type','Numéro','Date','Date prestation','Client','SIRET client','Devise','Total HT','TVA','Total TTC','Statut','Encaissé','Reste dû'];
     var rows=[head.join(';')];
     docs.forEach(function(d){
       var t=computeTotal(d), sign=d.kind==='avoir'?-1:1, st=(STATUS[t.status]||{}).t||'';
-      var typ=d.kind==='avoir'?'Avoir':(d.kind==='situation'?'Facture de situation':'Facture');
+      var typ=d.kind==='avoir'?'Avoir':(d.kind==='situation'?'Facture de situation':(d.kind==='dgd'?'Décompte général définitif':'Facture'));
       rows.push([
         typ, d.number||'', fmtDate(d.date),
         d.supplyDate?fmtDate(d.supplyDate):'', (d.client&&d.client.name)||'',
@@ -551,7 +590,7 @@
   function fecDate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); return m?(m[1]+m[2]+m[3]):''; }
   function auxNum(name){ return 'C'+String(name||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,10); }
   function exportFEC(){
-    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'; });
+    var docs=loadDocs().filter(function(d){ return d.kind==='facture'||d.kind==='avoir'||d.kind==='situation'||d.kind==='dgd'; });
     if(!docs.length){ toast('Aucune écriture à exporter.'); return; }
     docs.sort(function(a,b){ return (a.date||'').localeCompare(b.date||'') || String(a.number||'').localeCompare(String(b.number||'')); });
     var cols=['JournalCode','JournalLib','EcritureNum','EcritureDate','CompteNum','CompteLib','CompAuxNum','CompAuxLib','PieceRef','PieceDate','EcritureLib','Debit','Credit','EcritureLet','DateLet','ValidDate','Montantdevise','Idevise'];
@@ -562,7 +601,7 @@
       var isAv=d.kind==='avoir', dt=fecDate(d.date), num=d.number||('AUTO'+ecr);
       var name=((d.client&&d.client.name)||'Client').trim(), aux=auxNum(name);
       var cur=d.currency||'EUR', dev=(cur!=='EUR')?fecNum(t.ttc):'', idev=(cur!=='EUR')?cur:'';
-      var lib=(isAv?'Avoir ':(d.kind==='situation'?'Situation ':'Facture '))+num+' - '+name;
+      var lib=(isAv?'Avoir ':(d.kind==='situation'?'Situation ':(d.kind==='dgd'?'DGD ':'Facture ')))+num+' - '+name;
       function line(compte,complib,aux1,auxlib,debit,credit){
         out.push(['VT','Ventes',ecr,dt,compte,complib,aux1||'',auxlib||'',num,dt,lib,fecNum(debit),fecNum(credit),'','',dt,dev,idev].join('\t'));
       }
@@ -667,7 +706,7 @@
     var svg = isDevis
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
-    var kn={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'}[d.kind]||'Facture';
+    var kn={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'}[d.kind]||'Facture';
     var num = d.number ? kn+' '+d.number : kn+' (brouillon)';
     var st=STATUS[t.status]||STATUS.pending; var badge='<span class="badge '+st.c+'">'+st.t+'</span>';
     return '<div class="doc" data-id="'+esc(d.id)+'">'+
@@ -713,7 +752,7 @@
     document.getElementById('dwK').innerHTML= isDevis
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>'
       : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>';
-    document.getElementById('dwTitle').textContent=({facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'}[d.kind]||'Facture')+' '+(d.number||'(brouillon)');
+    document.getElementById('dwTitle').textContent=({facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'}[d.kind]||'Facture')+' '+(d.number||'(brouillon)');
     document.getElementById('dwSub').textContent=fmtDate(d.date)+' · '+((d.client&&d.client.name)||'Sans client');
     var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu)||Number(l.qty)!==1;});
     var linesHtml=lines.length? lines.map(function(l){
