@@ -505,6 +505,12 @@
       </div>
       <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-vat-exempt"> Non assujetti à la TVA (franchise en base — art. 293 B du CGI)</label>
       <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-autoliq"> Autoliquidation (sous-traitance BTP / intra-UE — art. 283-2 du CGI)</label>
+      <div id="retenueWrap">
+        <label class="check" style="margin-bottom:6px"><input type="checkbox" id="f-retenue-active"> Retenue de garantie (BTP)</label>
+        <div id="retenueRow" style="margin:0 0 8px" hidden>
+          <div class="field" style="width:150px"><label for="f-retenue-pct">Taux de retenue (%)</label><input id="f-retenue-pct" type="number" min="0" max="100" step="0.1" value="5"></div>
+        </div>
+      </div>
       <div id="recurWrap">
         <label class="check"><input type="checkbox" id="f-recur-active"> Facture récurrente (abonnement)</label>
         <div id="recurRow" class="grid2" style="margin-top:10px" hidden>
@@ -637,6 +643,7 @@ function blankState(){
     accepted: false, acceptedAt: '', acceptedBy: '', signature: '',
     recur: {active:false, freq:'monthly', next:''},
     marche: {total:'', progress:'', prev:'', num:'', vat:20},
+    retenue: {active:false, pct:5, released:false, releasedAt:''},
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:'',decAssureur:'',decContrat:'',decZone:''},
     client: {name:'',addr:'',siret:'',email:''},
@@ -708,8 +715,12 @@ function computeTotals(s){
   });
   const totalTTC = netHT + totalVAT;
   const deposit = Math.min(Number(s.deposit)||0, totalTTC);
-  const due = totalTTC - deposit;
-  return {subHT, discAmt, netHT, vatRows, totalVAT, totalTTC, deposit, due};
+  // Retenue de garantie (BTP) : retenue tant qu'elle n'est pas libérée.
+  const retPct = (s.retenue && s.retenue.active) ? (Number(s.retenue.pct)||0) : 0;
+  const retenue = Math.round(totalTTC * retPct/100 * 100)/100;
+  const retenueHeld = (s.retenue && s.retenue.active && !s.retenue.released) ? retenue : 0;
+  const due = totalTTC - deposit - retenueHeld;
+  return {subHT, discAmt, netHT, vatRows, totalVAT, totalTTC, deposit, retenue, retenueHeld, retPct, due};
 }
 
 /* ============ Rendu de l'aperçu ============ */
@@ -791,6 +802,8 @@ function buildDocData(s,t){
     totalTTC: money.format(t.totalTTC),
     ttcLabel: (s.vatExempt||s.autoliq)?L.totalNet:L.totalTTC,
     deposit: t.deposit>0?money.format(t.deposit):'',
+    retenueAmt: t.retenueHeld>0?money.format(t.retenueHeld):'',
+    retenuePct: nf2.format(t.retPct||0),
     acompteRef: esc(s.acompteRef||''),
     situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : '',
     signBlock: (s.accepted && s.kind==='devis')
@@ -820,6 +833,12 @@ function legalText(D){
     bits.push(en?'Delivery note — to be returned signed, confirming receipt of the goods or services.':'Bon de livraison — à retourner signé, valant réception des marchandises ou prestations.');
   } else {
     if(D.devisRef) bits.push(en?('Based on quote '+D.devisRef+'.'):('Établie d’après le devis '+D.devisRef+'.'));
+    if(D.s && D.s.retenue && D.s.retenue.active){
+      const rp=nf2.format(Number(D.s.retenue.pct)||0);
+      bits.push(en
+        ? ('Retention money of '+rp+'% released upon final acceptance (lifting of reservations), unless replaced by a bank guarantee.')
+        : ('Retenue de garantie de '+rp+' % libérable à la réception définitive (levée des réserves), sauf caution bancaire de substitution.'));
+    }
     if(en){ bits.push('Late-payment penalties: 3× the statutory interest rate · fixed recovery indemnity €40 (art. L441-10 & D441-5 French Commercial Code).'); bits.push('Early-payment discount: none.'); }
     else { bits.push('Pénalités de retard : 3× le taux d’intérêt légal · indemnité forfaitaire de recouvrement 40 € (art. L441-10 et D441-5 du Code de commerce).'); bits.push('Escompte pour paiement anticipé : néant.'); }
   }
@@ -841,7 +860,7 @@ const TEMPLATES = {
       D.discAmt?`<div style="display:flex;justify-content:space-between;padding:6px 0;color:#64748b;"><span>${D.discLabel}</span><span>− ${D.discAmt}</span></div>`:'',
       !D.noVat?`<div style="display:flex;justify-content:space-between;padding:6px 0;color:#64748b;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
     ].join('');
-    const dep = D.deposit?`<div style="display:flex;justify-content:space-between;padding:9px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div><div style="display:flex;justify-content:space-between;padding:4px 2px 0;font-weight:700;color:#0f172a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    const dep = (D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;padding:9px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;padding:9px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;padding:4px 2px 0;font-weight:700;color:#0f172a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
     return `<div style="width:100%;min-height:297mm;background:#fff;display:flex;font-family:'Inter',sans-serif;color:#1e293b;">
       <div style="width:206px;background:#0f172a;color:#cbd5e1;padding:40px 24px;display:flex;flex-direction:column;box-sizing:border-box;flex:none;">
         <div style="font-size:19px;font-weight:800;color:#fff;letter-spacing:-.01em;line-height:1.2;">${D.emitName}</div>
@@ -898,7 +917,7 @@ const TEMPLATES = {
       D.discAmt?`<div style="display:flex;justify-content:space-between;padding:7px 0;color:#8f8a7e;"><span>${D.discLabel}</span><span style="color:#eae6dd;">− ${D.discAmt}</span></div>`:'',
       !D.noVat?`<div style="display:flex;justify-content:space-between;padding:7px 0;color:#8f8a7e;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span style="color:#eae6dd;">${D.totalVAT}</span></div>`:''
     ].join('');
-    const dep = D.deposit?`<div style="display:flex;justify-content:space-between;padding:9px 0 0;color:#8f8a7e;font-size:12.5px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div><div style="display:flex;justify-content:space-between;color:#f4f1e9;font-weight:600;padding-top:3px;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    const dep = (D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;padding:9px 0 0;color:#8f8a7e;font-size:12.5px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;padding:9px 0 0;color:#8f8a7e;font-size:12.5px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;color:#f4f1e9;font-weight:600;padding-top:3px;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
     return `<div style="width:100%;min-height:297mm;background:#12110f;color:#eae6dd;font-family:'Inter Tight',sans-serif;display:flex;flex-direction:column;box-sizing:border-box;">
       <div style="padding:52px 60px 34px;text-align:center;border-bottom:1px solid #2a2823;">
         <div style="font-family:'Fraunces',serif;font-size:13px;letter-spacing:.42em;color:#c8a35b;text-transform:uppercase;padding-left:.42em;">${D.kind}</div>
@@ -941,7 +960,7 @@ const TEMPLATES = {
       D.discAmt?`<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:#7a776d;">${D.discLabel}</span><span style="font-variant-numeric:tabular-nums;">− ${D.discAmt}</span></div>`:'',
       !D.noVat?`<div style="display:flex;justify-content:space-between;font-size:14px;"><span style="color:#7a776d;">${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span style="font-variant-numeric:tabular-nums;">${D.totalVAT}</span></div>`:''
     ].join('');
-    const dep = D.deposit?`<div style="display:flex;justify-content:space-between;font-size:13px;color:#7a776d;padding-top:2px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div><div style="display:flex;justify-content:space-between;font-weight:600;color:#1a1a1a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    const dep = (D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;font-size:13px;color:#7a776d;padding-top:2px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;font-size:13px;color:#7a776d;padding-top:2px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;font-weight:600;color:#1a1a1a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
     return `<div style="width:100%;min-height:297mm;background:#faf9f6;padding:60px 58px;box-sizing:border-box;color:#26241d;font-family:'Inter Tight',sans-serif;display:flex;flex-direction:column;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
         <div style="display:flex;flex-direction:column;gap:6px;">
@@ -1140,6 +1159,9 @@ function fillForm(){
   document.getElementById('m-prev').value=s.marche.prev||'';
   document.getElementById('m-progress').value=s.marche.progress||'';
   document.getElementById('m-vat').value=(s.marche.vat!=null?s.marche.vat:20);
+  s.retenue=s.retenue||{active:false,pct:5,released:false,releasedAt:''};
+  document.getElementById('f-retenue-active').checked=!!s.retenue.active;
+  document.getElementById('f-retenue-pct').value=(s.retenue.pct!=null?s.retenue.pct:5);
   s.recur=s.recur||{active:false,freq:'monthly',next:''};
   document.getElementById('f-recur-active').checked=!!s.recur.active;
   document.getElementById('f-recur-freq').value=s.recur.freq||'monthly';
@@ -1316,6 +1338,10 @@ function advanceDate(iso, freq){
   const dim=new Date(y, mo+1, 0).getDate(); if(d>dim) d=dim;   // borne le jour à la fin du mois
   return y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
 }
+function applyRetenueUI(){
+  const active=!!(state.retenue&&state.retenue.active);
+  const row=document.getElementById('retenueRow'); if(row) row.hidden=!active;
+}
 function applyRecurUI(){
   const active=!!(state.recur&&state.recur.active);
   const row=document.getElementById('recurRow'); if(row) row.hidden=!active;
@@ -1374,9 +1400,10 @@ function updateKindUI(){
   showEl('dueWrap', k!=='avoir' && k!=='livraison');                  // échéance/validité : ni avoir ni BL
   showEl('reglCard', k!=='livraison');                               // un bon de livraison n'a pas de règlement
   showEl('acompteWrap', k==='facture' || k==='situation');          // acompte : docs fiscaux payables
+  showEl('retenueWrap', k==='facture' || k==='situation');          // retenue de garantie : BTP
   showEl('discountWrap', k!=='livraison');
   showEl('recurWrap', k==='facture');                               // récurrence : facture seule
-  applyRecurUI();
+  applyRecurUI(); applyRetenueUI();
   const ph=document.getElementById('f-number');
   ph.placeholder = state.client && String(state.client.name||'').trim() ? '—' : 'Renseignez le client…';
 }
@@ -1433,7 +1460,8 @@ const LABELS={
     issuer:'Émetteur', payment:'Paiement', mentions:'Mentions', details:'Détails', notes:'Notes', number:'N°',
     issuedOn:'Émise le', capital:'au capital de', linesEmpty:'Ajoutez des prestations pour les voir apparaître ici.',
     descPh:'Désignation…', bonAccord:'Bon pour accord', client:'Client',
-    yourCompany:'Votre société', clientNamePh:'Nom du client', byTransfer:'Par virement'
+    yourCompany:'Votre société', clientNamePh:'Nom du client', byTransfer:'Par virement',
+    retenue:'Retenue de garantie'
   },
   en:{
     kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',commande:'Purchase order',livraison:'Delivery note'},
@@ -1445,7 +1473,8 @@ const LABELS={
     issuer:'From', payment:'Payment', mentions:'Notes', details:'Details', notes:'Notes', number:'No.',
     issuedOn:'Issued on', capital:'share capital', linesEmpty:'Add items to see them here.',
     descPh:'Description…', bonAccord:'Approved', client:'Client',
-    yourCompany:'Your company', clientNamePh:'Client name', byTransfer:'By bank transfer'
+    yourCompany:'Your company', clientNamePh:'Client name', byTransfer:'By bank transfer',
+    retenue:'Retention money'
   }
 };
 function labelsFor(lang){ return LABELS[lang]||LABELS.fr; }
@@ -1529,11 +1558,12 @@ function closeDrawer(){ document.getElementById('overlay').classList.remove('ope
 function isPastDue(iso){ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return false; const dd=new Date(+m[1],+m[2]-1,+m[3]); const t=new Date(); t.setHours(0,0,0,0); return dd<t; }
 function payInfo(d,t){
   let extra=0; (d.payments||[]).forEach(p=>extra+=Number(p.amount)||0);
-  const paid=Math.min(t.totalTTC, (t.deposit||0)+extra);
-  const due=Math.max(0, t.totalTTC-paid);
+  const base=Math.max(0, t.totalTTC-(t.retenueHeld||0));   // la retenue de garantie n'est pas due tant qu'elle n'est pas libérée
+  const paid=Math.min(base, (t.deposit||0)+extra);
+  const due=Math.max(0, base-paid);
   let status;
   if(d.kind && !PAYABLE_KINDS[d.kind]) status=d.kind;   // devis, avoir, commande, livraison : non suivis en paiement
-  else if(t.totalTTC>0 && due<=0.005) status='paid';
+  else if(base>0 && due<=0.005) status='paid';
   else if(paid>0.005) status='partial';
   else if(isPastDue(d.due)) status='overdue';
   else status='pending';
@@ -1685,6 +1715,11 @@ async function init(){
   document.getElementById('c-name').addEventListener('input', function(){ if(autofillClient(this.value)){ render(); scheduleSave(); } });
   bind('f-discount','discount'); bind('f-discount-type','discountType'); bind('f-deposit','deposit'); bind('f-acompte-ref','acompteRef');
   bind('f-recur-freq','recur.freq'); bind('f-recur-next','recur.next');
+  bind('f-retenue-pct','retenue.pct');
+  document.getElementById('f-retenue-active').addEventListener('change',function(){
+    state.retenue=state.retenue||{active:false,pct:5,released:false,releasedAt:''};
+    state.retenue.active=this.checked; applyRetenueUI(); render(); scheduleSave();
+  });
   [['m-num','num'],['m-total','total'],['m-prev','prev'],['m-progress','progress'],['m-vat','vat']].forEach(function(pair){
     document.getElementById(pair[0]).addEventListener('input',function(){
       state.marche=state.marche||{total:'',progress:'',prev:'',num:'',vat:20};

@@ -367,19 +367,23 @@
     var discAmt = s.discountType==='pct' ? subHT*(Number(s.discount)||0)/100 : Math.min(Number(s.discount)||0,subHT);
     var factor = subHT>0 ? (subHT-discAmt)/subHT : 1;
     var netHT = subHT-discAmt, totalVAT=0;
-    Object.keys(vatMap).map(Number).forEach(function(r){ if(!s.vatExempt) totalVAT += vatMap[r]*factor*r/100; });
+    Object.keys(vatMap).map(Number).forEach(function(r){ if(!s.vatExempt && !s.autoliq) totalVAT += vatMap[r]*factor*r/100; });
     var ttc=netHT+totalVAT;
     var deposit=Math.min(Number(s.deposit)||0, ttc);
     var extra=0; (s.payments||[]).forEach(function(p){ extra += Number(p.amount)||0; });
-    var paid=Math.min(ttc, deposit+extra);
-    var due=Math.max(0, ttc-paid);
+    var retPct=(s.retenue&&s.retenue.active)?(Number(s.retenue.pct)||0):0;
+    var retenue=Math.round(ttc*retPct/100*100)/100;
+    var retenueHeld=(s.retenue&&s.retenue.active&&!s.retenue.released)?retenue:0;
+    var base=Math.max(0, ttc-retenueHeld);
+    var paid=Math.min(base, deposit+extra);
+    var due=Math.max(0, base-paid);
     var status;
     if(s.kind && s.kind!=='facture' && s.kind!=='situation') status=s.kind;   // devis, avoir, BC, BL : non suivis en paiement
-    else if(ttc>0 && due<=0.005) status='paid';
+    else if(base>0 && due<=0.005) status='paid';
     else if(paid>0.005) status='partial';
     else if(isPast(s.due)) status='overdue';
     else status='pending';
-    return {subHT:subHT, discAmt:discAmt, netHT:netHT, totalVAT:totalVAT, ttc:ttc, deposit:deposit, paid:paid, due:due, status:status};
+    return {subHT:subHT, discAmt:discAmt, netHT:netHT, totalVAT:totalVAT, ttc:ttc, deposit:deposit, retenue:retenue, retenueHeld:retenueHeld, paid:paid, due:due, status:status};
   }
   function isPast(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); if(!m) return false; var d=new Date(+m[1],+m[2]-1,+m[3]); var t=new Date(); t.setHours(0,0,0,0); return d<t; }
   var STATUS={paid:{t:'Payée',c:'paid'},partial:{t:'Partielle',c:'partial'},overdue:{t:'En retard',c:'overdue'},pending:{t:'En attente',c:'facture'},devis:{t:'Devis',c:'devis'},avoir:{t:'Avoir',c:'devis'},commande:{t:'Commande',c:'facture'},livraison:{t:'Livraison',c:'facture'}};
@@ -394,7 +398,7 @@
     if(!dash) return;
     if(!docs.length){ dash.hidden=true; if(yEl) yEl.textContent=''; return; }
     var year=String(new Date().getFullYear());
-    var caTTC=0, encaisse=0, encours=0, retard=0, avoirTTC=0, nbFact=0, nbDevis=0;
+    var caTTC=0, encaisse=0, encours=0, retard=0, avoirTTC=0, nbFact=0, nbDevis=0, retenues=0;
     docs.forEach(function(d){
       var dy=(d.date&&/^\d{4}/.test(d.date))?d.date.slice(0,4):year;
       if(dy!==year) return;
@@ -402,7 +406,7 @@
       if(d.kind==='commande'||d.kind==='livraison') return;   // documents non fiscaux : hors CA
       if(d.kind==='devis'){ nbDevis++; return; }
       if(d.kind==='avoir'){ avoirTTC+=t.ttc; return; }
-      nbFact++; caTTC+=t.ttc; encaisse+=t.paid; encours+=t.due;
+      nbFact++; caTTC+=t.ttc; encaisse+=t.paid; encours+=t.due; retenues+=(t.retenueHeld||0);
       if(t.status==='overdue') retard+=t.due;
     });
     if(yEl) yEl.textContent='Année '+year;
@@ -412,6 +416,7 @@
       dcard('','Encaissé', euro.format(encaisse), 'Règlements reçus', 'pos')+
       dcard('','Reste à encaisser', euro.format(encours), 'En attente de paiement', 'warn')+
       dcard('','En retard', euro.format(retard), 'Échéance dépassée', 'over')+
+      (retenues>0.005 ? dcard('','Retenues de garantie', euro.format(retenues), 'À libérer (BTP)', 'warn') : '')+
       dcard('','Devis en cours', String(nbDevis), 'À convertir / relancer', '');
     renderCaChart(year);
     renderTopClients(year);
@@ -728,8 +733,10 @@
       body+='<div class="dw-tot"><span style="color:var(--txt2)">Statut</span><span class="badge '+st.c+'">'+st.t+'</span></div>';
       body+='<div class="dw-tot"><span style="color:var(--txt2)">Encaissé</span><span>'+dmoney(d).format(t.paid)+'</span></div>';
       body+='<div class="dw-tot"><span style="color:var(--txt2)">Reste dû</span><span'+(t.due>0.005?' style="color:var(--warn);font-weight:700"':'')+'>'+dmoney(d).format(t.due)+'</span></div>';
+      if(t.retenueHeld>0.005) body+='<div class="dw-tot"><span style="color:var(--warn)">Retenue de garantie retenue</span><span style="color:var(--warn)">'+dmoney(d).format(t.retenueHeld)+'</span></div>';
       var pays=(d.payments||[]).filter(function(p){return Number(p.amount)>0;});
       if(pays.length) body+='<div style="margin-top:6px">'+pays.map(function(p){ return '<div class="dw-line"><span class="dl-d" style="color:var(--txt2)">Encaissement '+fmtDate(p.date)+'</span><span>'+dmoney(d).format(Number(p.amount)||0)+'</span></div>'; }).join('')+'</div>';
+      if(t.retenueHeld>0.005) body+='<div class="pay-actions"><button class="btn-pay relance" data-release="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V7a4 4 0 0 1 8 0M5 11h14v10H5z"/></svg> Libérer la retenue ('+dmoney(d).format(t.retenueHeld)+')</button></div>';
       if(t.due>0.005){
         body+='<div class="pay-actions"><button class="btn-pay full" data-payfull="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Marquer payée</button><button class="btn-pay part" data-paypart="'+esc(d.id)+'">Encaissement partiel</button></div>';
       } else {
@@ -792,8 +799,18 @@
     buildFolders(); renderFolders(); if(activeKey&&folderByKey(activeKey)) openFolder(activeKey);
     openDoc(id);
   }
+  function releaseRetenue(id){
+    var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d) return;
+    if(!confirm('Libérer la retenue de garantie ?\n\nLe montant retenu deviendra dû par le client (réception définitive / levée des réserves).')) return;
+    d.retenue=d.retenue||{}; d.retenue.released=true; d.retenue.releasedAt=todayISO(); d.updated=Date.now();
+    saveDocs(docs); cloudPushDoc(d);
+    buildFolders(); renderFolders(); if(activeKey&&folderByKey(activeKey)) openFolder(activeKey);
+    openDoc(id); toast('Retenue de garantie libérée');
+  }
   document.getElementById('dwBody').addEventListener('click', function(e){
     var full=e.target.closest('[data-payfull]'), part=e.target.closest('[data-paypart]'), send=e.target.closest('[data-send]');
+    var release=e.target.closest('[data-release]');
+    if(release){ releaseRetenue(release.dataset.release); return; }
     if(full){ var id=full.dataset.payfull, docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(d) recordPayment(id, computeTotal(d).due); return; }
     if(part){ var v=prompt('Montant encaissé (€) :'); if(v!=null){ var a=Number(String(v).replace(/\s/g,'').replace(',','.')); if(a>0) recordPayment(part.dataset.paypart, a); } return; }
     if(send){ sendInvoice(send.dataset.send, send, 'send'); return; }
