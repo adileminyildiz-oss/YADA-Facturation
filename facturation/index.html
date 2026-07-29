@@ -565,6 +565,9 @@
           <option value="2C">Corporate bleu</option>
           <option value="2B">Luxe noir &amp; or</option>
           <option value="1A">Épuré éditorial</option>
+          <option value="3M">Moderne compact</option>
+          <option value="4A">Classique administratif</option>
+          <option value="5C">Coloré émeraude</option>
         </select>
         <select id="langSel" onchange="setLang(this.value)" title="Langue du document" style="width:auto;font-size:12.5px;padding:6px 26px 6px 10px;border-radius:9px">
           <option value="fr">FR</option>
@@ -1030,6 +1033,165 @@ const TEMPLATES = {
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#b0ac9f;margin-bottom:8px;">${D.L.mentions}</div>
           <div style="font-size:12px;color:#7a776d;line-height:1.7;">${D.emitRegLine?D.emitRegLine+'<br>':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}${D.notes?'<br>'+D.notes:''}</div>
         </div>
+      </div>
+    </div>`;
+  },
+
+  /* 3M · Moderne compact — bandeau accent, tableau épuré */
+  '3M': function(D){
+    const rows = D.lines.length ? D.lines.map(l=>`
+      <tr>
+        <td style="padding:12px 14px;border-bottom:1px solid #eef1f7;font-weight:600;color:#0f172a;">${l.desc||('<span style="color:#c3cad9;font-style:italic;">'+D.L.descPh+'</span>')}</td>
+        <td style="padding:12px 10px;border-bottom:1px solid #eef1f7;text-align:right;color:#475569;white-space:nowrap;">${l.qtyF}</td>
+        <td style="padding:12px 10px;border-bottom:1px solid #eef1f7;text-align:right;color:#475569;white-space:nowrap;">${l.puF}</td>
+        <td style="padding:12px 14px;border-bottom:1px solid #eef1f7;text-align:right;font-weight:700;color:#0f172a;white-space:nowrap;">${l.totalF}</td>
+      </tr>`).join('') : `<tr><td colspan="4" style="padding:26px;text-align:center;color:#c3cad9;font-style:italic;">${D.L.linesEmpty}</td></tr>`;
+    const tot=[
+      `<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>${D.L.subtotal}</span><span>${D.subHT}</span></div>`,
+      D.discAmt?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>${D.discLabel}</span><span>− ${D.discAmt}</span></div>`:'',
+      !D.noVat?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
+    ].join('');
+    const dep=(D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;padding:5px 2px 0;font-weight:700;color:#0f172a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    return `<div style="width:100%;min-height:297mm;background:#fff;font-family:'Inter',sans-serif;color:#0f172a;display:flex;flex-direction:column;box-sizing:border-box;">
+      <div style="height:8px;background:linear-gradient(90deg,#2b45ff,#6d86ff);"></div>
+      <div style="padding:40px 46px;flex:1;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><div style="font-size:20px;font-weight:800;letter-spacing:-.01em;">${D.emitName}</div>
+          ${D.emitCapLine?`<div style="font-size:11px;color:#94a3b8;margin-top:3px;">${D.emitCapLine}</div>`:''}
+          ${D.emitAddr?`<div style="font-size:11.5px;color:#64748b;margin-top:6px;line-height:1.6;">${D.emitAddr}</div>`:''}</div>
+          <div style="text-align:right;"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em;color:#2b45ff;text-transform:uppercase;">${D.kind}</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:4px;">${D.L.number} ${D.number}</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:24px;margin-top:26px;">
+          <div style="background:#f5f7fb;border-radius:10px;padding:14px 16px;flex:1;">
+            <div style="font-size:9px;letter-spacing:.14em;color:#94a3b8;text-transform:uppercase;">${D.recipientLabel}</div>
+            <div style="font-size:14px;font-weight:700;margin-top:5px;">${D.clientName}</div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#475569;line-height:1.9;min-width:150px;">
+            <div><span style="color:#94a3b8;">${D.L.date} </span>${D.dateEmis}</div>
+            ${D.supplyDate?`<div><span style="color:#94a3b8;">${D.L.deliveryDate} </span>${D.supplyDate}</div>`:''}
+            ${D.dueDate?`<div><span style="color:#94a3b8;">${D.dueLabel} </span>${D.dueDate}</div>`:''}
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:26px;font-size:12.5px;">
+          <thead><tr style="background:#0f172a;color:#fff;">
+            <th style="padding:10px 14px;text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:7px 0 0 7px;">${D.L.desc}</th>
+            <th style="padding:10px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;">${D.L.qty}</th>
+            <th style="padding:10px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;">${D.L.unitShort}</th>
+            <th style="padding:10px 14px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:0 7px 7px 0;">${D.L.lineTotalShort}</th>
+          </tr></thead><tbody>${rows}</tbody>
+        </table>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <div style="width:270px;font-size:13px;">${tot}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#2b45ff;color:#fff;border-radius:9px;padding:12px 15px;"><span style="font-weight:600;">${D.ttcLabel}</span><span style="font-size:19px;font-weight:800;">${D.totalTTC}</span></div>${dep}
+          </div>
+        </div>
+        ${D.notes?`<div style="margin-top:20px;font-size:11.5px;color:#64748b;line-height:1.6;"><b style="color:#475569;">Notes — </b>${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
+        <div style="margin-top:auto;padding-top:26px;font-size:10.5px;color:#94a3b8;line-height:1.7;border-top:1px solid #eef1f7;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
+      </div>
+    </div>`;
+  },
+
+  /* 4A · Classique administratif — sobre, encadré, esprit mairie / BTP */
+  '4A': function(D){
+    const rows = D.lines.length ? D.lines.map(l=>`
+      <tr>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;color:#1a1a1a;">${l.desc||('<span style="color:#aeb4bf;font-style:italic;">'+D.L.descPh+'</span>')}</td>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;color:#333;white-space:nowrap;">${l.qtyF}</td>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;color:#333;white-space:nowrap;">${l.puF}</td>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-weight:600;color:#1a1a1a;white-space:nowrap;">${l.totalF}</td>
+      </tr>`).join('') : `<tr><td colspan="4" style="padding:22px;border:1px solid #cbd0d8;text-align:center;color:#aeb4bf;font-style:italic;">${D.L.linesEmpty}</td></tr>`;
+    const totRow=(k,v,b)=>`<tr><td colspan="3" style="padding:7px 12px;border:1px solid #cbd0d8;text-align:right;${b?'font-weight:700;':''}color:#33393f;">${k}</td><td style="padding:7px 12px;border:1px solid #cbd0d8;text-align:right;${b?'font-weight:700;font-size:13px;':''}white-space:nowrap;">${v}</td></tr>`;
+    const totRows=[
+      totRow(D.L.subtotal, D.subHT),
+      D.discAmt?totRow(D.discLabel,'− '+D.discAmt):'',
+      !D.noVat?totRow(D.L.vat+(D.vatRate?' '+D.vatRate+' %':''), D.totalVAT):'',
+      totRow(D.ttcLabel, D.totalTTC, true),
+      D.deposit?totRow(D.L.depositInvoiced+(D.acompteRef?' ('+D.acompteRef+')':''),'− '+D.deposit):'',
+      D.retenueAmt?totRow(D.L.retenue+' ('+D.retenuePct+' %)','− '+D.retenueAmt):'',
+      (D.deposit||D.retenueAmt)?totRow(D.L.balanceDue, D.due, true):''
+    ].join('');
+    return `<div style="width:100%;min-height:297mm;background:#fff;padding:48px 52px;box-sizing:border-box;font-family:'Inter Tight',sans-serif;color:#1f2937;display:flex;flex-direction:column;">
+      <div style="text-align:center;border-bottom:3px double #1f2937;padding-bottom:16px;">
+        <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:600;letter-spacing:.02em;">${D.emitName}</div>
+        ${D.emitAddr?`<div style="font-size:11px;color:#6b7280;margin-top:5px;">${D.emitAddr.replace(/<br>/g,' · ')}</div>`:''}
+        ${D.emitRegLine?`<div style="font-size:10.5px;color:#6b7280;margin-top:3px;">${D.emitRegLine}</div>`:''}
+      </div>
+      <div style="text-align:center;margin-top:20px;"><span style="font-family:'Fraunces',serif;font-size:19px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;border-bottom:2px solid #1f2937;padding:0 14px 4px;">${D.kind} N° ${D.number}</span></div>
+      <div style="display:flex;justify-content:space-between;gap:24px;margin-top:22px;font-size:12px;">
+        <div style="border:1px solid #cbd0d8;border-radius:4px;padding:11px 14px;flex:1;">
+          <div style="font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">${D.recipientLabel}</div>
+          <div style="font-weight:700;font-size:13px;">${D.clientName}</div>
+          <div style="color:#4b5563;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div>
+        </div>
+        <div style="font-size:12px;color:#374151;line-height:1.9;text-align:right;min-width:160px;">
+          <div><span style="color:#6b7280;">${D.L.date} : </span>${D.dateEmis}</div>
+          ${D.supplyDate?`<div><span style="color:#6b7280;">${D.L.deliveryDate} : </span>${D.supplyDate}</div>`:''}
+          ${D.dueDate?`<div><span style="color:#6b7280;">${D.dueLabel} : </span>${D.dueDate}</div>`:''}
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:12px;">
+        <thead><tr style="background:#eef1f5;">
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:left;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.desc}</th>
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.qty}</th>
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.unitShort}</th>
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.lineTotalShort}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot>${totRows}</tfoot>
+      </table>
+      ${D.notes?`<div style="margin-top:18px;font-size:11.5px;color:#4b5563;line-height:1.6;">${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
+      <div style="margin-top:auto;padding-top:26px;font-size:10px;color:#6b7280;line-height:1.7;border-top:1px solid #cbd0d8;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
+    </div>`;
+  },
+
+  /* 5C · Coloré émeraude — en-tête dégradé, esprit moderne & chaleureux */
+  '5C': function(D){
+    const rows = D.lines.length ? D.lines.map(l=>`
+      <div style="display:grid;grid-template-columns:1fr 50px 92px 108px;gap:10px;padding:12px 0;border-bottom:1px solid #e8f2f1;font-size:12.5px;align-items:baseline;">
+        <div style="font-weight:600;color:#134e4a;">${l.desc||('<span style="color:#a7c4c1;font-style:italic;">'+D.L.descPh+'</span>')}</div>
+        <div style="text-align:right;color:#4b6360;">${l.qtyF}</div>
+        <div style="text-align:right;color:#4b6360;">${l.puF}</div>
+        <div style="text-align:right;font-weight:700;color:#134e4a;">${l.totalF}</div>
+      </div>`).join('') : `<div style="padding:26px;text-align:center;color:#a7c4c1;font-style:italic;">${D.L.linesEmpty}</div>`;
+    const tot=[
+      `<div style="display:flex;justify-content:space-between;padding:5px 0;color:#5b716e;"><span>${D.L.subtotal}</span><span>${D.subHT}</span></div>`,
+      D.discAmt?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#5b716e;"><span>${D.discLabel}</span><span>− ${D.discAmt}</span></div>`:'',
+      !D.noVat?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#5b716e;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
+    ].join('');
+    const dep=(D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#5b716e;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#5b716e;font-size:12px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;padding:5px 2px 0;font-weight:700;color:#134e4a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    return `<div style="width:100%;min-height:297mm;background:#fff;font-family:'Inter',sans-serif;color:#134e4a;display:flex;flex-direction:column;box-sizing:border-box;">
+      <div style="background:linear-gradient(120deg,#0ea5a4,#14b8a6);color:#fff;padding:38px 46px;display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div style="font-size:21px;font-weight:800;letter-spacing:-.01em;">${D.emitName}</div>
+        ${D.emitCapLine?`<div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:3px;">${D.emitCapLine}</div>`:''}
+        ${D.emitAddr?`<div style="font-size:11.5px;color:rgba(255,255,255,.85);margin-top:7px;line-height:1.6;">${D.emitAddr}</div>`:''}</div>
+        <div style="text-align:right;"><div style="font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;">${D.kind}</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.85);margin-top:4px;">${D.L.number} ${D.number}</div></div>
+      </div>
+      <div style="padding:34px 46px;flex:1;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;gap:24px;">
+          <div><div style="font-size:9px;letter-spacing:.14em;color:#0ea5a4;text-transform:uppercase;">${D.recipientLabel}</div>
+          <div style="font-size:14px;font-weight:700;margin-top:5px;">${D.clientName}</div>
+          <div style="font-size:11.5px;color:#5b716e;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div></div>
+          <div style="text-align:right;font-size:12px;color:#4b6360;line-height:1.9;">
+            <div><span style="color:#9bb3b0;">${D.L.date} </span>${D.dateEmis}</div>
+            ${D.supplyDate?`<div><span style="color:#9bb3b0;">${D.L.deliveryDate} </span>${D.supplyDate}</div>`:''}
+            ${D.dueDate?`<div><span style="color:#9bb3b0;">${D.dueLabel} </span>${D.dueDate}</div>`:''}
+          </div>
+        </div>
+        <div style="margin-top:26px;">
+          <div style="display:grid;grid-template-columns:1fr 50px 92px 108px;gap:10px;padding-bottom:10px;border-bottom:2px solid #0ea5a4;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#0ea5a4;">
+            <div>${D.L.desc}</div><div style="text-align:right;">${D.L.qty}</div><div style="text-align:right;">${D.L.unitShort}</div><div style="text-align:right;">${D.L.lineTotalShort}</div>
+          </div>${rows}
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <div style="width:266px;font-size:13px;">${tot}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#0ea5a4;color:#fff;border-radius:10px;padding:12px 15px;"><span style="font-weight:600;">${D.ttcLabel}</span><span style="font-size:19px;font-weight:800;">${D.totalTTC}</span></div>${dep}
+          </div>
+        </div>
+        ${D.notes?`<div style="margin-top:20px;font-size:11.5px;color:#5b716e;line-height:1.6;"><b style="color:#0ea5a4;">Notes — </b>${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
+        <div style="margin-top:auto;padding-top:26px;font-size:10.5px;color:#9bb3b0;line-height:1.7;border-top:1px solid #e8f2f1;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
       </div>
     </div>`;
   }
