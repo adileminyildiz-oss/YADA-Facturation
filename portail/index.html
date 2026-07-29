@@ -101,6 +101,8 @@
   .vbar .sp{flex:1}
   .vbar button{display:inline-flex;align-items:center;gap:7px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;border-radius:9px;padding:9px 13px;border:1px solid var(--line-2);background:var(--glass);color:var(--txt)}
   .vbar button:hover{background:var(--glass-2)}
+  .vbar .vack{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--pos);background:rgba(62,233,164,.1);border:1px solid rgba(62,233,164,.28);padding:6px 11px;border-radius:8px}
+  .vbar button[disabled]{opacity:.55;cursor:default}
   .vbar button.primary{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
   .vbar button svg{width:15px;height:15px}
   .vscroll{flex:1;overflow:auto;padding:20px;display:flex;justify-content:center;background:#3a3f52}
@@ -162,7 +164,9 @@
 <div class="viewer" id="viewer" aria-hidden="true">
   <div class="vbar">
     <span class="vt" id="vTitle">Document</span>
+    <span class="vack" id="vAck" hidden></span>
     <span class="sp"></span>
+    <button id="btnAck" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Accuser réception</button>
     <button class="primary" id="btnPrint" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> Imprimer / PDF</button>
     <button id="btnClose" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg> Fermer</button>
   </div>
@@ -301,7 +305,7 @@ function renderDoc(s){
 
 /* ================= Données ================= */
 var SB_URL='https://ammmyhtxnwyoopfxtans.supabase.co', SB_KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
-var sb=null, myEmail='', DOCS=[];
+var sb=null, myEmail='', myUid=null, DOCS=[], curDocId=null;
 try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }catch(e){}
 
 async function fetchInvoices(email){
@@ -343,16 +347,39 @@ function renderList(){
   }).join('');
 }
 
+/* ===== Accusés de réception (horodatés) ===== */
+function fmtDateTime(iso){ var d=new Date(iso); if(isNaN(d.getTime())) return fmtDate(iso); return fmtDate(iso)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function loadAcks(){ try{ return JSON.parse(localStorage.getItem('aem_fact_acks')||'[]'); }catch(e){ return []; } }
+function saveAcks(a){ try{ localStorage.setItem('aem_fact_acks', JSON.stringify(a)); }catch(e){} }
+function ackOf(id,kind){ return loadAcks().filter(function(a){ return a.invoiceId===id && a.kind===kind && keyOf(a.email)===keyOf(myEmail); }).map(function(a){return a.at;}).sort()[0]||null; }
+function recordAck(id,kind){
+  if(ackOf(id,kind)) return false;
+  var at=new Date().toISOString();
+  var ls=loadAcks(); ls.push({invoiceId:id, email:myEmail, kind:kind, at:at}); saveAcks(ls);
+  if(sb && myUid){ try{ sb.from('invoice_acks').insert({invoice_id:id, recipient_email:myEmail, kind:kind}).then(function(){},function(){}); }catch(e){} }
+  return true;
+}
+function refreshAckUI(){
+  var span=document.getElementById('vAck'), btn=document.getElementById('btnAck');
+  var rec=curDocId?ackOf(curDocId,'received'):null;
+  if(rec){ span.hidden=false; span.innerHTML='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Réception accusée le '+fmtDateTime(rec);
+    btn.disabled=true; btn.innerHTML='Réception accusée'; }
+  else{ span.hidden=true; btn.disabled=false; btn.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Accuser réception'; }
+}
 function openDoc(i){
   var d=DOCS[i]; if(!d) return;
+  curDocId=d.id;
   document.getElementById('vTitle').textContent=(labelsFor(d.lang).kind[d.kind]||'Facture')+' '+(d.number||'');
   document.getElementById('doc').innerHTML=renderDoc(d);
+  recordAck(d.id,'viewed');   // consultation horodatée
+  refreshAckUI();
   var v=document.getElementById('viewer'); v.classList.add('open'); v.setAttribute('aria-hidden','false');
 }
 function closeViewer(){ var v=document.getElementById('viewer'); v.classList.remove('open'); v.setAttribute('aria-hidden','true'); }
 document.getElementById('list').addEventListener('click', function(e){ var b=e.target.closest('.inv'); if(b) openDoc(+b.dataset.i); });
 document.getElementById('btnClose').addEventListener('click', closeViewer);
 document.getElementById('btnPrint').addEventListener('click', function(){ window.print(); });
+document.getElementById('btnAck').addEventListener('click', function(){ if(!curDocId) return; recordAck(curDocId,'received'); refreshAckUI(); toast('Réception accusée — merci.'); });
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeViewer(); });
 
 function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2600); }
@@ -373,6 +400,7 @@ async function showPortal(session){
   document.getElementById('authGate').hidden=true;
   document.getElementById('topbar').hidden=false; document.getElementById('wrap').hidden=false;
   myEmail=(session&&session.user&&session.user.email)||'';
+  myUid=(session&&session.user&&session.user.id)||null;
   document.getElementById('tbUser').innerHTML='Connecté · <b>'+esc(myEmail)+'</b>';
   DOCS=await fetchInvoices(myEmail); renderList();
 }

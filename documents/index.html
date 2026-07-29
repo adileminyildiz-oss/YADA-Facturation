@@ -744,6 +744,25 @@
     body.innerHTML='<div class="doc-list">'+arr.map(docRow).join('')+'</div>';
   }
 
+  /* Accusés destinataire (consultation / réception via le portail) */
+  function fmtDateTime(iso){ var d=new Date(iso); if(isNaN(d.getTime())) return fmtDate(iso); return fmtDate(iso)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  function loadAcksLS(){ try{ return JSON.parse(localStorage.getItem('aem_fact_acks')||'[]'); }catch(e){ return []; } }
+  async function fetchAcks(invoiceId){
+    var out=loadAcksLS().filter(function(a){ return a.invoiceId===invoiceId; });
+    if(_sb){ try{ var r=await _sb.from('invoice_acks').select('kind,at,recipient_email').eq('invoice_id',invoiceId);
+      if(r&&r.data) out=out.concat(r.data.map(function(x){ return {invoiceId:invoiceId,kind:x.kind,at:x.at,email:x.recipient_email}; })); }catch(e){} }
+    return out;
+  }
+  async function renderAcks(id){
+    var box=document.getElementById('ackBox'); if(!box) return;
+    var acks=await fetchAcks(id);
+    var viewed=acks.filter(function(a){return a.kind==='viewed';}).map(function(a){return a.at;}).sort();
+    var received=acks.filter(function(a){return a.kind==='received';}).map(function(a){return a.at;}).sort();
+    var html='';
+    html+='<div class="dw-tot"><span style="color:var(--txt2)">Consultée en ligne</span><span'+(viewed.length?'':' style="color:var(--txt2)"')+'>'+(viewed.length?fmtDateTime(viewed[0]):'—')+'</span></div>';
+    html+='<div class="dw-tot"><span style="color:var(--txt2)">Réception accusée</span>'+(received.length?'<span style="color:var(--pos);font-weight:600">'+fmtDateTime(received[0])+'</span>':'<span style="color:var(--txt2)">—</span>')+'</div>';
+    box.innerHTML=html;
+  }
   /* Drawer document */
   function openDoc(id){
     var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;}
@@ -782,6 +801,8 @@
         body+='<div class="pay-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Facture soldée</div>';
       }
       body+='</div>';
+      body+='<div class="dw-sec"><h4>Suivi destinataire</h4><div id="ackBox" style="display:flex;flex-direction:column;gap:2px">'+
+        '<div class="dw-tot"><span style="color:var(--txt2)">Portail client</span><span style="color:var(--txt2)">Chargement…</span></div></div></div>';
       // Envoi & relances
       var cemail=((d.client&&d.client.email)||'').trim();
       var late = t.due>0.005 && isPast(d.due);
@@ -806,6 +827,7 @@
       body+='</div>';
     }
     document.getElementById('dwBody').innerHTML=body;
+    if(!isDevis) renderAcks(d.id);
     document.getElementById('dwOpen').onclick=function(){ try{ localStorage.setItem(LS_CUR, d.id); }catch(e){} openFacturation(); };
     document.getElementById('drawer').classList.add('open');
     document.getElementById('ov').classList.add('open');
