@@ -872,13 +872,14 @@
       else throw new Error('no-url');
     }catch(e){ btn.disabled=false; btn.innerHTML=old; toast('Paiement en ligne non configuré (Stripe).'); }
   }
+  function portalUrl(){ var o=(location.origin&&location.origin.indexOf('http')===0)?location.origin:'https://yada.aemconseil.eu'; return o.replace(/\/+$/,'')+'/portail/'; }
   function invoicePayload(d){
     var t=computeTotal(d);
     var lines=(d.lines||[]).filter(function(l){return (l.desc||'').trim()||Number(l.pu);}).map(function(l){ return {desc:l.desc||'',qty:Number(l.qty)||0,pu:Number(l.pu)||0,ht:(Number(l.qty)||0)*(Number(l.pu)||0)}; });
     return { to:((d.client&&d.client.email)||'').trim(), replyTo:((d.emit&&d.emit.email)||'').trim(),
       emitName:(d.emit&&d.emit.name)||'', emitEmail:(d.emit&&d.emit.email)||'', clientName:(d.client&&d.client.name)||'',
       number:d.number||'', date:d.date||'', dueDate:d.due||'', lines:lines,
-      totalHT:t.netHT, totalTVA:t.totalVAT, totalTTC:t.ttc, due:t.due, terms:d.terms||'', payUrl:d.payLink||'' };
+      totalHT:t.netHT, totalTVA:t.totalVAT, totalTTC:t.ttc, due:t.due, terms:d.terms||'', payUrl:d.payLink||'', portalUrl:portalUrl() };
   }
   function mailtoInvoice(d, mode){
     var t=computeTotal(d), to=((d.client&&d.client.email)||'').trim(), rel=mode==='reminder';
@@ -887,7 +888,8 @@
       ? 'Sauf erreur de notre part, la facture '+(d.number||'')+(d.due?' (échéance du '+fmtDate(d.due)+')':'')+' reste impayée. Merci de bien vouloir procéder à son règlement.'
       : 'Veuillez trouver le récapitulatif de votre facture '+(d.number||')')+'.';
     var body='Bonjour '+((d.client&&d.client.name)||'')+',\n\n'+intro+'\n\n'+
-      'Total TTC : '+dmoney(d).format(t.ttc)+'\nMontant dû : '+dmoney(d).format(t.due>0.005?t.due:t.ttc)+(d.due?'\nÉchéance : '+fmtDate(d.due):'')+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'');
+      'Total TTC : '+dmoney(d).format(t.ttc)+'\nMontant dû : '+dmoney(d).format(t.due>0.005?t.due:t.ttc)+(d.due?'\nÉchéance : '+fmtDate(d.due):'')+
+      '\n\nConsultez et téléchargez votre facture en ligne :\n'+portalUrl()+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'');
     window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body), '_blank');
   }
   async function sendInvoice(id, btn, mode){
