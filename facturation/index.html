@@ -666,6 +666,30 @@ function saveDocs(list){ localStorage.setItem(LS_DOCS, JSON.stringify(list)); }
 function loadEmit(){ try{ return JSON.parse(localStorage.getItem(LS_EMIT)||'null'); }catch(e){ return null; } }
 function saveEmit(e){ localStorage.setItem(LS_EMIT, JSON.stringify(e)); }
 
+/* Pré-remplissage émetteur transmis par la page d'identification du site AEM.
+   La coquille (index.html) a stocké les infos dans localStorage.aem_fact_prefill.
+   On ne remplit que les champs vides de l'émetteur, puis on consomme la clé. */
+function applyAemPrefill(emit){
+  var raw; try{ raw=localStorage.getItem('aem_fact_prefill'); }catch(e){ return false; }
+  if(!raw) return false;
+  var d; try{ d=JSON.parse(raw); }catch(e){ localStorage.removeItem('aem_fact_prefill'); return false; }
+  var name = (d.type==='particulier')
+    ? [d.prenom, d.nom].filter(Boolean).join(' ').trim()
+    : (d.raison||'');
+  var map = {
+    name: name, legalForm: d.forme, capital: d.capital, addr: d.adresse,
+    siret: d.siret, rcs: d.rcs, tva: d.tva, email: d.email, phone: d.tel,
+    iban: d.iban, bic: d.bic
+  };
+  var changed=false;
+  Object.keys(map).forEach(function(k){
+    var v=map[k];
+    if(v && !String(emit[k]||'').trim()){ emit[k]=v; changed=true; }
+  });
+  try{ localStorage.removeItem('aem_fact_prefill'); }catch(e){}
+  return changed;
+}
+
 let saveTimer=null, dirty=false;
 function markSaved(saved){
   const el=document.getElementById('saveState');
@@ -1750,8 +1774,10 @@ async function init(){
     state=blankState();
     const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em);
   }
+  // Consomme un éventuel pré-remplissage émetteur venu du site AEM
+  const prefilled = applyAemPrefill(state.emit);
   fillForm(); render(); applyZoom(); markSaved(true);
-  if(!cur) persist();
+  if(!cur || prefilled) persist();
 
   window.addEventListener('beforeunload', ()=>{ if(dirty) persist(); });
 }

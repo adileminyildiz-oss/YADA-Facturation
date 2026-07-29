@@ -418,6 +418,22 @@
     setTimeout(function(){ toast('Merci ! Votre abonnement est en cours d’activation.'); }, 1000);
     try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
   }
+  /* Pré-remplissage émetteur transmis depuis la page d'identification du site AEM
+     (aemconseil.eu/identification/). On capte les paramètres ici — avant la
+     connexion — et on les stocke pour que le module Facturation les consomme
+     (même origine → localStorage partagé). La chaîne est ensuite retirée de l'URL. */
+  (function(){
+    try{
+      var sp=new URLSearchParams(location.search);
+      var KEYS=['type','siren','raison','forme','capital','adresse','siret','rcs','tva','email','tel','iban','bic','prenom','nom'];
+      var data={}, has=false;
+      KEYS.forEach(function(k){ if(sp.has(k)){ var v=sp.get(k); if(v){ data[k]=v; has=true; } } });
+      if(has){
+        localStorage.setItem('aem_fact_prefill', JSON.stringify(data));
+        history.replaceState(null,'',location.pathname+location.hash);
+      }
+    }catch(e){}
+  })();
   initAuth();
 </script>
 <script>
