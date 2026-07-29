@@ -453,7 +453,7 @@
         <div class="field col-2"><label for="c-name">Nom / Société</label><input id="c-name" list="clientList" autocomplete="off" placeholder="Société Cliente SARL"><datalist id="clientList"></datalist></div>
         <div class="field col-2"><label for="c-addr">Adresse</label><textarea id="c-addr" placeholder="3 avenue du Client&#10;69000 Lyon"></textarea></div>
         <div class="field"><label for="c-siret">SIRET (optionnel)</label><input id="c-siret" placeholder="000 000 000 00000"></div>
-        <div class="field"><label for="c-email">Email (optionnel)</label><input id="c-email" placeholder="client@exemple.fr"></div>
+        <div class="field"><label for="c-email">E-mail <span class="auto-tag" style="color:#ffcf6d;background:rgba(255,207,109,.14);border-color:rgba(255,207,109,.3)">requis</span></label><input id="c-email" type="email" placeholder="client@exemple.fr"></div>
       </div>
     </div>
 
@@ -759,6 +759,7 @@ function render(){
   const tpl = TEMPLATES[s.template] || TEMPLATES['2C'];
   document.getElementById('doc').innerHTML = tpl(D);
   if(manualZoom==null) applyZoom();
+  updateEmitButton();
 }
 
 /* Données communes formatées pour tous les modèles */
@@ -1402,9 +1403,28 @@ function applyLockUI(){
     ? (state.accepted ? ('Devis accepté et signé'+(state.acceptedBy?' par '+state.acceptedBy:'')+'. Verrouillé.') : 'Devis validé et verrouillé. Pour le modifier, dupliquez-le en brouillon.')
     : 'Document émis et verrouillé. Il ne peut plus être modifié ni supprimé. Pour le corriger, créez un avoir.';
 }
+/* Conditions à réunir avant de pouvoir émettre : client, e-mail, numéro, au moins une ligne. */
+function emitRequirements(s){
+  s=s||state; const miss=[];
+  if(!clientKeyOf(s.client&&s.client.name)) miss.push('le nom du client');
+  if(!/.+@.+\..+/.test(String((s.client&&s.client.email)||'').trim())) miss.push('l’e-mail du client');
+  if(!s.number) miss.push('le numéro');
+  const hasLine=(s.lines||[]).some(l=>String(l.desc||'').trim() || lineHT(l)>0);
+  if(!hasLine) miss.push('au moins une ligne');
+  return miss;
+}
+/* Active/désactive le bouton « Émettre » selon les informations renseignées. */
+function updateEmitButton(){
+  const btn=document.getElementById('emitBtn'); if(!btn) return;
+  if(state.emitted){ return; }
+  const miss=emitRequirements();
+  btn.disabled=miss.length>0;
+  btn.title=miss.length ? ('À renseigner avant d’émettre : '+miss.join(', ')+'.') : 'Émettre le document';
+}
 function emitDoc(){
   if(state.emitted) return;
-  if(!state.number || !clientKeyOf(state.client&&state.client.name)){ toast('Renseignez le client avant d\'émettre.'); return; }
+  const miss=emitRequirements();
+  if(miss.length){ toast('Avant d’émettre, renseignez : '+miss.join(', ')+'.'); return; }
   const quoi=state.kind==='devis'?'ce devis':(state.kind==='avoir'?'cet avoir':'cette facture');
   if(!confirm('Émettre '+quoi+' définitivement ?\n\nUne fois émis, le document ne pourra plus être modifié ni supprimé (obligation de conformité). Les corrections se font uniquement par un avoir.')) return;
   state.emitted=true; state.emittedAt=todayISO();
