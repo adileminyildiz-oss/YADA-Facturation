@@ -1270,12 +1270,21 @@ function saveLinesToCatalog(){
   toast(added?('Catalogue : '+added+' article'+(added>1?'s':'')+' ajouté'+(added>1?'s':'')):'Aucun nouvel article à enregistrer');
 }
 /* ============ Annuaire client (mini-CRM) ============ */
+function loadClientStore(){ try{ return JSON.parse(localStorage.getItem('aem_fact_clients')||'[]'); }catch(e){ return []; } }
 function clientDir(){
   const map={};
   loadDocs().forEach(d=>{
     const c=d.client||{}; const name=String(c.name||'').trim(); if(!name) return;
     const key=name.toLowerCase(); const cur=map[key];
     if(!cur || (d.updated||0)>=(cur.updated||0)) map[key]={name:name, addr:c.addr||'', email:c.email||'', siret:c.siret||'', updated:d.updated||0};
+  });
+  // Fiches du module Clients : source de référence des coordonnées.
+  loadClientStore().forEach(c=>{
+    const name=String(c.name||'').trim(); if(!name) return;
+    const key=name.toLowerCase(); const cur=map[key];
+    map[key]={ name:name,
+      addr:c.addr||(cur&&cur.addr)||'', email:c.email||(cur&&cur.email)||'', siret:c.siret||(cur&&cur.siret)||'',
+      updated:Math.max(Number(c.updated)||0, (cur&&cur.updated)||0) };
   });
   return Object.keys(map).map(k=>map[k]).sort((a,b)=>b.updated-a.updated);
 }
@@ -2012,8 +2021,16 @@ async function init(){
   // charger le doc courant ou en créer un
   const docs=loadDocs();
   const curId=localStorage.getItem(LS_CUR);
-  const cur = curId && docs.find(d=>d.id===curId);
-  if(cur){ state=JSON.parse(JSON.stringify(cur)); if(!state.lines||!state.lines.length) state.lines=[newLine()]; }
+  let cur = curId && docs.find(d=>d.id===curId);
+  // Pré-remplissage client depuis le module Clients (bouton « Nouvelle facture »)
+  let prefill=null; try{ prefill=JSON.parse(localStorage.getItem('aem_fact_prefill_client')||'null'); }catch(e){}
+  if(prefill && prefill.name){
+    localStorage.removeItem('aem_fact_prefill_client');
+    state=blankState();
+    const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em);
+    state.client.name=prefill.name; state.client.addr=prefill.addr||''; state.client.siret=prefill.siret||''; state.client.email=prefill.email||'';
+    assignNumberFor(state); cur=null;
+  } else if(cur){ state=JSON.parse(JSON.stringify(cur)); if(!state.lines||!state.lines.length) state.lines=[newLine()]; }
   else{
     state=blankState();
     const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em);
