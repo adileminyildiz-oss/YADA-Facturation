@@ -5,7 +5,7 @@
 const CACHE = 'aem-espace-v1';
 const CORE = [
   './', './index.html',
-  './facturation/', './clients/', './documents/', './efacture/', './portail/', './abonnement/', './legal/',
+  './facturation/', './clients/', './sous-traitants/', './documents/', './efacture/', './portail/', './abonnement/', './legal/',
   './assets/favicon-192.png', './assets/favicon-512.png', './assets/logo-full.png', './assets/logo-round.png'
 ];
 
