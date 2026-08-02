@@ -175,6 +175,19 @@
     <div class="authmsg" id="recMsg" role="status"></div>
   </form>
 </div>
+<div class="authgate" id="pwGate" hidden style="background:rgba(4,5,11,.72)">
+  <form class="authcard" id="pwForm" novalidate style="position:relative">
+    <button type="button" id="pwClose" aria-label="Fermer" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--txt2);font-size:22px;line-height:1;cursor:pointer">&times;</button>
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Mot de passe<small>AEM-CONSEIL</small></span></div>
+    <p class="lead">Choisissez un nouveau mot de passe pour votre compte.</p>
+    <label for="pwNew">Nouveau mot de passe</label>
+    <input id="pwNew" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <label for="pwNew2">Confirmer le mot de passe</label>
+    <input id="pwNew2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <button class="submit" type="submit" id="pwSubmit">Enregistrer</button>
+    <div class="authmsg" id="pwMsg" role="status"></div>
+  </form>
+</div>
 <div class="authgate" id="pendingGate" hidden>
   <div class="authcard" style="text-align:center">
     <div class="brand" style="justify-content:center"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM CONSEIL</small></span></div>
@@ -233,6 +246,10 @@
         <span class="av" id="userAv">A</span>
         <span class="uinfo"><span class="ue" id="userEmail"></span><span class="ur">Connecté</span></span>
       </div>
+      <button class="item" type="button" id="changePwBtn" hidden>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></span>
+        <span class="lbl">Changer de mot de passe</span>
+      </button>
       <button class="item logout" type="button" id="logoutBtn" hidden>
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
         <span class="lbl">Déconnexion</span>
@@ -297,6 +314,7 @@
     document.getElementById('userAv').textContent=(em.charAt(0)||'A');
     document.getElementById('sbUser').hidden=false;
     document.getElementById('logoutBtn').hidden=false;
+    document.getElementById('changePwBtn').hidden=false;
     if(!showApp._routed){ showApp._routed=true; route(); }
   }
   function showPending(session){
@@ -310,6 +328,7 @@
     document.getElementById('pendingGate').hidden=true;
     document.getElementById('sbUser').hidden=true;
     document.getElementById('logoutBtn').hidden=true;
+    document.getElementById('changePwBtn').hidden=true;
     IS_ADMIN=false; document.getElementById('admItem').hidden=true;
   }
   /* Décide de l'accès : admin / approuvé / offre. Tant que le SQL n'est
@@ -377,6 +396,28 @@
     }finally{ btn.disabled=false; btn.textContent = authMode==='signup' ? 'Créer mon compte' : 'Se connecter'; }
   });
   document.getElementById('logoutBtn').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
+  // Changer de mot de passe (utilisateur connecté)
+  function pwMsg(kind,text){ var m=document.getElementById('pwMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+  function openPw(){ document.getElementById('pwNew').value=''; document.getElementById('pwNew2').value=''; pwMsg(); document.getElementById('pwGate').hidden=false; document.getElementById('pwNew').focus(); }
+  function closePw(){ document.getElementById('pwGate').hidden=true; }
+  document.getElementById('changePwBtn').addEventListener('click', openPw);
+  document.getElementById('pwClose').addEventListener('click', closePw);
+  document.getElementById('pwGate').addEventListener('click', function(e){ if(e.target===this) closePw(); });
+  document.getElementById('pwForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    if(!sb){ pwMsg('err','Service indisponible.'); return; }
+    var p1=document.getElementById('pwNew').value, p2=document.getElementById('pwNew2').value;
+    if(p1.length<6){ pwMsg('err','Mot de passe d’au moins 6 caractères.'); return; }
+    if(p1!==p2){ pwMsg('err','Les deux mots de passe ne correspondent pas.'); return; }
+    var btn=document.getElementById('pwSubmit'); btn.disabled=true; pwMsg();
+    try{
+      var r=await sb.auth.updateUser({password:p1});
+      if(r&&r.error) throw r.error;
+      pwMsg('ok','Mot de passe mis à jour.');
+      setTimeout(closePw, 1200);
+    }catch(err){ pwMsg('err',(err&&err.message)||'Mise à jour impossible.'); }
+    finally{ btn.disabled=false; }
+  });
   document.getElementById('pendLogout').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
 
   // Mot de passe oublié : envoie un e-mail de réinitialisation.
