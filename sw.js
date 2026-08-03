@@ -2,7 +2,7 @@
    Stratégie sûre : réseau d'abord (jamais d'appli périmée quand on est en ligne),
    repli sur le cache hors-ligne. N'intercepte que le même domaine en GET :
    Supabase, Stripe, Resend et les CDN passent directement par le réseau. */
-const CACHE = 'aem-espace-v2';
+const CACHE = 'aem-espace-v3';
 const CORE = [
   './', './index.html',
   './facturation/', './documents/', './efacture/', './abonnement/', './legal/',
