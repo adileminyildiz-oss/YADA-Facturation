@@ -140,7 +140,20 @@
     <label for="authPass">Mot de passe</label>
     <input id="authPass" type="password" required autocomplete="current-password" minlength="6" placeholder="••••••••">
     <button class="submit" type="submit" id="authSubmit">Se connecter</button>
+    <div style="text-align:center;margin-top:10px"><button type="button" id="authForgot" style="background:none;border:none;color:var(--peri);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px">Mot de passe oublié ?</button></div>
     <div class="authmsg" id="authMsg" role="status"></div>
+  </form>
+</div>
+<div class="authgate" id="recoverGate" hidden>
+  <form class="authcard" id="recoverForm" novalidate>
+    <div class="brand"><img src="../assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace client<small>AEM CONSEIL</small></span></div>
+    <p class="lead">Choisissez un nouveau mot de passe pour votre accès.</p>
+    <label for="recPass">Nouveau mot de passe</label>
+    <input id="recPass" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <label for="recPass2">Confirmer le mot de passe</label>
+    <input id="recPass2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <button class="submit" type="submit" id="recSubmit">Enregistrer le mot de passe</button>
+    <div class="authmsg" id="recMsg" role="status"></div>
   </form>
 </div>
 
@@ -428,10 +441,50 @@ document.getElementById('authForm').addEventListener('submit', async function(e)
 });
 document.getElementById('btnLogout').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
 
+// Mot de passe oublié : envoie un e-mail de réinitialisation.
+document.getElementById('authForgot').addEventListener('click', async function(){
+  if(!sb){ authMsg('err','Service indisponible.'); return; }
+  var email=document.getElementById('authEmail').value.trim();
+  if(!/.+@.+\..+/.test(email)){ authMsg('err','Saisissez votre adresse e-mail, puis cliquez à nouveau sur « Mot de passe oublié ? ».'); return; }
+  try{
+    var r=await sb.auth.resetPasswordForEmail(email, {redirectTo:location.origin+location.pathname});
+    if(r&&r.error) throw r.error;
+    authMsg('ok','E-mail de réinitialisation envoyé à '+email+'. Suivez le lien pour choisir un nouveau mot de passe.');
+  }catch(err){ authMsg('err',(err&&err.message)||'Envoi impossible. Réessayez.'); }
+});
+var _recovering=false;
+function showRecover(){ document.getElementById('authGate').hidden=true; document.getElementById('topbar').hidden=true; document.getElementById('wrap').hidden=true; document.getElementById('recoverGate').hidden=false; }
+function recMsg(kind,text){ var m=document.getElementById('recMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+document.getElementById('recoverForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(!sb){ recMsg('err','Service indisponible.'); return; }
+  var p1=document.getElementById('recPass').value, p2=document.getElementById('recPass2').value;
+  if(p1.length<6){ recMsg('err','Mot de passe d’au moins 6 caractères.'); return; }
+  if(p1!==p2){ recMsg('err','Les deux mots de passe ne correspondent pas.'); return; }
+  var btn=document.getElementById('recSubmit'); btn.disabled=true; recMsg();
+  try{
+    var r=await sb.auth.updateUser({password:p1}); if(r&&r.error) throw r.error;
+    _recovering=false; recMsg('ok','Mot de passe mis à jour. Redirection…');
+    var s=await sb.auth.getSession();
+    document.getElementById('recoverGate').hidden=true;
+    if(s&&s.data&&s.data.session){ showPortal(s.data.session); } else { showGate(); }
+  }catch(err){ recMsg('err',(err&&err.message)||'Mise à jour impossible.'); }
+  finally{ btn.disabled=false; }
+});
+
 async function init(){
   if(!sb){ showGate(); return; }
-  try{ var res=await sb.auth.getSession(); if(res.data&&res.data.session){ showPortal(res.data.session); } else { showGate(); } }catch(e){ showGate(); }
-  sb.auth.onAuthStateChange(function(_evt,session){ if(session){ authMsg(); showPortal(session); } else { showGate(); } });
+  if(/type=recovery/.test(location.hash||'')){ _recovering=true; showRecover(); }
+  try{
+    var res=await sb.auth.getSession();
+    if(_recovering){ showRecover(); }
+    else if(res.data&&res.data.session){ showPortal(res.data.session); } else { showGate(); }
+  }catch(e){ if(!_recovering) showGate(); }
+  sb.auth.onAuthStateChange(function(_evt,session){
+    if(_evt==='PASSWORD_RECOVERY'){ _recovering=true; showRecover(); return; }
+    if(_recovering) return;
+    if(session){ authMsg(); showPortal(session); } else { showGate(); }
+  });
 }
 init();
 </script>
