@@ -690,6 +690,23 @@ function applyAemPrefill(emit){
   return changed;
 }
 
+/* Pré-remplissage du CLIENT (destinataire) transmis par LAST pour émettre une
+   facture. La coquille a stocké les infos dans localStorage.aem_fact_prefill_client.
+   On ne remplit que les champs vides du client, puis on consomme la clé. */
+function applyAemPrefillClient(client){
+  var raw; try{ raw=localStorage.getItem('aem_fact_prefill_client'); }catch(e){ return false; }
+  if(!raw) return false;
+  var d; try{ d=JSON.parse(raw); }catch(e){ localStorage.removeItem('aem_fact_prefill_client'); return false; }
+  var map = { name: d.cnom, addr: d.cadresse, siret: d.csiret, email: d.cemail };
+  var changed=false;
+  Object.keys(map).forEach(function(k){
+    var v=map[k];
+    if(v && !String(client[k]||'').trim()){ client[k]=v; changed=true; }
+  });
+  try{ localStorage.removeItem('aem_fact_prefill_client'); }catch(e){}
+  return changed;
+}
+
 let saveTimer=null, dirty=false;
 function markSaved(saved){
   const el=document.getElementById('saveState');
@@ -1776,8 +1793,10 @@ async function init(){
   }
   // Consomme un éventuel pré-remplissage émetteur venu du site AEM
   const prefilled = applyAemPrefill(state.emit);
+  // Consomme un éventuel pré-remplissage CLIENT venu de LAST (facturation d'une demande)
+  const prefilledClient = applyAemPrefillClient(state.client);
   fillForm(); render(); applyZoom(); markSaved(true);
-  if(!cur || prefilled) persist();
+  if(!cur || prefilled || prefilledClient) persist();
 
   window.addEventListener('beforeunload', ()=>{ if(dirty) persist(); });
 }

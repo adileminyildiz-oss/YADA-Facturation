@@ -428,10 +428,14 @@
       var KEYS=['type','siren','raison','forme','capital','adresse','siret','rcs','tva','email','tel','iban','bic','prenom','nom'];
       var data={}, has=false;
       KEYS.forEach(function(k){ if(sp.has(k)){ var v=sp.get(k); if(v){ data[k]=v; has=true; } } });
-      if(has){
-        localStorage.setItem('aem_fact_prefill', JSON.stringify(data));
-        history.replaceState(null,'',location.pathname+location.hash);
+      if(has) localStorage.setItem('aem_fact_prefill', JSON.stringify(data));
+      // Pré-remplissage CLIENT (destinataire) transmis depuis LAST pour facturer.
+      var cdata={}, chas=false;
+      if(sp.get('fclient')){
+        ['cnom','cadresse','csiret','cemail'].forEach(function(k){ if(sp.has(k)){ var v=sp.get(k); if(v){ cdata[k]=v; chas=true; } } });
       }
+      if(chas) localStorage.setItem('aem_fact_prefill_client', JSON.stringify(cdata));
+      if(has || chas) history.replaceState(null,'',location.pathname+location.hash);
     }catch(e){}
   })();
   initAuth();
