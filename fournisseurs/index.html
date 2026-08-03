@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Fournisseurs — AEM-CONSEIL</title>
+<meta name="description" content="Fiches fournisseurs & factures reçues — Espace AEM-CONSEIL.">
+<meta name="theme-color" content="#04050b">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Verrou d'accès : compte connecté, approuvé et abonné (offre requise). */
+(function(){
+  var REQUIRED=1; // Facturation (offre de base)
+  try{
+    var root=document.documentElement; root.style.visibility='hidden';
+    function reveal(){ root.style.visibility=''; }
+    function bounce(){ location.replace('../'); }
+    if(!window.supabase){ reveal(); return; }
+    var RANK={free:0,essentiel:1,pro:2,premium:3};
+    var sb=window.supabase.createClient('https://ammmyhtxnwyoopfxtans.supabase.co','sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo',{auth:{persistSession:true,autoRefreshToken:true}});
+    sb.auth.getSession().then(function(r){
+      if(!(r&&r.data&&r.data.session)){ bounce(); return; }
+      sb.rpc('my_access').then(function(a){
+        if(a&&!a.error&&a.data){
+          if(!(a.data.approved===true||a.data.admin===true)){ bounce(); return; }
+          if(a.data.admin!==true && (RANK[a.data.plan]||0) < REQUIRED){ bounce(); return; }
+          reveal();
+        } else { sb.rpc('is_approved').then(function(p){ if(p&&!p.error&&p.data!==true){ bounce(); } else { reveal(); } }).catch(reveal); }
+      }).catch(reveal);
+    }).catch(reveal);
+  }catch(e){ try{document.documentElement.style.visibility='';}catch(_){} }
+})();
+</script>
+<style>
+  :root{
+    --noir:#04050b; --noir2:#070912; --noir3:#0b0e1a;
+    --outremer:#2b45ff; --azur:#6d86ff; --peri:#a9b8ff;
+    --line:rgba(150,168,255,.11); --line-2:rgba(150,168,255,.18);
+    --glass:rgba(255,255,255,.035); --glass-2:rgba(255,255,255,.06);
+    --txt:#f2f4ff; --txt2:#8b98bd; --pos:#3ee9a4; --warn:#ffcf6d; --danger:#ff6b7d;
+  }
+  *{box-sizing:border-box;margin:0}
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);background:var(--noir);-webkit-font-smoothing:antialiased;line-height:1.5;
+    display:flex;flex-direction:column;height:100vh;height:100dvh;overflow:hidden}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px clamp(14px,3vw,26px);border-bottom:1px solid var(--line);flex:none;
+    background:linear-gradient(180deg,rgba(12,16,30,.9),rgba(7,9,18,.7))}
+  .topbar .brand{display:flex;align-items:center;gap:12px}
+  .topbar .brand img{height:30px;filter:brightness(1.14) drop-shadow(0 0 8px rgba(169,184,255,.4))}
+  .topbar .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
+  .topbar .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
+  body.embed .topbar{display:none}
+  .tb-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .tb-count{font-size:12px;font-weight:600;color:var(--peri);background:rgba(109,134,255,.1);border:1px solid var(--line-2);padding:5px 12px;border-radius:999px}
+
+  .shell{flex:1;min-height:0;display:grid;grid-template-columns:320px minmax(0,1fr);gap:0}
+  @media(max-width:860px){ .shell{grid-template-columns:1fr} .shell.detail-open .listcol{display:none} .shell:not(.detail-open) .formcol{display:none} }
+
+  .listcol{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0;background:linear-gradient(180deg,rgba(9,12,22,.6),transparent)}
+  .lc-head{padding:16px 16px 12px;flex:none}
+  .lc-head h1{font-family:'Inter Tight';font-weight:600;font-size:17px;letter-spacing:-.01em}
+  .lc-head p{font-size:12px;color:var(--txt2);margin-top:2px}
+  .lc-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;border-radius:10px;padding:9px 13px;transition:.15s;border:1px solid var(--line-2);background:var(--glass);color:var(--txt)}
+  .btn svg{width:15px;height:15px}
+  .btn:hover{background:var(--glass-2)}
+  .btn.primary{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.danger{color:var(--danger);background:rgba(255,107,125,.08);border-color:rgba(255,107,125,.28)}
+  .btn.danger:hover{background:rgba(255,107,125,.16)}
+  .search{margin-top:10px;position:relative}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--txt2)}
+  .search input{width:100%;padding:9px 11px 9px 33px;background:var(--noir2);border:1px solid var(--line-2);border-radius:10px;color:var(--txt);font-size:13px;transition:.16s}
+  .search input:focus{outline:none;border-color:var(--azur);box-shadow:0 0 0 3px rgba(109,134,255,.16)}
+  .cl-list{flex:1;overflow-y:auto;padding:6px 10px 14px;display:flex;flex-direction:column;gap:5px}
+  .cl-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;padding:10px 11px;border-radius:12px;border:1px solid transparent;background:none;color:inherit;cursor:pointer;transition:.15s}
+  .cl-item:hover{background:var(--glass);border-color:var(--line)}
+  .cl-item.active{background:var(--glass-2);border-color:var(--line-2);box-shadow:inset 3px 0 0 0 var(--azur)}
+  .cl-item .av{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(109,134,255,.22),rgba(43,69,255,.18));border:1px solid var(--line-2);color:var(--peri);font-family:'Inter Tight';font-weight:700;font-size:15px;text-transform:uppercase}
+  .cl-item .m{flex:1;min-width:0;display:flex;flex-direction:column}
+  .cl-item .nm{font-family:'Inter Tight';font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl-item .sub{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl-item .cl-amt{margin-left:auto;text-align:right;font-family:'Inter Tight';font-weight:700;font-size:13px;color:var(--txt);white-space:nowrap;display:flex;flex-direction:column;line-height:1.15}
+  .cl-item .cl-amt small{font-size:9.5px;font-weight:500;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em}
+  .cl-item .cl-amt.due{color:var(--warn)}
+  .cl-empty{margin:auto;text-align:center;max-width:300px;padding:30px 20px;color:var(--txt2)}
+  .cl-empty .eic{width:54px;height:54px;margin:0 auto 14px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(109,134,255,.22),rgba(43,69,255,.16));border:1px solid var(--line-2);color:var(--peri)}
+  .cl-empty .eic svg{width:26px;height:26px}
+  .cl-empty h2{font-family:'Inter Tight';font-weight:600;font-size:16px;margin-bottom:6px;color:var(--txt)}
+  .cl-empty p{font-size:12.5px;line-height:1.55}
+
+  .formcol{display:flex;flex-direction:column;min-height:0}
+  .fc-head{padding:16px clamp(14px,2.4vw,24px) 0;flex:none;display:flex;align-items:center;gap:12px}
+  .fc-back{display:none;align-items:center;gap:6px;font-size:12.5px;color:var(--txt2);background:none;border:none;cursor:pointer;padding:0}
+  .fc-back svg{width:15px;height:15px}
+  @media(max-width:860px){ .fc-back{display:inline-flex} }
+  .fc-title{font-family:'Inter Tight';font-weight:700;font-size:18px}
+  .fc-body{flex:1;overflow-y:auto;padding:16px clamp(14px,2.4vw,24px) 30px}
+  .fc-placeholder{margin:auto;text-align:center;color:var(--txt2);max-width:320px;padding:24px}
+  .fc-placeholder .pic{width:54px;height:54px;margin:0 auto 14px;border-radius:14px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line);color:var(--peri)}
+  .fc-placeholder .pic svg{width:26px;height:26px}
+  .fc-placeholder h2{font-family:'Inter Tight';font-weight:600;font-size:17px;color:var(--txt);margin-bottom:6px}
+  .card{border:1px solid var(--line);border-radius:14px;background:var(--glass);padding:16px 18px;max-width:720px}
+  .card+.card{margin-top:14px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:560px){.grid2{grid-template-columns:1fr}}
+  .field{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .field.col-2{grid-column:span 2}
+  @media(max-width:560px){.field.col-2{grid-column:auto}}
+  label{font-size:10px;letter-spacing:.03em;color:var(--txt2);font-weight:600;text-transform:uppercase}
+  input,textarea{width:100%;font-family:inherit;font-size:13px;color:var(--txt);background:var(--noir2);border:1px solid var(--line-2);border-radius:9px;padding:9px 11px;transition:border-color .16s}
+  input:focus,textarea:focus{outline:none;border-color:var(--azur);box-shadow:0 0 0 3px rgba(109,134,255,.14)}
+  textarea{resize:vertical;min-height:56px;line-height:1.5}
+  .fc-actions{display:flex;gap:10px;margin-top:18px;max-width:720px;flex-wrap:wrap}
+  .fc-actions .btn{padding:11px 18px}
+  .fc-stats{display:flex;gap:10px;margin:14px 0 4px;flex-wrap:wrap;max-width:720px}
+  .stat{flex:1;min-width:120px;background:var(--noir2);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
+  .stat .sv{font-family:'Inter Tight';font-weight:700;font-size:16px}
+  .stat .sl{font-size:11px;color:var(--txt2);margin-top:1px}
+  .stat.warn .sv{color:var(--warn)} .stat.pos .sv{color:var(--pos)} .stat.due .sv{color:var(--warn)}
+  .sec-t{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--txt2);font-weight:700;margin:2px 0 10px}
+  /* Factures reçues du fournisseur */
+  .cdocs{display:flex;flex-direction:column;gap:7px}
+  .cd-empty{font-size:12.5px;color:var(--txt2)}
+  .cd-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--noir2)}
+  .cd-m{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+  .cd-n{font-weight:600;font-size:13px}
+  .cd-sub{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cd-amt{flex:none;font-family:'Inter Tight';font-weight:700;font-size:12.5px;white-space:nowrap}
+  .paytoggle{flex:none;font-family:'Inter Tight';font-weight:700;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:5px 10px;border-radius:999px;cursor:pointer;border:1px solid var(--line-2);background:var(--glass);color:var(--txt2)}
+  .paytoggle.on{background:rgba(62,233,164,.13);border-color:rgba(62,233,164,.3);color:var(--pos)}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);z-index:200;background:var(--noir3);border:1px solid var(--line-2);color:var(--txt);padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.24s}
+  .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">
+      <img src="../assets/logo-full.png" alt="AEM CONSEIL">
+      <span class="t">Fournisseurs<small>AEM CONSEIL</small></span>
+    </div>
+    <div class="tb-right"><div class="tb-count" id="cnt">—</div></div>
+  </div>
+
+  <div class="shell" id="shell">
+    <aside class="listcol">
+      <div class="lc-head">
+        <h1>Fournisseurs</h1>
+        <p>Vos fournisseurs, leurs factures reçues et le montant dépensé.</p>
+        <div class="lc-actions">
+          <button class="btn primary" id="btnNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg> Nouveau fournisseur</button>
+          <button class="btn" id="btnImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg> Depuis les factures reçues</button>
+        </div>
+        <div class="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="search" type="search" placeholder="Rechercher un fournisseur…" autocomplete="off">
+        </div>
+      </div>
+      <div class="cl-list" id="clList"></div>
+    </aside>
+
+    <section class="formcol">
+      <div class="fc-placeholder" id="placeholder">
+        <div class="pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M3 15h18M9 3v18"/></svg></div>
+        <h2>Sélectionnez un fournisseur</h2>
+        <p>Choisissez une fiche à gauche, ou importez vos fournisseurs depuis les factures reçues (module Facturation électronique).</p>
+      </div>
+      <div id="editor" hidden>
+        <div class="fc-head">
+          <button class="fc-back" id="btnBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Fournisseurs</button>
+          <span class="fc-title" id="fcTitle">Nouveau fournisseur</span>
+        </div>
+        <div class="fc-body">
+          <div class="fc-stats" id="fcStats" hidden></div>
+          <div class="card">
+            <div class="sec-t">Identité</div>
+            <div class="grid2">
+              <div class="field col-2"><label for="f-name">Nom / Société</label><input id="f-name" placeholder="Fournisseur Durand SARL"></div>
+              <div class="field"><label for="f-legalform">Forme juridique</label><input id="f-legalform" placeholder="SARL, SAS, EI…"></div>
+              <div class="field"><label for="f-siret">SIRET</label><input id="f-siret" placeholder="000 000 000 00000"></div>
+              <div class="field"><label for="f-tva">N° TVA intracom.</label><input id="f-tva" placeholder="FR00000000000"></div>
+              <div class="field"><label for="f-contact">Contact (personne)</label><input id="f-contact" placeholder="Prénom Nom"></div>
+              <div class="field col-2"><label for="f-addr">Adresse</label><textarea id="f-addr" placeholder="5 rue du Fournisseur&#10;75000 Paris"></textarea></div>
+            </div>
+            <div class="sec-t" style="margin-top:16px">Coordonnées & paiement</div>
+            <div class="grid2">
+              <div class="field"><label for="f-email">E-mail</label><input id="f-email" type="email" placeholder="contact@fournisseur.fr"></div>
+              <div class="field"><label for="f-phone">Téléphone</label><input id="f-phone" placeholder="01 00 00 00 00"></div>
+              <div class="field col-2"><label for="f-iban">IBAN (règlement)</label><input id="f-iban" placeholder="FR76 0000 0000 0000 0000 0000 000"></div>
+              <div class="field col-2"><label for="f-notes">Notes internes</label><textarea id="f-notes" placeholder="Informations utiles sur ce fournisseur."></textarea></div>
+            </div>
+          </div>
+          <div class="card" id="cDocsCard" hidden>
+            <div class="sec-t">Factures reçues</div>
+            <div class="cdocs" id="cDocs"></div>
+          </div>
+          <div class="fc-actions">
+            <button class="btn primary" id="btnSave" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Enregistrer</button>
+            <button class="btn danger" id="btnDelete" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Supprimer</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+  var EMBED=/[?&]embed=1/.test(location.search);
+  if(EMBED) document.body.classList.add('embed');
+  var LS_FOURN='aem_fact_fournisseurs', LS_IN='aem_efact_inbox';
+  var euro=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2});
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function nowId(){ return 'f_'+Date.now().toString(36)+Math.round(Math.random()*1e5).toString(36); }
+  function todayTs(){ return Date.now(); }
+  function keyOf(name){ return String(name||'').trim().toLowerCase().replace(/\s+/g,' '); }
+  function fmtDate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); return m?(m[3]+'/'+m[2]+'/'+m[1]):''; }
+  function loadFourn(){ try{ return JSON.parse(localStorage.getItem(LS_FOURN)||'[]'); }catch(e){ return []; } }
+  function saveFourn(l){ try{ localStorage.setItem(LS_FOURN, JSON.stringify(l)); }catch(e){} }
+  function loadInbox(){ try{ return JSON.parse(localStorage.getItem(LS_IN)||'[]'); }catch(e){ return []; } }
+  function saveInbox(l){ try{ localStorage.setItem(LS_IN, JSON.stringify(l)); }catch(e){} }
+
+  var current=null, query='';
+
+  /* Agrège les factures reçues (module e-facture) par fournisseur. */
+  function supplierStats(name){
+    var k=keyOf(name), total=0, depense=0, list=[];
+    loadInbox().forEach(function(x){
+      var p=x.parsed||{}; if(keyOf(p.seller)!==k) return;
+      var ttc=Number(p.ttc)||0, paid=!!x.paid;
+      total+=ttc; if(paid) depense+=ttc;
+      list.push({x:x, ttc:ttc, paid:paid});
+    });
+    list.sort(function(a,b){ return String((b.x.parsed||{}).date||'').localeCompare(String((a.x.parsed||{}).date||'')); });
+    return {total:total, depense:depense, apayer:Math.max(0,total-depense), count:list.length, list:list};
+  }
+
+  function renderList(){
+    var list=loadFourn().slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||'')); });
+    document.getElementById('cnt').textContent=list.length+' fournisseur'+(list.length>1?'s':'');
+    var q=query.trim().toLowerCase();
+    var shown=list.filter(function(c){ return !q || String(c.name||'').toLowerCase().indexOf(q)>=0 || String(c.email||'').toLowerCase().indexOf(q)>=0; });
+    var box=document.getElementById('clList');
+    if(!list.length){
+      box.innerHTML='<div class="cl-empty"><div class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M3 15h18M9 3v18"/></svg></div><h2>Aucun fournisseur</h2><p>Créez une fiche, ou importez automatiquement vos fournisseurs depuis les factures reçues.</p><button class="btn" id="btnImport2" type="button" style="margin-top:14px">Importer depuis les factures reçues</button></div>';
+      var bi=document.getElementById('btnImport2'); if(bi) bi.onclick=importFromInbox;
+      return;
+    }
+    if(!shown.length){ box.innerHTML='<div class="cl-empty"><p>Aucun fournisseur ne correspond à « '+esc(query)+' ».</p></div>'; return; }
+    box.innerHTML=shown.map(function(c){
+      var sub=c.email||c.siret||(c.addr||'').split('\n')[0]||'—';
+      var s=supplierStats(c.name);
+      var amt=s.count? '<span class="cl-amt'+(s.apayer>0.005?' due':'')+'">'+euro.format(s.depense)+(s.apayer>0.005?'<small>à payer '+euro.format(s.apayer)+'</small>':'<small>dépensé</small>')+'</span>' : '';
+      return '<button class="cl-item'+(current&&current.id===c.id?' active':'')+'" data-id="'+esc(c.id)+'">'+
+        '<span class="av">'+esc((c.name||'?')[0]||'?')+'</span>'+
+        '<span class="m"><span class="nm">'+esc(c.name||'Sans nom')+'</span><span class="sub">'+esc(sub)+'</span></span>'+
+        amt+
+      '</button>';
+    }).join('');
+  }
+
+  /* Crée des fiches fournisseurs à partir des émetteurs des factures reçues. */
+  function importFromInbox(){
+    var byKey={}; loadFourn().forEach(function(c){ byKey[keyOf(c.name)]=c; });
+    var added=0;
+    loadInbox().forEach(function(x){
+      var seller=String((x.parsed&&x.parsed.seller)||'').trim(); if(!seller) return;
+      var k=keyOf(seller); if(byKey[k]) return;
+      byKey[k]={id:nowId(), name:seller, legalForm:'', siret:'', tva:'', contact:'', addr:'', email:'', phone:'', iban:'', notes:'', updated:todayTs()};
+      added++;
+    });
+    saveFourn(Object.keys(byKey).map(function(k){return byKey[k];}));
+    renderList(); toast(added?('Import : '+added+' fournisseur'+(added>1?'s':'')+' ajouté'+(added>1?'s':'')):'Aucun nouveau fournisseur à importer (factures reçues dans le module e-facture).');
+  }
+
+  function blank(){ return {id:nowId(), name:'', legalForm:'', siret:'', tva:'', contact:'', addr:'', email:'', phone:'', iban:'', notes:'', updated:todayTs()}; }
+  function openFourn(c){
+    current=c;
+    document.getElementById('placeholder').hidden=true;
+    document.getElementById('editor').hidden=false;
+    document.getElementById('shell').classList.add('detail-open');
+    var isNew=!loadFourn().some(function(x){return x.id===c.id;});
+    document.getElementById('fcTitle').textContent=isNew?'Nouveau fournisseur':(c.name||'Fiche fournisseur');
+    document.getElementById('f-name').value=c.name||'';
+    document.getElementById('f-legalform').value=c.legalForm||'';
+    document.getElementById('f-siret').value=c.siret||'';
+    document.getElementById('f-tva').value=c.tva||'';
+    document.getElementById('f-contact').value=c.contact||'';
+    document.getElementById('f-addr').value=c.addr||'';
+    document.getElementById('f-email').value=c.email||'';
+    document.getElementById('f-phone').value=c.phone||'';
+    document.getElementById('f-iban').value=c.iban||'';
+    document.getElementById('f-notes').value=c.notes||'';
+    document.getElementById('btnDelete').hidden=isNew;
+    var st=document.getElementById('fcStats');
+    if(isNew){ st.hidden=true; document.getElementById('cDocsCard').hidden=true; }
+    else{
+      var s=supplierStats(c.name); st.hidden=false;
+      st.innerHTML='<div class="stat"><div class="sv">'+s.count+'</div><div class="sl">Factures reçues</div></div>'+
+        '<div class="stat"><div class="sv">'+euro.format(s.total)+'</div><div class="sl">Total (TTC)</div></div>'+
+        '<div class="stat pos"><div class="sv">'+euro.format(s.depense)+'</div><div class="sl">Dépensé</div></div>'+
+        '<div class="stat'+(s.apayer>0.005?' due':'')+'"><div class="sv">'+euro.format(s.apayer)+'</div><div class="sl">À payer</div></div>';
+      renderInvoices(c.name);
+    }
+    renderList();
+  }
+  function renderInvoices(name){
+    var card=document.getElementById('cDocsCard'), box=document.getElementById('cDocs');
+    var s=supplierStats(name); card.hidden=false;
+    if(!s.list.length){ box.innerHTML='<p class="cd-empty">Aucune facture reçue de ce fournisseur. Relevez votre PDP ou importez un XML dans le module Facturation électronique.</p>'; return; }
+    box.innerHTML=s.list.map(function(r){
+      var p=r.x.parsed||{};
+      var meta=(p.format||'?')+(p.date?' · '+fmtDate(p.date):'');
+      return '<div class="cd-row"><span class="cd-m"><span class="cd-n">'+esc(p.number||r.x.file||'—')+'</span><span class="cd-sub">'+esc(meta)+'</span></span>'+
+        '<span class="cd-amt">'+euro.format(r.ttc)+'</span>'+
+        '<button class="paytoggle'+(r.paid?' on':'')+'" data-pay="'+esc(r.x.id)+'">'+(r.paid?'Payée':'À payer')+'</button></div>';
+    }).join('');
+  }
+  document.getElementById('cDocs').addEventListener('click', function(e){
+    var t=e.target.closest('[data-pay]'); if(!t) return;
+    var inbox=loadInbox(), x=inbox.find(function(v){return v.id===t.dataset.pay;}); if(!x) return;
+    x.paid=!x.paid; x.paidAt=x.paid?new Date().toISOString():''; saveInbox(inbox);
+    if(current){ openFourn(JSON.parse(JSON.stringify(current))); }
+    toast(x.paid?'Facture marquée payée':'Facture remise à payer');
+  });
+
+  function readForm(){
+    if(!current) return;
+    current.name=document.getElementById('f-name').value.trim();
+    current.legalForm=document.getElementById('f-legalform').value.trim();
+    current.siret=document.getElementById('f-siret').value.trim();
+    current.tva=document.getElementById('f-tva').value.trim();
+    current.contact=document.getElementById('f-contact').value.trim();
+    current.addr=document.getElementById('f-addr').value;
+    current.email=document.getElementById('f-email').value.trim();
+    current.phone=document.getElementById('f-phone').value.trim();
+    current.iban=document.getElementById('f-iban').value.trim();
+    current.notes=document.getElementById('f-notes').value;
+    current.updated=todayTs();
+  }
+  function saveCurrent(){
+    readForm();
+    if(!current.name){ toast('Indiquez au moins le nom du fournisseur.'); return; }
+    var list=loadFourn(); var i=list.findIndex(function(x){return x.id===current.id;});
+    var dup=list.find(function(x){ return x.id!==current.id && keyOf(x.name)===keyOf(current.name); });
+    if(dup){ toast('Une fiche existe déjà pour « '+current.name+' ».'); return; }
+    if(i>=0) list[i]=current; else list.unshift(current);
+    saveFourn(list); cloudPush(current);
+    document.getElementById('fcTitle').textContent=current.name;
+    document.getElementById('btnDelete').hidden=false;
+    renderInvoices(current.name);
+    renderList(); toast('Fiche enregistrée');
+  }
+  function deleteCurrent(){
+    if(!current) return;
+    if(!confirm('Supprimer la fiche « '+(current.name||'')+' » ?\n\nLes factures reçues ne sont pas affectées.')) return;
+    var list=loadFourn().filter(function(x){return x.id!==current.id;});
+    saveFourn(list); cloudRemove(current.id);
+    current=null;
+    document.getElementById('editor').hidden=true;
+    document.getElementById('placeholder').hidden=false;
+    document.getElementById('shell').classList.remove('detail-open');
+    renderList(); toast('Fiche supprimée');
+  }
+
+  document.getElementById('btnNew').addEventListener('click', function(){ openFourn(blank()); document.getElementById('f-name').focus(); });
+  document.getElementById('btnImport').addEventListener('click', importFromInbox);
+  document.getElementById('btnSave').addEventListener('click', saveCurrent);
+  document.getElementById('btnDelete').addEventListener('click', deleteCurrent);
+  document.getElementById('btnBack').addEventListener('click', function(){ document.getElementById('shell').classList.remove('detail-open'); });
+  document.getElementById('search').addEventListener('input', function(e){ query=e.target.value; renderList(); });
+  document.getElementById('clList').addEventListener('click', function(e){ var b=e.target.closest('.cl-item'); if(!b) return; var c=loadFourn().find(function(x){return x.id===b.dataset.id;}); if(c) openFourn(JSON.parse(JSON.stringify(c))); });
+  document.addEventListener('keydown', function(e){ if((e.ctrlKey||e.metaKey)&&e.key==='s'){ e.preventDefault(); if(current) saveCurrent(); } });
+
+  function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2600); }
+
+  /* ===== Synchronisation cloud (par compte, RLS) — table « fournisseurs » ===== */
+  var SB_URL='https://ammmyhtxnwyoopfxtans.supabase.co', SB_KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
+  var _sb=null, _uid=null;
+  try{ if(window.supabase) _sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
+  function cloudPush(c){ if(!_sb||!_uid||!c||!c.id) return; try{ _sb.from('fournisseurs').upsert({id:c.id,user_id:_uid,data:c,updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
+  function cloudRemove(id){ if(!_sb||!_uid) return; try{ _sb.from('fournisseurs').delete().eq('id',id).then(function(){},function(){}); }catch(e){} }
+  async function cloudPull(){
+    try{
+      if(!_sb) return;
+      var s=await Promise.race([_sb.auth.getSession(), new Promise(function(r){setTimeout(function(){r(null);},2500);})]);
+      if(!s||!s.data||!s.data.session) return;
+      _uid=s.data.session.user.id;
+      var res=await Promise.race([_sb.from('fournisseurs').select('id,data,updated_at').eq('user_id',_uid), new Promise(function(r){setTimeout(function(){r(null);},3500);})]);
+      if(res&&res.data){
+        var byId={}; loadFourn().forEach(function(c){ if(c&&c.id) byId[c.id]=c; });
+        res.data.forEach(function(r){ var c=r.data; if(!c||!c.id) return; var ex=byId[c.id]; if(!ex||(c.updated||0)>=(ex.updated||0)) byId[c.id]=c; });
+        saveFourn(Object.keys(byId).map(function(k){return byId[k];}));
+      }
+    }catch(e){}
+  }
+  cloudPull().then(renderList);
+  renderList();
+</script>
+</body>
+</html>
