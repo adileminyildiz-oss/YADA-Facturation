@@ -123,8 +123,25 @@
   .stat{flex:1;min-width:130px;background:var(--noir2);border:1px solid var(--line);border-radius:12px;padding:11px 13px}
   .stat .sv{font-family:'Inter Tight';font-weight:700;font-size:16px}
   .stat .sl{font-size:11px;color:var(--txt2);margin-top:1px}
-  .stat.warn .sv{color:var(--warn)} .stat.pos .sv{color:var(--pos)}
+  .stat.warn .sv{color:var(--warn)} .stat.pos .sv{color:var(--pos)} .stat.due .sv{color:var(--warn)}
   .sec-t{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--txt2);font-weight:700;margin:2px 0 10px}
+  /* Montant sur la ligne client */
+  .cl-item .cl-amt{margin-left:auto;text-align:right;font-family:'Inter Tight';font-weight:700;font-size:13px;color:var(--pos);white-space:nowrap;display:flex;flex-direction:column;line-height:1.15}
+  .cl-item .cl-amt small{font-size:9.5px;font-weight:500;color:var(--txt2);text-transform:uppercase;letter-spacing:.03em}
+  .cl-item .cl-amt.due{color:var(--warn)}
+  /* Suivi de facturation (liste des documents du client) */
+  .cdocs{display:flex;flex-direction:column;gap:7px}
+  .cd-empty{font-size:12.5px;color:var(--txt2)}
+  .cd-row{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--noir2)}
+  .cd-badge{flex:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt2)}
+  .cd-badge.ok{background:rgba(62,233,164,.12);border-color:rgba(62,233,164,.3);color:var(--pos)}
+  .cd-badge.warn{background:rgba(255,207,109,.12);border-color:rgba(255,207,109,.28);color:var(--warn)}
+  .cd-badge.ko{background:rgba(255,107,125,.12);border-color:rgba(255,107,125,.3);color:#ff8f9e}
+  .cd-badge.draft{background:var(--glass);border-color:var(--line-2);color:var(--txt2)}
+  .cd-m{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2}
+  .cd-n{font-weight:600;font-size:13px}
+  .cd-sub{font-size:11px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cd-amt{flex:none;font-family:'Inter Tight';font-weight:700;font-size:12.5px;white-space:nowrap}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);z-index:200;background:var(--noir3);border:1px solid var(--line-2);color:var(--txt);padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.24s}
   .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -189,6 +206,10 @@
               <div class="field col-2"><label for="f-notes">Notes internes</label><textarea id="f-notes" placeholder="Informations utiles sur ce client."></textarea></div>
             </div>
           </div>
+          <div class="card" id="cDocsCard" hidden>
+            <div class="sec-t">Suivi de facturation</div>
+            <div class="cdocs" id="cDocs"></div>
+          </div>
           <div class="fc-actions">
             <button class="btn primary" id="btnSave" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Enregistrer</button>
             <button class="btn" id="btnFact" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg> Nouvelle facture</button>
@@ -225,16 +246,51 @@
     Object.keys(vatMap).forEach(function(r){ if(!d.vatExempt&&!d.autoliq) vat+=vatMap[r]*factor*Number(r)/100; });
     return net+vat;
   }
+  var PAYABLE={facture:1, situation:1, dgd:1, acompte:1};
   function clientStats(name){
-    var k=keyOf(name), fact=0, docs=0;
+    var k=keyOf(name), fact=0, recu=0, list=[];
     loadDocs().forEach(function(d){
       if(keyOf(d.client&&d.client.name)!==k) return;
-      docs++;
-      if(d.kind==='devis'||d.kind==='commande'||d.kind==='livraison') return;
-      if(d.kind==='avoir'){ fact-=computeTTC(d); } else { fact+=computeTTC(d); }
+      var ttc=computeTTC(d);
+      var paid=0; (d.payments||[]).forEach(function(p){ paid+=Number(p.amount)||0; });
+      if(d.kind==='avoir'){ fact-=ttc; }
+      else if(PAYABLE[d.kind]){ fact+=ttc; recu+=paid; }
+      list.push({d:d, ttc:ttc, paid:paid});
     });
-    return {fact:fact, docs:docs};
+    // Tri : plus récent d'abord (date d'émission, sinon date du document).
+    list.sort(function(a,b){ return String(b.d.emittedAt||b.d.date||'').localeCompare(String(a.d.emittedAt||a.d.date||'')); });
+    return {fact:fact, recu:recu, reste:Math.max(0,fact-recu), docs:list.length, list:list};
   }
+  var KIND_LABEL={facture:'Facture', devis:'Devis', avoir:'Avoir', situation:'Situation', dgd:'DGD', acompte:'Acompte', commande:'Commande', livraison:'Livraison'};
+  function docState(d, ttc, paid){
+    if(d.kind==='devis') return {t:'Devis', c:''};
+    if(d.kind==='avoir') return {t:'Avoir', c:'ko'};
+    if(!d.emitted) return {t:'Brouillon', c:'draft'};
+    if(PAYABLE[d.kind]){
+      if(paid>=ttc-0.005 && ttc>0) return {t:'Payée', c:'ok'};
+      if(paid>0) return {t:'Partiel', c:'warn'};
+      if(d.sentAt) return {t:'Envoyée', c:'warn'};
+      return {t:'Émise', c:'warn'};
+    }
+    return {t:'Émise', c:''};
+  }
+  function renderClientDocs(name){
+    var card=document.getElementById('cDocsCard'), box=document.getElementById('cDocs');
+    var s=clientStats(name);
+    if(!s.list.length){ card.hidden=false; box.innerHTML='<p class="cd-empty">Aucun document pour ce client. Utilisez « Nouvelle facture » pour démarrer.</p>'; return; }
+    card.hidden=false;
+    box.innerHTML=s.list.map(function(r){
+      var d=r.d, stt=docState(d, r.ttc, r.paid);
+      var meta=(KIND_LABEL[d.kind]||d.kind)+' · '+(d.number||'—')+(d.date?' · '+fmtDate(d.date):'');
+      var right=(d.kind==='devis'||d.kind==='commande'||d.kind==='livraison')
+        ? euro.format(r.ttc)
+        : euro.format(r.paid)+' / '+euro.format(r.ttc);
+      return '<div class="cd-row"><span class="cd-badge '+stt.c+'">'+stt.t+'</span>'+
+        '<span class="cd-m"><span class="cd-n">'+esc(d.number||'—')+'</span><span class="cd-sub">'+esc(meta)+'</span></span>'+
+        '<span class="cd-amt">'+right+'</span></div>';
+    }).join('');
+  }
+  function fmtDate(iso){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso||'')); return m?(m[3]+'/'+m[2]+'/'+m[1]):''; }
 
   function renderList(){
     var list=loadClients().slice().sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||'')); });
@@ -250,9 +306,12 @@
     if(!shown.length){ box.innerHTML='<div class="cl-empty"><p>Aucun client ne correspond à « '+esc(query)+' ».</p></div>'; return; }
     box.innerHTML=shown.map(function(c){
       var sub=c.email||c.siret||(c.addr||'').split('\n')[0]||'—';
+      var s=clientStats(c.name);
+      var amt=s.docs? '<span class="cl-amt'+(s.reste>0.005?' due':'')+'">'+euro.format(s.recu)+(s.reste>0.005?'<small>reste '+euro.format(s.reste)+'</small>':'<small>reçu</small>')+'</span>' : '';
       return '<button class="cl-item'+(current&&current.id===c.id?' active':'')+'" data-id="'+esc(c.id)+'">'+
         '<span class="av">'+esc((c.name||'?')[0]||'?')+'</span>'+
         '<span class="m"><span class="nm">'+esc(c.name||'Sans nom')+'</span><span class="sub">'+esc(sub)+'</span></span>'+
+        amt+
       '</button>';
     }).join('');
   }
@@ -293,11 +352,14 @@
     document.getElementById('btnDelete').hidden=isNew;
     document.getElementById('btnFact').hidden=isNew;
     var st=document.getElementById('fcStats');
-    if(isNew){ st.hidden=true; }
+    if(isNew){ st.hidden=true; document.getElementById('cDocsCard').hidden=true; }
     else{
       var s=clientStats(c.name); st.hidden=false;
       st.innerHTML='<div class="stat"><div class="sv">'+s.docs+'</div><div class="sl">Documents</div></div>'+
-        '<div class="stat pos"><div class="sv">'+euro.format(s.fact)+'</div><div class="sl">Facturé (TTC)</div></div>';
+        '<div class="stat"><div class="sv">'+euro.format(s.fact)+'</div><div class="sl">Facturé (TTC)</div></div>'+
+        '<div class="stat pos"><div class="sv">'+euro.format(s.recu)+'</div><div class="sl">Reçu</div></div>'+
+        '<div class="stat'+(s.reste>0.005?' due':'')+'"><div class="sv">'+euro.format(s.reste)+'</div><div class="sl">Reste dû</div></div>';
+      renderClientDocs(c.name);
     }
     renderList();
   }
