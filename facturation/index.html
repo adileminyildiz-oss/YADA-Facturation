@@ -228,6 +228,32 @@
   .sign-pad-wrap{position:relative;border:1px dashed var(--line-2);border-radius:12px;background:#fbfcff;overflow:hidden}
   #signPad{display:block;width:100%;height:200px;touch-action:none;cursor:crosshair}
   .sign-placeholder{position:absolute;inset:0;display:grid;place-items:center;color:#aab;font-size:14px;pointer-events:none}
+  /* Contrôle avant émission (IA) */
+  .chk-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(4,5,11,.72);backdrop-filter:blur(6px);padding:18px}
+  .chk-modal[hidden]{display:none}
+  .chk-card{width:100%;max-width:540px;max-height:90vh;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(15,19,32,.98),rgba(9,11,20,.99));
+    border:1px solid var(--line-2);border-radius:16px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .chk-head{display:flex;align-items:center;gap:10px;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+  .chk-head h3{font-family:'Inter Tight';font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px}
+  .chk-head .ic{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;background:rgba(150,168,255,.12);border:1px solid var(--line-2);color:var(--peri)}
+  .chk-head .ic svg{width:16px;height:16px}
+  .chk-x{margin-left:auto;width:32px;height:32px;flex:none;border-radius:9px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+  .chk-x svg{width:15px;height:15px}
+  .chk-body{padding:16px 20px;overflow-y:auto}
+  .chk-sum{font-size:13px;line-height:1.5;padding:10px 12px;border-radius:10px;margin-bottom:12px;background:var(--glass);border:1px solid var(--line-2)}
+  .chk-sum.ok{background:rgba(62,233,164,.1);border-color:rgba(62,233,164,.28);color:var(--pos)}
+  .chk-sum.ko{background:rgba(255,107,125,.1);border-color:rgba(255,107,125,.3);color:var(--danger)}
+  .chk-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+  .chk-item:first-child{border-top:none}
+  .chk-tag{flex:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-top:1px}
+  .chk-tag.bloquant{background:rgba(255,107,125,.14);color:var(--danger);border:1px solid rgba(255,107,125,.3)}
+  .chk-tag.attention{background:rgba(255,207,109,.12);color:#f0c072;border:1px solid rgba(255,207,109,.28)}
+  .chk-tag.info{background:rgba(150,168,255,.12);color:var(--peri);border:1px solid var(--line-2)}
+  .chk-item .msg{font-size:12.5px;line-height:1.5;color:var(--txt)}
+  .chk-loading{display:flex;align-items:center;gap:10px;color:var(--txt2);font-size:13px;padding:16px 4px}
+  .chk-loading .sp{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--peri);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .chk-foot{flex:none;display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line)}
   .sign-actions{display:flex;align-items:center;gap:8px;margin-top:14px}
 
   .row-split{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
@@ -381,6 +407,7 @@
     <button class="btn btn-ghost btn-sm" id="acompteBtn" onclick="createAcompteFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Facture d'acompte</button>
     <button class="btn btn-ghost btn-sm" id="signBtn" onclick="openSignModal()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21s3-1 5-3 9-9 9-9M14 4l6 6M2 21l4-1"/></svg> Signer (accord)</button>
     <button class="btn btn-ghost btn-sm" id="recurBtn" onclick="generateNextRecurrence()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg> Générer l'échéance</button>
+    <button class="btn btn-ghost btn-sm" id="checkBtn" onclick="aiPreEmitCheck()" title="Contrôle IA des mentions et de la cohérence avant émission"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="m9 19 2 2 4-4"/></svg> Vérifier (IA)</button>
     <button class="btn btn-emit btn-sm" id="emitBtn" onclick="emitDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Émettre</button>
     <button class="btn btn-pri btn-sm" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter PDF</button>
   </div>
@@ -659,6 +686,20 @@
       <span style="flex:1"></span>
       <button class="btn btn-ghost btn-sm" type="button" onclick="closeSignModal()">Annuler</button>
       <button class="btn btn-emit btn-sm" type="button" onclick="confirmSignature()">Valider l'accord</button>
+    </div>
+  </div>
+</div>
+
+<div class="chk-modal no-print" id="chkModal" hidden>
+  <div class="chk-card">
+    <div class="chk-head">
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg></span> Contrôle avant émission</h3>
+      <button class="chk-x" type="button" id="chkX" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="chk-body" id="chkBody"></div>
+    <div class="chk-foot">
+      <button class="btn btn-ghost btn-sm" type="button" id="chkClose">Fermer</button>
+      <button class="btn btn-emit btn-sm" type="button" id="chkEmit">Émettre quand même</button>
     </div>
   </div>
 </div>
@@ -1505,6 +1546,60 @@ function emitDoc(){
   persist(); render(); applyLockUI();
   toast('Document émis · '+esc(state.number));
 }
+
+/* ============ IA ④ : contrôle avant émission ============ */
+function chkDocPayload(){
+  const s=state;
+  const lines=(s.lines||[]).map(function(l){ return {desc:l.desc||'',qty:Number(l.qty)||0,pu:Number(l.pu)||0,vat:Number(l.vat)||0,ht:lineHT(l)}; });
+  return {
+    kind:s.kind, number:s.number||'', date:s.date||'', dueDate:s.due||'',
+    emit:{ name:(s.emit&&s.emit.name)||'', siret:(s.emit&&s.emit.siret)||'', tva:(s.emit&&s.emit.tva)||'', addr:(s.emit&&s.emit.addr)||'', email:(s.emit&&s.emit.email)||'' },
+    client:{ name:(s.client&&s.client.name)||'', addr:(s.client&&s.client.addr)||'', siret:(s.client&&s.client.siret)||'', email:(s.client&&s.client.email)||'' },
+    lines:lines, currency:s.currency||'EUR', vatExempt:!!s.vatExempt, autoliq:!!s.autoliq,
+    discount:s.discount||0, discountType:s.discountType||'pct', chantier:s.chantier||'',
+    retenue:(s.retenue&&s.retenue.active)?{pct:s.retenue.pct}:null, terms:s.terms||''
+  };
+}
+function chkOpen(){ document.getElementById('chkModal').hidden=false; }
+function chkClose(){ document.getElementById('chkModal').hidden=true; }
+function chkRender(report){
+  const body=document.getElementById('chkBody');
+  const issues=(report.issues||[]).slice().sort(function(a,b){ var o={bloquant:0,attention:1,info:2}; var av=(a.severity in o)?o[a.severity]:3, bv=(b.severity in o)?o[b.severity]:3; return av-bv; });
+  const blk=issues.filter(function(i){return i.severity==='bloquant';}).length;
+  var html='';
+  html+='<div class="chk-sum '+(blk?'ko':(issues.length?'':'ok'))+'">'+esc(report.summary||(issues.length?'Vérifications à examiner.':'Aucune anomalie détectée.'))+'</div>';
+  if(!issues.length){ html+='<div class="chk-item"><span class="chk-tag info">OK</span><span class="msg">La facture semble complète et cohérente. Relisez tout de même avant l’émission définitive.</span></div>'; }
+  issues.forEach(function(i){
+    var sev=(['bloquant','attention','info'].indexOf(i.severity)>=0)?i.severity:'info';
+    html+='<div class="chk-item"><span class="chk-tag '+sev+'">'+sev+'</span><span class="msg">'+esc(i.message||'')+'</span></div>';
+  });
+  body.innerHTML=html;
+  document.getElementById('chkEmit').textContent = blk ? 'Émettre malgré les alertes' : 'Émettre';
+}
+async function aiPreEmitCheck(){
+  if(state.emitted){ toast('Document déjà émis.'); return; }
+  const miss=emitRequirements();
+  const body=document.getElementById('chkBody');
+  chkOpen();
+  body.innerHTML='<div class="chk-loading"><span class="sp"></span> L’assistant vérifie la facture…</div>';
+  // Contrôles locaux d'abord (immédiats)
+  const baseIssues=miss.map(function(m){ return {severity:'bloquant', message:'Information obligatoire manquante : '+m+'.'}; });
+  try{
+    const r=await CLOUD.ai('pre_emit_check', { doc: chkDocPayload() });
+    var issues=baseIssues.concat(Array.isArray(r.issues)?r.issues:[]);
+    chkRender({ ok:r.ok!==false && !baseIssues.length, issues:issues, summary:r.summary });
+  }catch(e){
+    if(e && e.notConfigured){
+      chkRender({ ok:!baseIssues.length, issues:baseIssues, summary:baseIssues.length?'Contrôles de base — l’IA n’est pas activée.':'Contrôles de base OK — l’assistant IA n’est pas activé sur votre espace.' });
+    }else{
+      chkRender({ ok:!baseIssues.length, issues:baseIssues, summary:'Contrôle IA indisponible ('+String(e&&e.message||e)+'). Seuls les contrôles de base ont été appliqués.' });
+    }
+  }
+}
+document.getElementById('chkX').addEventListener('click', chkClose);
+document.getElementById('chkClose').addEventListener('click', chkClose);
+document.getElementById('chkModal').addEventListener('click', function(e){ if(e.target===this) chkClose(); });
+document.getElementById('chkEmit').addEventListener('click', function(){ chkClose(); emitDoc(); });
 /* Crée un avoir en brouillon à partir de la facture émise en cours. */
 function createAvoirFromCurrent(){
   if(dirty) persist();
