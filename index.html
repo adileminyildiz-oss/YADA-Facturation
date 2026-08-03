@@ -186,6 +186,8 @@
     <input id="pwNew2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
     <button class="submit" type="submit" id="pwSubmit">Enregistrer</button>
     <div class="authmsg" id="pwMsg" role="status"></div>
+    <button type="button" id="exportDataBtn" style="width:100%;margin-top:14px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt);font-family:inherit;font-weight:600;font-size:13px;padding:10px;border-radius:11px;cursor:pointer">Exporter mes données (JSON)</button>
+    <p style="text-align:center;margin-top:8px;font-size:10.5px;color:var(--txt2)">Télécharge l'ensemble de vos données (droit à la portabilité, RGPD).</p>
     <div style="border-top:1px solid var(--line);margin:18px 0 0"></div>
     <button type="button" id="delAccountBtn" style="width:100%;margin-top:14px;background:rgba(255,107,125,.08);border:1px solid rgba(255,107,125,.28);color:var(--danger);font-family:inherit;font-weight:600;font-size:13px;padding:10px;border-radius:11px;cursor:pointer">Supprimer mon compte</button>
     <p style="text-align:center;margin-top:8px;font-size:10.5px;color:var(--txt2)">Suppression définitive du compte et de toutes ses données (droit à l'effacement, RGPD).</p>
@@ -420,6 +422,27 @@
       setTimeout(closePw, 1200);
     }catch(err){ pwMsg('err',(err&&err.message)||'Mise à jour impossible.'); }
     finally{ btn.disabled=false; }
+  });
+  // Export des données du compte (droit à la portabilité, RGPD)
+  document.getElementById('exportDataBtn').addEventListener('click', function(){
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+    var email=(document.getElementById('userEmail')||{}).textContent||'';
+    var data={
+      export:'AEM-CONSEIL — données du compte',
+      compte:email,
+      exporte_le:new Date().toISOString(),
+      documents:ls('aem_fact_docs')||[],
+      emetteur:ls('aem_fact_emit'),
+      numerotation:ls('aem_fact_seq'),
+      clients:ls('aem_fact_clients')||[],
+      sous_traitants:ls('aem_fact_soustraitants')||[],
+      accuses_reception:ls('aem_fact_acks')||[]
+    };
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='mes-donnees-aem-conseil.json'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
+    pwMsg('ok','Export téléchargé ('+(data.documents.length)+' document'+(data.documents.length>1?'s':'')+').');
   });
   // Suppression du compte (droit à l'effacement, RGPD)
   document.getElementById('delAccountBtn').addEventListener('click', async function(){
