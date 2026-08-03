@@ -142,6 +142,38 @@
     .mtop{display:flex}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* Assistant IA */
+  .ai-fab{position:fixed;right:22px;bottom:22px;z-index:150;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));color:#fff;display:grid;place-items:center;
+    box-shadow:0 10px 28px rgba(43,69,255,.45);transition:transform .18s, box-shadow .18s}
+  .ai-fab:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(43,69,255,.55)}
+  .ai-fab svg{width:24px;height:24px}
+  .ai-fab.hide{display:none}
+  .ai-panel{position:fixed;right:22px;bottom:22px;z-index:151;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100dvh - 44px));
+    display:flex;flex-direction:column;background:var(--noir3,#0b0e1a);border:1px solid var(--line-2);border-radius:16px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .ai-panel[hidden]{display:none}
+  .ai-ph{flex:none;display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(43,69,255,.16),transparent)}
+  .ai-ph-t{display:inline-flex;align-items:center;gap:8px;font-family:'Inter Tight',sans-serif;font-weight:700;font-size:14px}
+  .ai-ph-t svg{width:16px;height:16px;color:var(--peri)}
+  .ai-ph-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+  .ai-ph-x svg{width:15px;height:15px}
+  .ai-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .ai-b{max-width:86%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+  .ai-b.me{align-self:flex-end;background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));color:#fff;border-bottom-right-radius:4px}
+  .ai-b.bot{align-self:flex-start;background:var(--glass-2);border:1px solid var(--line-2);color:var(--txt);border-bottom-left-radius:4px}
+  .ai-b.warn{align-self:flex-start;background:rgba(255,207,109,.1);border:1px solid rgba(255,207,109,.28);color:#f0c072}
+  .ai-b.typing{color:var(--txt2);font-style:italic}
+  .ai-hint{align-self:center;text-align:center;color:var(--txt2);font-size:12px;line-height:1.5;padding:8px 12px;max-width:92%}
+  .ai-compose{flex:none;display:flex;gap:8px;padding:11px;border-top:1px solid var(--line);align-items:flex-end}
+  .ai-compose textarea{flex:1;resize:none;max-height:120px;font:inherit;font-size:13px;line-height:1.4;padding:9px 11px;border:1px solid var(--line-2);border-radius:11px;background:var(--glass);color:var(--txt)}
+  .ai-compose textarea:focus{outline:none;border-color:var(--peri)}
+  .ai-send{flex:none;width:40px;height:40px;border-radius:11px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));color:#fff;display:grid;place-items:center}
+  .ai-send:disabled{opacity:.55;cursor:progress}
+  .ai-send svg{width:17px;height:17px}
+  @media(max-width:560px){ .ai-panel{right:8px;bottom:8px;height:calc(100dvh - 16px)} .ai-fab{right:14px;bottom:14px} }
 </style>
 </head>
 <body>
@@ -289,6 +321,22 @@
       <iframe class="module" id="moduleFrame" title="Module" src="about:blank"></iframe>
     </div>
   </div>
+
+  <!-- Assistant IA -->
+  <button class="ai-fab" id="aiFab" type="button" aria-label="Assistant" title="Assistant">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg>
+  </button>
+  <section class="ai-panel" id="aiPanel" hidden aria-label="Assistant IA">
+    <header class="ai-ph">
+      <span class="ai-ph-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg> Assistant</span>
+      <button class="ai-ph-x" id="aiPanelX" type="button" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="ai-log" id="aiLog"></div>
+    <form class="ai-compose" id="aiForm">
+      <textarea id="aiQ" rows="1" placeholder="Posez votre question (facturation, BTP, e-facture…)"></textarea>
+      <button class="ai-send" id="aiSend" type="submit" aria-label="Envoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </form>
+  </section>
 </div>
 <div class="ov" id="ov" onclick="toggleNav(false)"></div>
 <div class="toast" id="toast"><span class="d"></span><span id="toastMsg"></span></div>
@@ -571,6 +619,50 @@
     setTimeout(function(){ toast('Merci ! Votre abonnement est en cours d’activation.'); }, 1000);
     try{ history.replaceState(null,'',location.pathname+location.hash); }catch(e){}
   }
+
+  /* ---- Assistant IA (③) ---- */
+  (function(){
+    var fab=document.getElementById('aiFab'), panel=document.getElementById('aiPanel'),
+        log=document.getElementById('aiLog'), form=document.getElementById('aiForm'),
+        input=document.getElementById('aiQ'), send=document.getElementById('aiSend');
+    if(!fab) return;
+    var convo=[], greeted=false;
+    function bubble(text, cls){ var d=document.createElement('div'); d.className='ai-b '+(cls||'bot'); d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+    function hint(text){ var d=document.createElement('div'); d.className='ai-hint'; d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; }
+    function openPanel(){
+      panel.hidden=false; fab.classList.add('hide');
+      if(!greeted){ greeted=true; hint('Assistant AEM-CONSEIL — posez vos questions sur la facturation, le BTP (situations, DGD, retenue, sous-traitance), la TVA ou l’e-facture. Les réponses sont indicatives, non contractuelles.'); }
+      setTimeout(function(){ input.focus(); }, 60);
+    }
+    function closePanel(){ panel.hidden=true; fab.classList.remove('hide'); }
+    fab.addEventListener('click', openPanel);
+    document.getElementById('aiPanelX').addEventListener('click', closePanel);
+    input.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(120,this.scrollHeight)+'px'; });
+    input.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
+    async function ask(q){
+      bubble(q, 'me'); convo.push({role:'user', text:q});
+      var typing=bubble('L’assistant réfléchit…', 'bot typing');
+      send.disabled=true;
+      try{
+        if(!sb) throw new Error('Connexion requise.');
+        var ctx=convo.slice(-6,-1).map(function(m){ return (m.role==='user'?'Q: ':'R: ')+m.text; }).join('\n');
+        var r=await sb.functions.invoke('ai-assistant', { body:{ task:'assistant', text:q, context:ctx } });
+        if(r && r.error){ var msg='Assistant indisponible.'; try{ var j=await r.error.context.json(); if(j&&j.error) msg=j.error; }catch(e){} var er=new Error(msg); er.nc=/non configur/i.test(msg); throw er; }
+        if(r && r.data && r.data.error) throw new Error(r.data.error);
+        var ans=(r && r.data && r.data.answer) || 'Je n’ai pas de réponse pour le moment.';
+        typing.remove(); bubble(ans, 'bot'); convo.push({role:'bot', text:ans});
+      }catch(e){
+        typing.remove();
+        if(e && e.nc) bubble('L’assistant IA n’est pas encore activé sur votre espace. Contactez-nous pour l’activer (clé ANTHROPIC_API_KEY côté serveur).', 'warn');
+        else bubble('Assistant momentanément indisponible : '+String(e&&e.message||e), 'warn');
+      }finally{ send.disabled=false; input.focus(); }
+    }
+    form.addEventListener('submit', function(e){
+      e.preventDefault(); var q=(input.value||'').trim(); if(!q) return;
+      input.value=''; input.style.height='auto'; ask(q);
+    });
+  })();
+
   initAuth();
 </script>
 <script>
