@@ -129,6 +129,16 @@
   .badge.ko{background:rgba(255,107,125,.12);border:1px solid rgba(255,107,125,.3);color:#ff8f9e}
   .st-sel{font-size:11px;font-weight:600;color:var(--txt);background:var(--glass);border:1px solid var(--line-2);
     border-radius:8px;padding:4px 7px;cursor:pointer;font-family:inherit}
+  .recv-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .btn-relever{display:inline-flex;align-items:center;gap:8px;font-family:inherit;font-size:13px;font-weight:600;color:#0b1020;
+    background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));border:none;border-radius:11px;padding:10px 16px;cursor:pointer}
+  .btn-relever svg{width:16px;height:16px}
+  .btn-relever:hover{filter:brightness(1.06)}
+  .btn-relever:disabled{opacity:.6;cursor:progress}
+  .btn-relever.busy svg{animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .recv-hint{font-size:12px;color:var(--txt2)}
+  .iconbtn.busy svg{animation:spin .8s linear infinite}
   .ready{margin-bottom:18px;border:1px solid var(--line-2);border-radius:16px;background:linear-gradient(180deg,rgba(11,14,26,.55),rgba(7,9,18,.4));overflow:hidden}
   .ready-hd{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
   .ready-hd .rico{width:40px;height:40px;flex:none;border-radius:11px;display:grid;place-items:center}
@@ -230,6 +240,10 @@
 
   <!-- RECEVOIR -->
   <div class="panel" id="panel-receive" hidden>
+    <div class="recv-actions">
+      <button class="btn-relever" id="relever" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg> Relever ma PDP</button>
+      <span class="recv-hint" id="releverHint">Récupère les factures mises à votre disposition par votre plateforme.</span>
+    </div>
     <div class="drop" id="drop">
       <div class="di"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg></div>
       <h3>Importer une facture électronique reçue</h3>
@@ -661,6 +675,15 @@
     {k:'paid',      t:'Encaissée', c:'ok'}
   ];
   function lifecycleOf(k){ for(var i=0;i<LIFECYCLE.length;i++) if(LIFECYCLE[i].k===k) return LIFECYCLE[i]; return LIFECYCLE[0]; }
+  /* Statuts renvoyés par le DESTINATAIRE (obligation « réception » de la réforme). */
+  var INBOX_LIFECYCLE=[
+    {k:'received', t:'Mise à disposition', c:'warn'},
+    {k:'approved', t:'Approuvée', c:'ok'},
+    {k:'disputed', t:'En litige', c:'warn'},
+    {k:'refused',  t:'Refusée', c:'ko'},
+    {k:'paid',     t:'Encaissée', c:'ok'}
+  ];
+  function inboxStatusOf(k){ for(var i=0;i<INBOX_LIFECYCLE.length;i++) if(INBOX_LIFECYCLE[i].k===k) return INBOX_LIFECYCLE[i]; return INBOX_LIFECYCLE[0]; }
 
   /* Panneau « êtes-vous couvert ? » — différenciateur : la réforme angoisse, on rassure clairement. */
   var OK_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
@@ -706,6 +729,7 @@
         '<div class="ir"><span class="badge '+cur.c+'">'+esc(cur.t)+'</span>'+
         '<select class="st-sel" data-st="'+esc(o.docId)+'" title="Statut du cycle de vie">'+opts+'</select>'+
         '<button class="iconbtn" title="Transmettre à la PDP" data-tx="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>'+
+        (o.pdpId?'<button class="iconbtn" title="Actualiser le statut depuis la PDP" data-refresh="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/></svg></button>':'')+
         '<button class="iconbtn" title="Télécharger le XML" data-dl="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>'+
         '<button class="iconbtn" title="Retirer" data-rm="'+esc(o.docId)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'+
         '</div></div>';
@@ -717,9 +741,10 @@
     if(o){ o.status=sel.value; save(LS_OUT,out); renderOutbox(); toast('Statut : '+lifecycleOf(sel.value).t); }
   });
   $('outbox').addEventListener('click', function(e){
-    var dl=e.target.closest('[data-dl]'), rm=e.target.closest('[data-rm]'), tx=e.target.closest('[data-tx]');
+    var dl=e.target.closest('[data-dl]'), rm=e.target.closest('[data-rm]'), tx=e.target.closest('[data-tx]'), rf=e.target.closest('[data-refresh]');
     var out=load(LS_OUT,[]);
     if(tx){ transmitOutbox(tx.dataset.tx, tx); return; }
+    if(rf){ refreshOutboxStatus(rf.dataset.refresh, rf); return; }
     if(dl){ var o=out.find(function(x){return x.docId===dl.dataset.dl;}); if(o) download('facturx-'+(o.number||'facture').replace(/[^\w-]+/g,'_')+'.xml', o.xml); }
     if(rm){ save(LS_OUT, out.filter(function(x){return x.docId!==rm.dataset.rm;})); renderOutbox(); toast('Retirée de la file'); }
   });
@@ -769,11 +794,21 @@
     } else { throw new Error('Format non reconnu ('+ln+')'); }
     return out;
   }
-  function ingest(xmlStr, filename){
+  function ingest(xmlStr, filename, extra){
     var p=parseInvoiceXml(xmlStr, filename);
     var inbox=load(LS_IN,[]);
-    inbox.unshift({id:'in_'+Date.now().toString(36), file:filename, parsed:p, xml:xmlStr, ts:Date.now()});
-    save(LS_IN,inbox); renderInbox(); toast('Facture reçue importée : '+(p.number||filename));
+    var extId=(extra&&extra.extId)||'';
+    // Anti-doublon : même identifiant PDP, ou même n° + émetteur.
+    var dup=inbox.some(function(x){
+      if(extId && x.extId===extId) return true;
+      var xp=x.parsed||{}; return xp.number && p.number && xp.number===p.number && (xp.seller||'')===(p.seller||'');
+    });
+    if(dup) return false;
+    inbox.unshift({id:'in_'+Date.now().toString(36)+Math.round(Math.random()*1e4).toString(36), file:filename, parsed:p, xml:xmlStr,
+      extId:extId, status:(extra&&extra.status)||'received', ts:Date.now()});
+    save(LS_IN,inbox); renderInbox();
+    if(!extra||!extra.silent) toast('Facture reçue importée : '+(p.number||filename));
+    return true;
   }
   function renderInbox(){
     var inbox=load(LS_IN,[]);
@@ -781,10 +816,14 @@
     if(!inbox.length){ $('inbox').innerHTML='<p class="empty">Aucune facture reçue pour le moment.</p>'; return; }
     $('inbox').innerHTML=inbox.map(function(x){
       var p=x.parsed||{};
+      var st=x.status||'received'; var cur=inboxStatusOf(st);
+      var opts=INBOX_LIFECYCLE.map(function(l){ return '<option value="'+l.k+'"'+(l.k===st?' selected':'')+'>'+l.t+'</option>'; }).join('');
       return '<div class="item"><span class="ik"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span>'+
         '<div class="im"><div class="in">'+esc(p.number||x.file||'—')+' <span class="badge blue">'+esc(p.format||'?')+'</span></div>'+
         '<div class="id"><span>'+esc(p.seller||'Émetteur inconnu')+'</span><span>'+fmtDate(p.date)+'</span></div></div>'+
         '<div class="ir"><span class="amt">'+euro.format(p.ttc||0)+'</span>'+
+        '<span class="badge '+cur.c+'">'+esc(cur.t)+'</span>'+
+        '<select class="st-sel" data-instat="'+esc(x.id)+'" title="Statut renvoyé à l\'émetteur via la PDP">'+opts+'</select>'+
         '<button class="iconbtn" title="Télécharger le XML" data-dlin="'+esc(x.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>'+
         '<button class="iconbtn" title="Supprimer" data-rmin="'+esc(x.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>'+
         '</div></div>';
@@ -795,6 +834,38 @@
     var inbox=load(LS_IN,[]);
     if(dl){ var x=inbox.find(function(v){return v.id===dl.dataset.dlin;}); if(x) download(x.file||'facture.xml', x.xml); }
     if(rm){ save(LS_IN, inbox.filter(function(v){return v.id!==rm.dataset.rmin;})); renderInbox(); toast('Facture retirée'); }
+  });
+  $('inbox').addEventListener('change', function(e){
+    var sel=e.target.closest('[data-instat]'); if(!sel) return;
+    var id=sel.dataset.instat, newStat=sel.value;
+    var inbox=load(LS_IN,[]); var x=inbox.find(function(v){return v.id===id;}); if(!x) return;
+    x.status=newStat; save(LS_IN,inbox); renderInbox();
+    // Renvoie le statut à l'émetteur via la PDP (obligation « réception »).
+    if(x.extId){
+      callFn('pdp-inbox',{action:'set_status', extId:x.extId, status:newStat}).then(function(){
+        toast('Statut renvoyé à l\'émetteur : '+inboxStatusOf(newStat).t);
+      }, function(err){
+        if(/non configur/i.test(err&&err.message||'')) toast('Statut enregistré (PDP non branchée — non transmis).', false);
+        else toast('Statut enregistré ; envoi PDP échoué : '+(err&&err.message||''), false);
+      });
+    } else {
+      toast('Statut enregistré : '+inboxStatusOf(newStat).t);
+    }
+  });
+  /* Relève des factures reçues depuis la PDP (flux entrant). */
+  $('relever').addEventListener('click', function(){
+    var btn=this; btn.disabled=true; btn.classList.add('busy');
+    callFn('pdp-inbox',{action:'list'}).then(function(res){
+      var list=(res&&res.invoices)||[]; var added=0;
+      list.forEach(function(inv){
+        if(!inv||!inv.xml) return;
+        if(ingest(inv.xml, (inv.number||'facture')+'.xml', {extId:inv.extId, status:inv.status||'received', silent:true})) added++;
+      });
+      toast(added?('Relève PDP : '+added+' nouvelle'+(added>1?'s':'')+' facture'+(added>1?'s':'')):'Relève PDP : aucune nouvelle facture.');
+    }, function(err){
+      if(/non configur/i.test(err&&err.message||'')) toast('PDP non configurée. Importez vos factures manuellement pour le moment.', false);
+      else toast('Relève impossible : '+(err&&err.message||''), false);
+    }).then(function(){ btn.disabled=false; btn.classList.remove('busy'); });
   });
 
   /* ============ PDP ============ */
@@ -839,10 +910,23 @@
     if(btn){ btn.disabled=true; btn.classList.add('busy'); }
     try{
       var res=await callFn('pdp-transmit',{mode:'emit', number:o.number, xml:o.xml});
-      o.status=res&&res.status?res.status:'deposited'; save(LS_OUT,out); renderOutbox();
+      o.status=res&&res.status?res.status:'deposited'; if(res&&res.id) o.pdpId=res.id; save(LS_OUT,out); renderOutbox();
       toast('Transmise à la PDP · '+lifecycleOf(o.status).t);
     }catch(err){
       toast(err.message||'Transmission impossible', false);
+      if(btn){ btn.disabled=false; btn.classList.remove('busy'); }
+    }
+  }
+  async function refreshOutboxStatus(docId, btn){
+    var out=load(LS_OUT,[]); var o=out.find(function(x){return x.docId===docId;}); if(!o||!o.pdpId) return;
+    if(btn){ btn.disabled=true; btn.classList.add('busy'); }
+    try{
+      var res=await callFn('pdp-inbox',{action:'get_status', extId:o.pdpId});
+      if(res&&res.status){ o.status=res.status; save(LS_OUT,out); renderOutbox(); toast('Statut PDP : '+lifecycleOf(o.status).t); }
+      else toast('Statut inchangé.');
+    }catch(err){
+      if(/non configur/i.test(err&&err.message||'')) toast('PDP non configurée.', false);
+      else toast('Statut indisponible : '+(err&&err.message||''), false);
       if(btn){ btn.disabled=false; btn.classList.remove('busy'); }
     }
   }
