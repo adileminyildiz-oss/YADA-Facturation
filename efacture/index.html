@@ -158,6 +158,11 @@
   .note b{color:var(--txt)}
   .status-dot{width:8px;height:8px;border-radius:50%;flex:none}
   .status-dot.off{background:var(--txt2)} .status-dot.on{background:var(--pos)}
+  .stat{flex:1;min-width:150px;background:var(--noir2,rgba(255,255,255,.03));border:1px solid var(--line,rgba(150,168,255,.14));border-radius:12px;padding:11px 14px}
+  .stat .sv{font-family:'Inter Tight',sans-serif;font-weight:700;font-size:17px}
+  .stat .sl{font-size:11px;color:var(--txt2);margin-top:1px}
+  .ertable th{padding:6px 4px;border-bottom:1px solid var(--line,rgba(150,168,255,.14));font-weight:600}
+  .ertable td{padding:6px 4px;border-bottom:1px solid var(--line,rgba(150,168,255,.08))}
 
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);z-index:200;background:var(--noir3);border:1px solid var(--line-2);color:var(--txt);
     padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.24s;display:flex;align-items:center;gap:9px}
@@ -177,6 +182,7 @@
   <div class="tabs">
     <button class="tab active" data-tab="emit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Émettre</button>
     <button class="tab" data-tab="receive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg> Recevoir <span class="cnt" id="inboxCnt">0</span></button>
+    <button class="tab" data-tab="ereport"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg> e-reporting</button>
     <button class="tab" data-tab="pdp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> Réglages PDP</button>
   </div>
 
@@ -264,6 +270,20 @@
     </div>
   </div>
 
+  <!-- E-REPORTING -->
+  <div class="panel" id="panel-ereport" hidden>
+    <div class="card">
+      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg> e-reporting</h2>
+      <p class="sub">Transmission des données des opérations <b>non couvertes</b> par la facturation électronique : ventes aux particuliers (B2C), et données d'encaissement (paiements). À déclarer périodiquement à l'administration via votre PDP.</p>
+      <div class="row" style="align-items:flex-end;gap:12px">
+        <div style="flex:none;width:160px"><label for="erYear">Année</label><select id="erYear"></select></div>
+        <button class="btn primary" id="erExport" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter le e-reporting (CSV)</button>
+      </div>
+      <div id="erSummary" style="margin-top:16px"></div>
+    </div>
+    <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>Un client <b>sans SIREN/SIRET</b> est traité comme un <b>particulier (B2C)</b>. Les opérations internationales nécessitent un champ « pays » (à venir). La périodicité et le format exact de dépôt dépendent de votre <b>PDP</b>.</span></div>
+  </div>
+
   <div class="toast" id="toast"><span class="d"></span><span id="toastMsg"></span></div>
 
 <script>
@@ -295,7 +315,77 @@
   document.querySelector('.tabs').addEventListener('click', function(e){ var b=e.target.closest('.tab'); if(!b) return; setTab(b.dataset.tab); });
   function setTab(t){
     document.querySelectorAll('.tab').forEach(function(x){ x.classList.toggle('active', x.dataset.tab===t); });
-    ['emit','receive','pdp'].forEach(function(k){ $('panel-'+k).hidden = k!==t; });
+    ['emit','receive','pdp','ereport'].forEach(function(k){ $('panel-'+k).hidden = k!==t; });
+    if(t==='ereport') renderEreport();
+  }
+
+  /* ============ e-reporting ============ */
+  var MONTHS_FR=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+  function isB2C(d){ return !digits(d.client&&d.client.siret); }   // pas de SIREN/SIRET = particulier
+  function ereportData(year){
+    var all=load(LS_DOCS,[]), salesByMonth={}, payByMonth={}, sales=[], pays=[];
+    all.forEach(function(d){
+      if(['facture','situation','dgd','avoir'].indexOf(d.kind)<0) return;
+      var t=totals(d), sign=d.kind==='avoir'?-1:1;
+      if(isB2C(d)){
+        var m=/^(\d{4})-(\d{2})/.exec(d.date||'');
+        if(m && m[1]===year){
+          var mo=+m[2]-1; var b=salesByMonth[mo]||(salesByMonth[mo]={ht:0,tva:0,ttc:0,n:0});
+          b.ht+=sign*t.netHT; b.tva+=sign*t.totalVAT; b.ttc+=sign*t.ttc; b.n++;
+          sales.push({date:d.date, kind:d.kind, client:(d.client&&d.client.name)||'', number:d.number||'', ht:sign*t.netHT, tva:sign*t.totalVAT, ttc:sign*t.ttc});
+        }
+      }
+      (d.payments||[]).forEach(function(pmt){
+        var m=/^(\d{4})-(\d{2})/.exec(pmt.date||'');
+        if(m && m[1]===year){ var mo=+m[2]-1; payByMonth[mo]=(payByMonth[mo]||0)+(Number(pmt.amount)||0);
+          pays.push({date:pmt.date, client:(d.client&&d.client.name)||'', number:d.number||'', amount:Number(pmt.amount)||0}); }
+      });
+    });
+    return {salesByMonth:salesByMonth, payByMonth:payByMonth, sales:sales, pays:pays};
+  }
+  function fillYears(){
+    var sel=$('erYear'); if(!sel) return; var set={}, cur=String(new Date().getFullYear());
+    load(LS_DOCS,[]).forEach(function(d){ var m=/^(\d{4})/.exec(d.date||''); if(m) set[m[1]]=1; });
+    set[cur]=1;
+    var years=Object.keys(set).sort().reverse();
+    var prev=sel.value;
+    sel.innerHTML=years.map(function(y){ return '<option value="'+y+'">'+y+'</option>'; }).join('');
+    sel.value=(prev&&years.indexOf(prev)>=0)?prev:(years.indexOf(cur)>=0?cur:years[0]);
+  }
+  function renderEreport(){
+    fillYears();
+    var year=$('erYear').value||String(new Date().getFullYear());
+    var r=ereportData(year), box=$('erSummary');
+    var tHt=0,tTva=0,tTtc=0,tN=0,tPay=0;
+    for(var i=0;i<12;i++){ var b=r.salesByMonth[i]; if(b){ tHt+=b.ht; tTva+=b.tva; tTtc+=b.ttc; tN+=b.n; } tPay+=(r.payByMonth[i]||0); }
+    var rows='';
+    for(var i=0;i<12;i++){ var b=r.salesByMonth[i]||{ht:0,tva:0,ttc:0,n:0}; var pm=r.payByMonth[i]||0;
+      if(!b.n && !pm) continue;
+      rows+='<tr><td>'+MONTHS_FR[i]+'</td><td style="text-align:right">'+b.n+'</td><td style="text-align:right">'+euro.format(b.ht)+'</td><td style="text-align:right">'+euro.format(b.tva)+'</td><td style="text-align:right">'+euro.format(b.ttc)+'</td><td style="text-align:right">'+euro.format(pm)+'</td></tr>';
+    }
+    if(!rows) rows='<tr><td colspan="6" style="text-align:center;color:var(--txt2);padding:14px">Aucune opération à déclarer pour '+year+'.</td></tr>';
+    box.innerHTML=''+
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">'+
+        '<div class="stat"><div class="sv">'+euro.format(tTtc)+'</div><div class="sl">Ventes B2C TTC ('+tN+')</div></div>'+
+        '<div class="stat"><div class="sv">'+euro.format(tTva)+'</div><div class="sl">TVA B2C</div></div>'+
+        '<div class="stat"><div class="sv">'+euro.format(tPay)+'</div><div class="sl">Encaissements déclarés</div></div>'+
+      '</div>'+
+      '<table class="ertable" style="width:100%;border-collapse:collapse;font-size:13px">'+
+        '<thead><tr style="color:var(--txt2);text-align:left"><th style="padding:6px 4px">Mois</th><th style="text-align:right">Ventes B2C</th><th style="text-align:right">HT</th><th style="text-align:right">TVA</th><th style="text-align:right">TTC</th><th style="text-align:right">Encaissé</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody>'+
+      '</table>';
+  }
+  function csvCell(s){ s=String(s==null?'':s); return /[";\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s; }
+  function csvNum(n){ return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',','); }
+  function exportEreport(){
+    var year=$('erYear').value||String(new Date().getFullYear());
+    var r=ereportData(year);
+    var rows=['Nature;Date;Type;Client;Numéro;HT;TVA;TTC;Encaissement'];
+    r.sales.forEach(function(s){ rows.push(['Vente B2C', fmtDate(s.date), s.kind, s.client, s.number, csvNum(s.ht), csvNum(s.tva), csvNum(s.ttc), ''].map(csvCell).join(';')); });
+    r.pays.forEach(function(p){ rows.push(['Encaissement', fmtDate(p.date), '', p.client, p.number, '', '', '', csvNum(p.amount)].map(csvCell).join(';')); });
+    if(rows.length===1){ toast('Aucune opération à déclarer pour '+year+'.', false); return; }
+    download('e-reporting-'+year+'.csv', '﻿'+rows.join('\r\n'));
+    toast('e-reporting '+year+' exporté ('+(rows.length-1)+' ligne'+(rows.length-1>1?'s':'')+')');
   }
 
   /* ============ ÉMETTRE ============ */
@@ -310,6 +400,8 @@
     if(cur && docs.some(function(d){return d.id===cur;})) sel.value=cur;
   }
   $('pick').addEventListener('change', function(){ selectDoc(this.value); });
+  $('erYear').addEventListener('change', renderEreport);
+  $('erExport').addEventListener('click', exportEreport);
   function selectDoc(id){
     selected = docs.find(function(d){return d.id===id;}) || null;
     if(!selected){ $('emitForm').hidden=true; $('conform').innerHTML='<p class="empty">Sélectionnez une facture pour lancer la vérification.</p>'; $('emitActions').hidden=true; return; }
