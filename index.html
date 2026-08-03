@@ -401,7 +401,7 @@
     }
     IS_ADMIN=acc.admin; USER_PLAN = acc.plan || 'free';
     document.getElementById('admItem').hidden = !IS_ADMIN;
-    var planNames={free:'Aucune offre', essentiel:'Essentiel', pro:'Pro', premium:'Premium'};
+    var planNames={free:'Aucune offre', essentiel:'Facturation', pro:'Pro', premium:'Premium'};
     document.getElementById('planSub').textContent = IS_ADMIN ? 'Accès complet' : ((USER_PLAN&&USER_PLAN!=='free') ? 'Offre '+planNames[USER_PLAN] : 'Choisir une offre');
     applyLocks();
     if(acc.admin || acc.approved){ showApp(session); } else { showPending(session); }

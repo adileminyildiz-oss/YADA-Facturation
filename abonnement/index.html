@@ -68,6 +68,8 @@
   .plan .ptag{font-size:12px;color:var(--txt2);margin-top:2px;min-height:32px}
   .plan .price{margin:14px 0 4px;font-family:'Inter Tight';font-weight:700;font-size:32px;letter-spacing:-.02em}
   .plan .price span{font-size:13px;font-weight:500;color:var(--txt2)}
+  .plan .trial{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:var(--pos);background:rgba(62,233,164,.12);border:1px solid rgba(62,233,164,.3);border-radius:999px;padding:3px 10px;margin-bottom:4px}
+  .plan .trial svg{width:12px;height:12px}
   .plan ul{list-style:none;margin:16px 0;display:flex;flex-direction:column;gap:9px;flex:1}
   .plan li{display:flex;align-items:flex-start;gap:9px;font-size:13px;color:var(--txt)}
   .plan li.off{color:var(--txt2);opacity:.6}
@@ -112,14 +114,14 @@
   var sb=null; try{ if(window.supabase) sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true}}); }catch(e){}
 
   var PLANS=[
-    {id:'essentiel', name:'Essentiel', price:'14,99', tag:'Pour facturer vos ventes au quotidien.',
-     features:[['Factures de vente illimitées',1],['Aperçu A4 & export PDF',1],['Numérotation automatique par client',1],['Sauvegarde de vos documents',1],['Facturation électronique (Factur-X)',0],['Envois clients & relances',0]]},
+    {id:'essentiel', name:'Facturation', price:'24,99', trial:'1er mois offert', tag:'Facturer, suivre vos clients et vos fournisseurs.',
+     features:[['Factures & devis illimités',1],['Aperçu A4 & export PDF',1],['Suivi de facturation intégré',1],['Liste clients — montant reçu par client',1],['Liste fournisseurs — montant dépensé',1],['Facturation électronique (Factur-X)',0]]},
     {id:'pro', name:'Pro', price:'44,99', tag:'La facturation électronique conforme à la réforme.', featured:true,
-     features:[['Tout de l\'offre Essentiel',1],['Facturation électronique (Factur-X)',1],['Émission & réception EN 16931',1],['Contrôle de conformité',1],['Prêt pour le raccordement PDP',1],['Envois clients & relances',0]]},
+     features:[['Tout de l\'offre Facturation',1],['Facturation électronique (Factur-X)',1],['Émission & réception EN 16931',1],['Contrôle de conformité',1],['Prêt pour le raccordement PDP',1],['Envois clients & relances',0]]},
     {id:'premium', name:'Premium', price:'149,99', tag:'La gestion client complète, envois et relances.',
      features:[['Tout de l\'offre Pro',1],['Dossiers clients (Mes documents)',1],['Envois des factures aux clients',1],['Relances par e-mail automatiques',1],['Suivi des règlements',1],['Support prioritaire',1]]}
   ];
-  var PLAN_NAMES={free:'Aucune',essentiel:'Essentiel',pro:'Pro',premium:'Premium'};
+  var PLAN_NAMES={free:'Aucune',essentiel:'Facturation',pro:'Pro',premium:'Premium'};
   var currentPlan='free', isAdmin=false;
 
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
@@ -139,6 +141,7 @@
         (isCur?'<span class="curtag">Actuelle</span>':'')+
         '<div class="pname">'+esc(p.name)+'</div><div class="ptag">'+esc(p.tag)+'</div>'+
         '<div class="price">'+p.price+' €<span> /mois</span></div>'+
+        (p.trial?'<div class="trial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> '+esc(p.trial)+'</div>':'')+
         '<ul>'+li+'</ul>'+btn+'</div>';
     }).join('');
     var cur=document.getElementById('current');
@@ -149,7 +152,7 @@
 
   function mailtoRequest(p){
     var subject=encodeURIComponent('Demande d\'abonnement — offre '+p.name);
-    var body=encodeURIComponent('Bonjour,\n\nJe souhaite souscrire à l\'offre '+p.name+' ('+p.price+' € / mois).\n\nMerci.');
+    var body=encodeURIComponent('Bonjour,\n\nJe souhaite souscrire à l\'offre '+p.name+' ('+p.price+' € / mois'+(p.trial?', '+p.trial:'')+').\n\nMerci.');
     window.open('mailto:'+CONTACT+'?subject='+subject+'&body='+body, '_blank');
     toast('Votre demande pour l\'offre '+p.name+' est prête à être envoyée.');
   }

@@ -10,9 +10,13 @@ Dans le tableau de bord Stripe → **Produits**, créez 3 tarifs **récurrents (
 
 | Offre | Prix | Note l'ID du tarif |
 |-------|------|--------------------|
-| Essentiel | 14,99 € / mois | `price_...` |
+| Facturation (offre de base, **1er mois offert**) | 24,99 € / mois | `price_...` |
 | Pro | 44,99 € / mois | `price_...` |
 | Premium | 149,99 € / mois | `price_...` |
+
+> L'offre de base garde l'identifiant technique `essentiel` (secret `PRICE_ESSENTIEL`).
+> Le **mois offert** est appliqué côté serveur via une période d'essai Stripe
+> (`trial_period_days`), réglable par secret `TRIAL_DAYS_ESSENTIEL` (30 par défaut).
 
 ## 2. Déployer les fonctions
 
@@ -28,6 +32,8 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 ```bash
 supabase secrets set STRIPE_SECRET_KEY=sk_live_xxx
 supabase secrets set PRICE_ESSENTIEL=price_xxx PRICE_PRO=price_xxx PRICE_PREMIUM=price_xxx
+# 1er mois offert sur l'offre de base (facultatif — 30 jours par défaut) :
+supabase secrets set TRIAL_DAYS_ESSENTIEL=30
 ```
 
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` et `SUPABASE_SERVICE_ROLE_KEY` sont fournis
