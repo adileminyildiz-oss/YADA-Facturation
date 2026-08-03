@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../assets/pdf-lib.min.js"></script>
 <script>
 /* Verrou d'accès : compte connecté, approuvé et abonné (offre requise). */
 (function(){
@@ -206,7 +207,8 @@
         <p class="sub">Vérification des mentions requises par la réforme (EN 16931).</p>
         <div id="conform"><p class="empty">Sélectionnez une facture pour lancer la vérification.</p></div>
         <div class="btn-row" id="emitActions" hidden>
-          <button class="btn primary" id="genXml"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Télécharger le Factur-X (XML)</button>
+          <button class="btn primary" id="genPdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15h6M9 12h6"/></svg> Télécharger le Factur-X (PDF)</button>
+          <button class="btn" id="genXml"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> XML seul</button>
           <button class="btn" id="queue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> Ajouter à transmettre</button>
         </div>
         <div class="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><span>Le XML généré suit le profil <b>EN 16931 (CII)</b>, socle de Factur-X. Faites-le <b>valider par votre PDP</b> avant mise en production : certaines règles métier dépendent de la plateforme.</span></div>
@@ -444,11 +446,111 @@
     var blob=new Blob([text],{type:'application/xml'}); var url=URL.createObjectURL(blob);
     var a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
   }
+  function downloadBytes(name, bytes, mime){
+    var blob=new Blob([bytes],{type:mime||'application/octet-stream'}); var url=URL.createObjectURL(blob);
+    var a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }
+  /* ---- Factur-X « réel » : PDF (lisible) + XML CII embarqué (hybride) ---- */
+  function xmpFacturX(number){
+    return '<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>'+
+    '<x:xmpmeta xmlns:x="adobe:ns:meta/">'+
+    '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'+
+    '<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title><rdf:Alt><rdf:li xml:lang="x-default">Facture '+xesc(number||'')+'</rdf:li></rdf:Alt></dc:title></rdf:Description>'+
+    '<rdf:Description rdf:about="" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"><pdfaid:part>3</pdfaid:part><pdfaid:conformance>B</pdfaid:conformance></rdf:Description>'+
+    '<rdf:Description rdf:about="" xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#">'+
+      '<fx:DocumentType>INVOICE</fx:DocumentType><fx:DocumentFileName>factur-x.xml</fx:DocumentFileName><fx:Version>1.0</fx:Version><fx:ConformanceLevel>EN 16931</fx:ConformanceLevel></rdf:Description>'+
+    '<rdf:Description rdf:about="" xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/" xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#" xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">'+
+      '<pdfaExtension:schemas><rdf:Bag><rdf:li rdf:parseType="Resource"><pdfaSchema:schema>Factur-X PDFA Extension Schema</pdfaSchema:schema><pdfaSchema:namespaceURI>urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#</pdfaSchema:namespaceURI><pdfaSchema:prefix>fx</pdfaSchema:prefix>'+
+      '<pdfaSchema:property><rdf:Seq>'+
+        '<rdf:li rdf:parseType="Resource"><pdfaProperty:name>DocumentFileName</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>name of the embedded XML invoice file</pdfaProperty:description></rdf:li>'+
+        '<rdf:li rdf:parseType="Resource"><pdfaProperty:name>DocumentType</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>INVOICE</pdfaProperty:description></rdf:li>'+
+        '<rdf:li rdf:parseType="Resource"><pdfaProperty:name>Version</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>version of the Factur-X standard</pdfaProperty:description></rdf:li>'+
+        '<rdf:li rdf:parseType="Resource"><pdfaProperty:name>ConformanceLevel</pdfaProperty:name><pdfaProperty:valueType>Text</pdfaProperty:valueType><pdfaProperty:category>external</pdfaProperty:category><pdfaProperty:description>conformance level</pdfaProperty:description></rdf:li>'+
+      '</rdf:Seq></pdfaSchema:property></rdf:li></rdf:Bag></pdfaExtension:schemas></rdf:Description>'+
+    '</rdf:RDF></x:xmpmeta><?xpacket end="w"?>';
+  }
+  async function buildFacturXPdf(d, meta, xml){
+    var P=window.PDFLib; if(!P||!P.PDFDocument) throw new Error('Bibliothèque PDF indisponible.');
+    var t=totals(d), enc=new TextEncoder();
+    var doc=await P.PDFDocument.create();
+    doc.setTitle('Facture '+(d.number||'')); doc.setProducer('AEM-CONSEIL'); doc.setCreator('AEM-CONSEIL — Espace facturation');
+    var font=await doc.embedFont(P.StandardFonts.Helvetica), bold=await doc.embedFont(P.StandardFonts.HelveticaBold);
+    var W=595.28, H=841.89, M=48;
+    var ink=P.rgb(0.06,0.09,0.16), mut=P.rgb(0.42,0.47,0.55), acc=P.rgb(0.17,0.27,1);
+    var page=doc.addPage([W,H]), y=H-56;
+    function T(s,x,yy,sz,f,c){ page.drawText(String(s==null?'':s),{x:x,y:yy,size:sz,font:f||font,color:c||ink}); }
+    function R(s,xr,yy,sz,f,c){ s=String(s==null?'':s); var w=(f||font).widthOfTextAtSize(s,sz); page.drawText(s,{x:xr-w,y:yy,size:sz,font:f||font,color:c||ink}); }
+    function money(x){ return n2(x).replace('.',',')+' €'; }
+    function newPage(){ page=doc.addPage([W,H]); y=H-56; }
+    // En-tête
+    T((d.emit&&d.emit.name)||'Émetteur', M, y, 15, bold); R('FACTURE', W-M, y, 20, bold, acc);
+    R('N° '+(d.number||'—'), W-M, y-16, 10, font, mut);
+    var yy=y-16; ((d.emit&&d.emit.addr)||'').split('\n').forEach(function(l){ if(l.trim()){ T(l, M, yy, 8.5, font, mut); yy-=11; } });
+    var reg=[]; if(d.emit&&d.emit.siret) reg.push('SIRET '+d.emit.siret); if(d.emit&&d.emit.tva) reg.push('TVA '+d.emit.tva);
+    if(reg.length){ T(reg.join('  ·  '), M, yy, 8.5, font, mut); yy-=11; }
+    y=Math.min(yy, y-40)-10;
+    // Dates + client
+    R('Date : '+fmtDate(d.date), W-M, y, 9.5, font, mut); if(d.due){ R('Échéance : '+fmtDate(d.due), W-M, y-13, 9.5, font, mut); }
+    T('FACTURÉ À', M, y, 8, bold, mut);
+    T((d.client&&d.client.name)||'—', M, y-15, 11, bold);
+    var cy=y-28; ((d.client&&d.client.addr)||'').split('\n').forEach(function(l){ if(l.trim()){ T(l, M, cy, 8.5, font, mut); cy-=11; } });
+    if(d.client&&d.client.siret){ T('SIRET '+d.client.siret, M, cy, 8.5, font, mut); cy-=11; }
+    y=cy-18;
+    // Tableau des lignes
+    var cQ=W-M-250, cU=W-M-150, cT=W-M;
+    page.drawRectangle({x:M-6,y:y-4,width:W-2*M+12,height:18,color:P.rgb(0.06,0.09,0.16)});
+    T('Désignation', M, y, 8.5, bold, P.rgb(1,1,1)); R('Qté', cQ, y, 8.5, bold, P.rgb(1,1,1)); R('P.U. HT', cU, y, 8.5, bold, P.rgb(1,1,1)); R('Total HT', cT, y, 8.5, bold, P.rgb(1,1,1));
+    y-=20;
+    (d.lines||[]).filter(function(l){ return (l.desc||'').trim()||Number(l.pu)||Number(l.qty)!==1; }).forEach(function(l){
+      if(y<130){ newPage(); }
+      var ht=(Number(l.qty)||0)*(Number(l.pu)||0);
+      var desc=String(l.desc||''); if(desc.length>58) desc=desc.slice(0,57)+'…';
+      T(desc, M, y, 9, font); R(n2(l.qty).replace('.',','), cQ, y, 9, font, mut); R(money(l.pu), cU, y, 9, font, mut); R(money(ht), cT, y, 9, bold);
+      page.drawLine({start:{x:M-6,y:y-6},end:{x:W-M+6,y:y-6},thickness:0.5,color:P.rgb(0.9,0.92,0.96)}); y-=18;
+    });
+    // Totaux
+    y-=8; if(y<150) newPage();
+    function totLine(lab,val,b){ T(lab, W-M-220, y, b?10:9, b?bold:font, b?ink:mut); R(val, cT, y, b?11:9, b?bold:font, b?ink:mut); y-=(b?16:14); }
+    totLine('Sous-total HT', money(t.subHT)); if(t.discAmt>0.005) totLine('Remise', '− '+money(t.discAmt));
+    if(!d.vatExempt) totLine('TVA', money(t.totalVAT)); else { T('TVA non applicable (art. 293 B du CGI)', W-M-220, y, 8, font, mut); y-=14; }
+    totLine(d.vatExempt?'Total net':'Total TTC', money(t.ttc), true);
+    if(t.deposit>0.005){ totLine('Acompte', '− '+money(t.deposit)); totLine('Net à payer', money(t.due), true); }
+    // Mentions
+    y-=10; if(y<80) newPage();
+    var legal='Facture électronique conforme au profil EN 16931 (Factur-X / CII). Données structurées : fichier factur-x.xml embarqué.';
+    T(legal, M, Math.max(y,56), 7.5, font, mut);
+    // XML embarqué (hybride) + relation
+    doc.attach(enc.encode(xml), 'factur-x.xml', {
+      mimeType:'text/xml', description:'Facture électronique Factur-X (CII EN 16931)',
+      creationDate:new Date(), modificationDate:new Date(),
+      afRelationship: (P.AFRelationship && P.AFRelationship.Alternative) || 'Alternative'
+    });
+    // Métadonnées XMP Factur-X
+    try{
+      var xmp=xmpFacturX(d.number);
+      var mdict=doc.context.obj({ Type:'Metadata', Subtype:'XML' });
+      var mstream=P.PDFRawStream.of(mdict, enc.encode(xmp));
+      var mref=doc.context.register(mstream);
+      doc.catalog.set(P.PDFName.of('Metadata'), mref);
+    }catch(e){}
+    return await doc.save({ useObjectStreams:false });
+  }
   $('genXml').addEventListener('click', function(){
     if(!selected) return; persistMeta();
     var xml=buildCII(selected, currentMeta());
     download('facturx-'+(selected.number||'facture').replace(/[^\w-]+/g,'_')+'.xml', xml);
     toast('Fichier Factur-X (XML) généré');
+  });
+  $('genPdf').addEventListener('click', async function(){
+    if(!selected) return; persistMeta();
+    var btn=this; btn.disabled=true;
+    try{
+      var xml=buildCII(selected, currentMeta());
+      var bytes=await buildFacturXPdf(selected, currentMeta(), xml);
+      downloadBytes('facturx-'+(selected.number||'facture').replace(/[^\w-]+/g,'_')+'.pdf', bytes, 'application/pdf');
+      toast('Factur-X (PDF hybride) généré');
+    }catch(e){ toast((e&&e.message)||'Génération PDF impossible.', false); }
+    finally{ btn.disabled=false; }
   });
   $('queue').addEventListener('click', function(){
     if(!selected) return; persistMeta();

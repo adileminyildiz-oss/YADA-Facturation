@@ -6,7 +6,7 @@ const CACHE = 'aem-espace-v1';
 const CORE = [
   './', './index.html',
   './facturation/', './clients/', './sous-traitants/', './documents/', './efacture/', './portail/', './abonnement/', './legal/',
-  './assets/favicon-192.png', './assets/favicon-512.png', './assets/logo-full.png', './assets/logo-round.png'
+  './assets/favicon-192.png', './assets/favicon-512.png', './assets/logo-full.png', './assets/logo-round.png', './assets/pdf-lib.min.js'
 ];
 
 self.addEventListener('install', (e) => {
