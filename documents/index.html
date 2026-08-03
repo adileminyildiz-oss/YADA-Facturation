@@ -256,6 +256,26 @@
   .linkcopy{display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:12px;font-weight:600;color:var(--peri);background:var(--glass);border:1px solid var(--line-2);border-radius:8px;padding:5px 10px;cursor:pointer}
   .linkcopy:hover{background:var(--glass-2)}
   .linkcopy svg{width:13px;height:13px}
+  .btn-pay.ai{background:rgba(150,168,255,.12);border-color:var(--line-2);color:var(--peri)}
+  .btn-pay.ai:hover{background:rgba(150,168,255,.2)}
+  /* Modale IA */
+  .mov{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.62);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:18px}
+  .mbox{width:min(560px,96vw);max-height:92vh;display:flex;flex-direction:column;background:var(--noir3);border:1px solid var(--line-2);border-radius:16px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+  .mbox-head{display:flex;align-items:flex-start;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+  .mbox-head h3{font-family:'Inter Tight';font-size:16px;font-weight:700}
+  .mbox-sub{font-size:12px;color:var(--txt2);margin-top:2px}
+  .mbox-head .dw-close{margin-left:auto}
+  .mbox-body{padding:16px 18px;overflow-y:auto}
+  .mlab{display:block;font-size:11.5px;color:var(--txt2);margin-bottom:6px;font-weight:600}
+  .mbox-body textarea{width:100%;resize:vertical;min-height:150px;font:inherit;font-size:13px;line-height:1.5;padding:11px 13px;border:1px solid var(--line-2);border-radius:11px;background:var(--glass);color:var(--txt)}
+  .mbox-body textarea:focus{outline:none;border-color:var(--peri)}
+  .ai-note{font-size:11.5px;line-height:1.45;padding:9px 11px;border-radius:9px;margin-bottom:12px;background:rgba(255,207,109,.1);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
+  .mbox-foot{flex:none;display:flex;gap:9px;padding:14px 18px;border-top:1px solid var(--line)}
+  .mbox-foot .btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;border:1px solid var(--line-2);background:var(--glass);color:var(--txt)}
+  .mbox-foot .btn-ghost:hover{background:var(--glass-2)}
+  .mbox-foot .btn-ghost svg{width:14px;height:14px}
+  .mbox-foot .primary{flex:1;padding:11px;border-radius:11px;font-family:'Inter Tight';font-weight:600;font-size:13px;cursor:pointer;border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
+  .mbox-foot .primary:disabled{opacity:.6;cursor:progress}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);z-index:200;background:var(--noir3);border:1px solid var(--line-2);color:var(--txt);padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.24s}
   .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
 
@@ -349,6 +369,29 @@
       <button id="dwOpen" class="primary">Ouvrir dans la facturation</button>
     </div>
   </aside>
+
+  <!-- Modale : relance rédigée par l'IA -->
+  <div class="mov" id="relMov" hidden>
+    <div class="mbox" role="dialog" aria-modal="true" aria-labelledby="relMTitle">
+      <div class="mbox-head">
+        <div>
+          <h3 id="relMTitle">Relance</h3>
+          <p id="relMSub" class="mbox-sub">—</p>
+        </div>
+        <button class="dw-close" id="relMClose" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="mbox-body">
+        <div class="ai-note" id="relMNote" hidden></div>
+        <label class="mlab" for="relMText">Message de relance (modifiable)</label>
+        <textarea id="relMText" rows="9" placeholder="Le message apparaîtra ici…"></textarea>
+      </div>
+      <div class="mbox-foot">
+        <button class="btn-ghost" id="relMRegen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6M21 12a9 9 0 1 1-3-6.7L21 8"/></svg> Régénérer</button>
+        <button class="btn-ghost" id="relMCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copier</button>
+        <button class="primary" id="relMSend" type="button">Envoyer la relance</button>
+      </div>
+    </div>
+  </div>
 
 <script>
   var EMBED = /[?&]embed=1/.test(location.search);
@@ -813,6 +856,7 @@
       if(rem.length) body+='<div class="dw-tot"><span style="color:var(--txt2)">Relances</span><span class="badge overdue">'+rem.length+' · dernière '+fmtDate(rem[rem.length-1].date)+'</span></div>';
       body+='<div class="pay-actions"><button class="btn-pay send" data-send="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg> '+(d.sentAt?'Renvoyer':'Envoyer au client')+'</button>'+
         (late?'<button class="btn-pay relance" data-relance="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6M21 12a9 9 0 1 1-3-6.7L21 8"/></svg> Relancer</button>':'')+'</div>';
+      if(t.due>0.005) body+='<div class="pay-actions"><button class="btn-pay ai" data-ai-relance="'+esc(d.id)+'"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg> Rédiger la relance (IA)</button></div>';
       if(late) body+='<div style="font-size:11.5px;color:var(--warn);margin-top:6px">Facture en retard — reste dû '+dmoney(d).format(t.due)+'.</div>';
       if(t.due>0.005){
         body+='<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">';
@@ -877,12 +921,88 @@
     if(send){ sendInvoice(send.dataset.send, send, 'send'); return; }
     var relance=e.target.closest('[data-relance]');
     if(relance){ sendInvoice(relance.dataset.relance, relance, 'reminder'); return; }
+    var airel=e.target.closest('[data-ai-relance]');
+    if(airel){ openRelanceIA(airel.dataset.aiRelance); return; }
     var paylink=e.target.closest('[data-paylink]');
     if(paylink){ genPayLink(paylink.dataset.paylink, paylink); return; }
     var copy=e.target.closest('[data-copy]');
     if(copy){ var link=copy.dataset.copy; try{ navigator.clipboard.writeText(link).then(function(){toast('Lien copié');},function(){toast('Lien : '+link);}); }catch(e2){ toast('Lien : '+link); } }
   });
   function toast(m){ var t=document.getElementById('toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); } t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2400); }
+
+  /* ===== IA ② : relance progressive ===== */
+  var _relId=null;
+  var REL_LABELS={1:'1re relance — ton courtois',2:'2e relance — ton ferme',3:'Dernière relance — ton formel'};
+  function relLevel(d){ var n=((d.reminders||[]).length); return Math.max(1, Math.min(3, n+1)); }
+  function relFallback(d, level){
+    var name=(d.client&&d.client.name)||'', num=d.number||'', due=computeTotal(d).due, dd=d.due?fmtDate(d.due):'';
+    var m=dmoney(d).format(due>0.005?due:computeTotal(d).ttc);
+    if(level>=3) return 'Bonjour '+name+',\n\nMalgré nos précédentes relances, la facture '+num+(dd?' (échéance du '+dd+')':'')+' d’un montant de '+m+' demeure impayée. Sans règlement sous 8 jours, nous serons contraints d’engager une procédure de recouvrement, et des pénalités de retard ainsi que l’indemnité forfaitaire de 40 € pour frais de recouvrement seront appliquées conformément à la loi.\n\nNous vous remercions de régulariser votre situation dans les meilleurs délais.';
+    if(level===2) return 'Bonjour '+name+',\n\nSauf erreur de notre part, la facture '+num+(dd?' (échéance du '+dd+')':'')+' d’un montant de '+m+' reste à ce jour impayée, malgré notre précédent rappel. Nous vous remercions de bien vouloir procéder à son règlement sans tarder.\n\nRestant à votre disposition pour tout renseignement.';
+    return 'Bonjour '+name+',\n\nSauf omission de votre part, il semblerait que la facture '+num+(dd?' (échéance du '+dd+')':'')+' d’un montant de '+m+' n’ait pas encore été réglée. Il s’agit probablement d’un simple oubli ; nous vous remercions de bien vouloir procéder à son règlement.\n\nRestant à votre disposition.';
+  }
+  function relSetBusy(b){ var s=document.getElementById('relMSend'), r=document.getElementById('relMRegen'); if(s) s.disabled=b; if(r) r.disabled=b; }
+  function relNote(text, show){ var n=document.getElementById('relMNote'); if(!n) return; n.hidden=!show; n.textContent=text||''; }
+  function openRelanceIA(id){
+    var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d) return;
+    _relId=id;
+    var level=relLevel(d);
+    document.getElementById('relMTitle').textContent='Relance — '+(d.number||'facture');
+    document.getElementById('relMSub').textContent=REL_LABELS[level]+' · '+((d.client&&d.client.name)||'client');
+    document.getElementById('relMText').value='';
+    relNote('', false);
+    document.getElementById('relMov').hidden=false;
+    generateRelance(d, level);
+  }
+  function closeRelanceIA(){ document.getElementById('relMov').hidden=true; _relId=null; }
+  async function generateRelance(d, level){
+    var ta=document.getElementById('relMText');
+    relSetBusy(true); relNote('L’assistant rédige la relance…', true); ta.value='';
+    try{
+      var t=computeTotal(d);
+      var r=await callFn('ai-assistant', { task:'reminder_draft', level:level, invoice:{
+        clientName:(d.client&&d.client.name)||'', number:d.number||'', due:(t.due>0.005?t.due:t.ttc),
+        dueDate:d.due||'', daysLate:daysLate(d.due)
+      }});
+      ta.value=(r&&r.body)||relFallback(d, level);
+      relNote('Relayé par l’IA — relisez et adaptez avant l’envoi.', true);
+    }catch(e){
+      ta.value=relFallback(d, level);
+      if(/non configur/i.test(String(e&&e.message||''))) relNote('IA non configurée : modèle de relance standard proposé. Modifiez-le librement.', true);
+      else relNote('IA indisponible : modèle standard proposé. Modifiez-le librement.', true);
+    }finally{ relSetBusy(false); }
+  }
+  async function sendRelanceIA(){
+    if(!_relId) return;
+    var id=_relId, docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d){ closeRelanceIA(); return; }
+    var msg=(document.getElementById('relMText').value||'').trim();
+    var to=((d.client&&d.client.email)||'').trim();
+    var btn=document.getElementById('relMSend'); var old=btn.textContent;
+    btn.disabled=true; btn.textContent='Envoi…';
+    try{
+      if(!/.+@.+\..+/.test(to)) throw new Error('no-email');
+      var payload=invoicePayload(d); payload.reminder=true; if(msg) payload.message=msg;
+      await callFn('send-invoice', payload);
+      d.reminders=(d.reminders||[]).concat([{date:todayISO(), level:relLevel(d), ai:true}]); d.updated=Date.now();
+      saveDocs(docs); cloudPushDoc(d);
+      closeRelanceIA(); toast('Relance envoyée'); openDoc(id);
+    }catch(e){
+      btn.disabled=false; btn.textContent=old;
+      if(String(e&&e.message)==='no-email'){
+        // Repli : messagerie pré-remplie avec le texte rédigé
+        var subject='Rappel — Facture '+(d.number||'');
+        window.open('mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg+'\n\nCordialement,\n'+((d.emit&&d.emit.name)||'')), '_blank');
+        relNote('Aucune adresse e-mail client : votre messagerie a été ouverte avec le texte.', true);
+      }else{
+        relNote('Envoi impossible : '+String(e&&e.message||e), true);
+      }
+    }
+  }
+  document.getElementById('relMClose').addEventListener('click', closeRelanceIA);
+  document.getElementById('relMov').addEventListener('click', function(e){ if(e.target===this) closeRelanceIA(); });
+  document.getElementById('relMSend').addEventListener('click', sendRelanceIA);
+  document.getElementById('relMCopy').addEventListener('click', function(){ var v=document.getElementById('relMText').value||''; try{ navigator.clipboard.writeText(v).then(function(){toast('Texte copié');},function(){toast('Copie impossible');}); }catch(e){ toast('Copie impossible'); } });
+  document.getElementById('relMRegen').addEventListener('click', function(){ if(!_relId) return; var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===_relId){d=docs[i];break;} if(d) generateRelance(d, relLevel(d)); });
   async function genPayLink(id, btn){
     var docs=loadDocs(), d=null; for(var i=0;i<docs.length;i++) if(docs[i].id===id){d=docs[i];break;} if(!d) return;
     var t=computeTotal(d); if(t.due<=0.005) return;
