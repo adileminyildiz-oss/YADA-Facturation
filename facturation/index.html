@@ -177,6 +177,22 @@
 
   .add-line{margin-top:4px;width:100%;justify-content:center;border:1px dashed var(--line-2);background:transparent;color:var(--peri)}
   .add-line:hover{background:var(--glass);border-style:solid}
+  .ai-bar{border:1px solid var(--line-2);border-radius:12px;padding:10px 11px;margin:2px 0 12px;background:linear-gradient(180deg,rgba(120,110,255,.10),rgba(120,110,255,.03))}
+  .ai-bar-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .ai-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--peri);letter-spacing:.02em}
+  .ai-badge svg{width:14px;height:14px}
+  .ai-input-row{display:flex;gap:8px;align-items:stretch}
+  .ai-input-row textarea{flex:1;resize:vertical;min-height:42px;font:inherit;font-size:12.5px;padding:9px 11px;border:1px solid var(--line-2);border-radius:10px;background:var(--glass);color:var(--txt);line-height:1.4}
+  .ai-input-row textarea:focus{outline:none;border-color:var(--peri)}
+  .ai-go{flex:none;align-self:stretch;display:inline-flex;align-items:center;gap:7px;background:var(--peri);color:#0b1020;border:none;font-weight:700;padding:0 15px;border-radius:10px;white-space:nowrap}
+  .ai-go svg{width:16px;height:16px}
+  .ai-go:hover{filter:brightness(1.06)}
+  .ai-go:disabled{opacity:.6;cursor:progress}
+  .ai-msg{margin-top:8px;font-size:11.5px;line-height:1.45;padding:8px 10px;border-radius:9px}
+  .ai-msg.info{background:rgba(120,110,255,.10);color:var(--txt);border:1px solid var(--line-2)}
+  .ai-msg.warn{background:rgba(255,180,60,.10);color:#f0c072;border:1px solid rgba(255,180,60,.28)}
+  .ai-msg.err{background:rgba(255,90,90,.10);color:#f2a0a0;border:1px solid rgba(255,90,90,.28)}
+  @media(max-width:560px){ .ai-input-row{flex-direction:column} .ai-go{padding:10px} }
   .line-actions{display:flex;gap:8px;margin-top:4px}
   .line-actions .add-line{margin-top:0;flex:1}
   .cat-toggle{flex:none;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);padding:10px 14px}
@@ -494,6 +510,20 @@
     <div class="card" id="linesCard">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span> Prestations &amp; produits</h3>
       <p class="hint">Ajoutez vos lignes. Les totaux se calculent automatiquement.</p>
+      <div class="ai-bar" id="aiBar">
+        <div class="ai-bar-head">
+          <span class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M19 14l.8 2 .2.1 2 .9-2 .9-.8 2-.9-2-2-.9 2-.9.8-2z"/></svg> Assistant</span>
+          <span class="hint" style="margin:0">Décrivez la facture en une phrase — l'IA propose les lignes.</span>
+        </div>
+        <div class="ai-input-row">
+          <textarea id="aiDesc" rows="2" placeholder="Ex. : 3 jours de main-d'œuvre à 350 €/j, fourniture de 12 m² de carrelage à 28 €, TVA 10 %"></textarea>
+          <button class="btn ai-go" type="button" id="aiGo" onclick="aiFillLines()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <span>Proposer les lignes</span>
+          </button>
+        </div>
+        <div class="ai-msg" id="aiMsg" hidden></div>
+      </div>
       <div class="lines-head">
         <span>Désignation</span><span>Qté</span><span>P.U. HT</span><span>TVA %</span><span>Total HT</span><span></span>
       </div>
@@ -1306,6 +1336,50 @@ function autofillClient(name){
 function addLine(){ state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
 function removeLine(i){ state.lines.splice(i,1); if(!state.lines.length) state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
 
+/* ============ IA ① : lignes depuis une description ============ */
+function aiMsg(text, kind){
+  const el=document.getElementById('aiMsg'); if(!el) return;
+  if(!text){ el.hidden=true; el.textContent=''; return; }
+  el.hidden=false; el.className='ai-msg '+(kind||'info'); el.textContent=text;
+}
+function lineBlank(l){ return !String(l&&l.desc||'').trim() && !(Number(l&&l.qty)>0 && Number(l&&l.pu)>0); }
+async function aiFillLines(){
+  if(state.emitted){ toast('Pièce émise : non modifiable.'); return; }
+  const ta=document.getElementById('aiDesc'); const desc=String(ta&&ta.value||'').trim();
+  if(!desc){ aiMsg('Décrivez d’abord la prestation dans le champ ci-dessus.', 'warn'); if(ta) ta.focus(); return; }
+  const btn=document.getElementById('aiGo');
+  const vatDefault=(state.lines&&state.lines[0]&&Number(state.lines[0].vat))||20;
+  if(btn){ btn.disabled=true; btn.querySelector('span').textContent='Analyse…'; }
+  aiMsg('L’assistant analyse votre description…', 'info');
+  try{
+    const r=await CLOUD.ai('invoice_from_text', { text: desc, vatDefault: vatDefault });
+    const lines=(r.lines||[]).map(function(l){
+      var d=String(l.desc||'').trim(); var u=String(l.unit||'').trim();
+      if(u && !/[€%]/.test(u)) d = d ? d+' ('+u+')' : d;
+      return { desc:d, qty:(Number(l.qty)||1), pu:(Number(l.pu)||0), vat:(Number(l.vat)||vatDefault) };
+    }).filter(function(l){ return l.desc || l.pu>0; });
+    if(!lines.length){ aiMsg('L’assistant n’a pas pu déduire de lignes. Reformulez avec des quantités et des prix.', 'warn'); return; }
+    // Remplace la première ligne vide, sinon ajoute à la suite.
+    if(state.lines.length===1 && lineBlank(state.lines[0])) state.lines=[];
+    lines.forEach(function(l){ state.lines.push(l); });
+    if(!state.lines.length) state.lines.push(newLine());
+    renderLines(); render(); scheduleSave();
+    if(ta) ta.value='';
+    var missingPrice=lines.some(function(l){ return !(l.pu>0); });
+    var msg='✓ '+lines.length+' ligne'+(lines.length>1?'s':'')+' ajoutée'+(lines.length>1?'s':'')+'. Vérifiez avant d’émettre.';
+    if(r.note) msg+=' '+r.note;
+    aiMsg(msg, missingPrice ? 'warn' : 'info');
+  }catch(e){
+    if(e && e.notConfigured){
+      aiMsg('Assistant IA non configuré. Ajoutez vos lignes manuellement, ou demandez l’activation de l’IA (clé ANTHROPIC_API_KEY côté serveur).', 'warn');
+    }else{
+      aiMsg('Assistant indisponible : '+String(e&&e.message||e)+'. Vous pouvez saisir les lignes manuellement.', 'err');
+    }
+  }finally{
+    if(btn){ btn.disabled=false; btn.querySelector('span').textContent='Proposer les lignes'; }
+  }
+}
+
 /* ============ Binding formulaire ============ */
 function bind(id, path){
   const el=document.getElementById(id);
@@ -1986,7 +2060,18 @@ var CLOUD=(function(){
   function pushDoc(doc){ if(!ready()||!doc||!doc.id) return; try{ sb.from('invoices').upsert({id:doc.id,user_id:uid,data:doc,updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
   function remove(id){ if(!ready()) return; try{ sb.from('invoices').delete().eq('id',id).then(function(){},function(){}); }catch(e){} }
   function pushSettings(){ if(!ready()) return; try{ sb.from('user_settings').upsert({user_id:uid,emit:loadEmit(),seq:loadSeq(),updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
-  return {initAndPull:initAndPull, pushDoc:pushDoc, remove:remove, pushSettings:pushSettings, ready:ready};
+  async function ai(task, payload){
+    if(!sb) throw new Error('Connexion requise pour l’assistant IA.');
+    var r=await sb.functions.invoke('ai-assistant', { body: Object.assign({ task: task }, payload||{}) });
+    if(r && r.error){
+      var msg='Assistant IA indisponible.';
+      try{ var ctx=await r.error.context.json(); if(ctx && ctx.error) msg=ctx.error; }catch(e){}
+      var err=new Error(msg); err.notConfigured=/non configur/i.test(msg); throw err;
+    }
+    if(r && r.data && r.data.error) throw new Error(r.data.error);
+    return (r && r.data) || {};
+  }
+  return {initAndPull:initAndPull, pushDoc:pushDoc, remove:remove, pushSettings:pushSettings, ready:ready, ai:ai};
 })();
 
 async function init(){
