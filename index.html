@@ -125,6 +125,17 @@
   .authcard .submit{width:100%;margin-top:20px;padding:12px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff;font-family:'Inter Tight';font-weight:600;font-size:14px;cursor:pointer;transition:.16s}
   .authcard .submit:hover{filter:brightness(1.08)}
   .authcard .submit:disabled{opacity:.55;cursor:default}
+  .authcard-wide{max-width:520px;max-height:calc(100dvh - 48px);overflow:auto}
+  .su-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:460px){ .su-row{grid-template-columns:1fr} }
+  .vopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:12px;padding:13px 14px;border:1px solid var(--line-2);border-radius:12px;background:var(--glass);color:var(--txt);cursor:pointer;transition:.15s;font-family:inherit}
+  .vopt:hover{background:var(--glass-2);border-color:var(--azur)}
+  .vopt .vic{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(109,134,255,.22),rgba(43,69,255,.18));border:1px solid var(--line-2);color:var(--peri)}
+  .vopt .vic svg{width:18px;height:18px}
+  .vopt .vtx{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+  .vopt .vtx b{font-family:'Inter Tight';font-weight:600;font-size:14px}
+  .vopt .vtx small{font-size:11.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vlink{background:none;border:none;color:var(--peri);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
   .authmsg{margin-top:14px;font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:10px;display:none}
   .authmsg.err{display:block;background:rgba(255,90,90,.1);border:1px solid rgba(255,90,90,.32);color:#ff9a9a}
   .authmsg.ok{display:block;background:rgba(62,233,164,.09);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
@@ -185,8 +196,18 @@
       <button type="button" data-mode="login" class="active">Se connecter</button>
       <button type="button" data-mode="signup">Créer un compte</button>
     </div>
+    <div id="suName" hidden>
+      <div class="su-row">
+        <div><label for="authFirst">Prénom</label><input id="authFirst" type="text" autocomplete="given-name" placeholder="Prénom"></div>
+        <div><label for="authLast">Nom</label><input id="authLast" type="text" autocomplete="family-name" placeholder="Nom"></div>
+      </div>
+    </div>
     <label for="authEmail">Adresse e-mail</label>
     <input id="authEmail" type="email" required autocomplete="email" placeholder="vous@exemple.fr">
+    <div id="suPhone" hidden>
+      <label for="authPhone">Téléphone mobile</label>
+      <input id="authPhone" type="tel" autocomplete="tel" placeholder="06 12 34 56 78">
+    </div>
     <label for="authPass">Mot de passe</label>
     <input id="authPass" type="password" required autocomplete="current-password" minlength="6" placeholder="••••••••">
     <button class="submit" type="submit" id="authSubmit">Se connecter</button>
@@ -205,6 +226,72 @@
     <input id="recPass2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
     <button class="submit" type="submit" id="recSubmit">Enregistrer le mot de passe</button>
     <div class="authmsg" id="recMsg" role="status"></div>
+  </form>
+</div>
+<div class="authgate" id="verifyGate" hidden>
+  <div class="authcard">
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM-CONSEIL</small></span></div>
+    <!-- Étape 1 : choix du mode de vérification -->
+    <div id="vChoose">
+      <p class="lead">Bienvenue <span id="vName"></span> ! Vérifiez votre identité pour activer votre compte.</p>
+      <button class="vopt" type="button" id="vOptEmail">
+        <span class="vic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg></span>
+        <span class="vtx"><b>Par e-mail</b><small id="vEmailAddr">Un lien de confirmation</small></span>
+      </button>
+      <button class="vopt" type="button" id="vOptSms">
+        <span class="vic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M11 18h2"/></svg></span>
+        <span class="vtx"><b>Par SMS</b><small id="vSmsNum">Un code sur votre mobile</small></span>
+      </button>
+      <div class="authmsg" id="vMsg" role="status"></div>
+      <div style="text-align:center;margin-top:14px"><button type="button" id="vBackLogin" class="vlink">Retour à la connexion</button></div>
+    </div>
+    <!-- Étape 2a : e-mail envoyé -->
+    <div id="vEmail" hidden>
+      <p class="lead">Un lien de confirmation a été envoyé à <b id="vEmailShown"></b>. Ouvrez-le pour activer votre compte, puis connectez-vous.</p>
+      <button class="submit" type="button" id="vEmailDone">J’ai confirmé — me connecter</button>
+      <div style="text-align:center;margin-top:12px"><button type="button" id="vEmailResend" class="vlink">Renvoyer l’e-mail</button> · <button type="button" id="vEmailChange" class="vlink">Autre méthode</button></div>
+      <div class="authmsg" id="vEmailMsg" role="status"></div>
+    </div>
+    <!-- Étape 2b : code SMS -->
+    <div id="vSms" hidden>
+      <p class="lead">Saisissez le code à 6 chiffres envoyé au <b id="vSmsShown"></b>.</p>
+      <label for="vCode">Code de vérification</label>
+      <input id="vCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="letter-spacing:.35em;text-align:center;font-size:18px">
+      <button class="submit" type="button" id="vSmsVerify">Valider mon numéro</button>
+      <div style="text-align:center;margin-top:12px"><button type="button" id="vSmsResend" class="vlink">Renvoyer le code</button> · <button type="button" id="vSmsChange" class="vlink">Autre méthode</button></div>
+      <div class="authmsg" id="vSmsMsg" role="status"></div>
+    </div>
+  </div>
+</div>
+<div class="authgate" id="companyGate" hidden>
+  <form class="authcard authcard-wide" id="companyForm" novalidate>
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM-CONSEIL</small></span></div>
+    <p class="lead">Dernière étape : les informations de votre société. Elles figureront sur vos factures et devis.</p>
+    <div class="su-row">
+      <div><label for="coName">Raison sociale / Nom</label><input id="coName" type="text" placeholder="Ma Société SARL"></div>
+      <div><label for="coForm">Forme juridique</label><input id="coForm" type="text" placeholder="SARL, SAS, EI…"></div>
+    </div>
+    <div class="su-row">
+      <div><label for="coSiret">SIRET</label><input id="coSiret" type="text" placeholder="000 000 000 00000"></div>
+      <div><label for="coTva">N° TVA intracom.</label><input id="coTva" type="text" placeholder="FR00000000000"></div>
+    </div>
+    <div class="su-row">
+      <div><label for="coRcs">RCS / RM</label><input id="coRcs" type="text" placeholder="RCS Ville 000 000 000"></div>
+      <div><label for="coCapital">Capital social</label><input id="coCapital" type="text" placeholder="1 000 €"></div>
+    </div>
+    <label for="coAddr">Adresse</label>
+    <input id="coAddr" type="text" placeholder="1 rue de l’Exemple, 75000 Paris">
+    <div class="su-row">
+      <div><label for="coEmail">E-mail de facturation</label><input id="coEmail" type="email" placeholder="contact@masociete.fr"></div>
+      <div><label for="coPhone">Téléphone</label><input id="coPhone" type="tel" placeholder="01 00 00 00 00"></div>
+    </div>
+    <div class="su-row">
+      <div><label for="coIban">IBAN</label><input id="coIban" type="text" placeholder="FR76 …"></div>
+      <div><label for="coBic">BIC</label><input id="coBic" type="text" placeholder="XXXXFRPPXXX"></div>
+    </div>
+    <button class="submit" type="submit" id="coSubmit">Enregistrer et accéder à mon espace</button>
+    <div style="text-align:center;margin-top:10px"><button type="button" id="coSkip" class="vlink">Compléter plus tard</button></div>
+    <div class="authmsg" id="coMsg" role="status"></div>
   </form>
 </div>
 <div class="authgate" id="pwGate" hidden style="background:rgba(4,5,11,.72)">
@@ -359,10 +446,22 @@
   function setAuthMode(mode){
     authMode=mode;
     document.querySelectorAll('#authTabs button').forEach(function(b){ b.classList.toggle('active', b.dataset.mode===mode); });
-    document.getElementById('authSubmit').textContent = mode==='signup' ? 'Créer mon compte' : 'Se connecter';
-    document.getElementById('authLead').textContent = mode==='signup' ? 'Créez votre compte pour accéder à votre espace.' : 'Connectez-vous pour accéder à votre espace.';
-    document.getElementById('authPass').setAttribute('autocomplete', mode==='signup' ? 'new-password' : 'current-password');
+    var isSignup = mode==='signup';
+    document.getElementById('authSubmit').textContent = isSignup ? 'Créer mon compte' : 'Se connecter';
+    document.getElementById('authLead').textContent = isSignup ? 'Créez votre compte pour accéder à votre espace.' : 'Connectez-vous pour accéder à votre espace.';
+    document.getElementById('authPass').setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
+    document.getElementById('suName').hidden = !isSignup;
+    document.getElementById('suPhone').hidden = !isSignup;
+    document.getElementById('authForgot').parentNode.hidden = isSignup;
     authMsg();
+  }
+  // Normalise un numéro FR en E.164 (+33…). Renvoie '' si invalide.
+  function normPhone(v){
+    var s=String(v||'').replace(/[\s.\-()]/g,'');
+    if(/^\+\d{8,15}$/.test(s)) return s;
+    if(/^0\d{9}$/.test(s)) return '+33'+s.slice(1);
+    if(/^33\d{9}$/.test(s)) return '+'+s;
+    return '';
   }
   function showApp(session){
     document.getElementById('pendingGate').hidden=true;
@@ -375,6 +474,45 @@
     document.getElementById('changePwBtn').hidden=false;
     if(!showApp._routed){ showApp._routed=true; route(); }
   }
+  /* Profil société : présent si une raison sociale est enregistrée. */
+  function hasCompany(){ try{ var e=JSON.parse(localStorage.getItem('aem_fact_emit')||'null'); return !!(e&&String(e.name||'').trim()); }catch(_){ return false; } }
+  /* Après authentification : profil société d'abord s'il manque, sinon l'espace. */
+  function enterApp(session){
+    if(!hasCompany() && !enterApp._skipped){ showCompany(session); return; }
+    document.getElementById('companyGate').hidden=true;
+    showApp(session);
+  }
+  function showCompany(session){
+    elApp.hidden=true; elGate.hidden=true; document.getElementById('pendingGate').hidden=true;
+    document.getElementById('verifyGate').hidden=true;
+    var u=(session&&session.user)||{}, meta=u.user_metadata||{};
+    if(!document.getElementById('coEmail').value) document.getElementById('coEmail').value=u.email||'';
+    if(!document.getElementById('coPhone').value && meta.phone) document.getElementById('coPhone').value=meta.phone;
+    document.getElementById('companyGate').hidden=false;
+    document.getElementById('coName').focus();
+    enterApp._session=session;
+  }
+  function saveCompany(){
+    var g=function(id){ return document.getElementById(id).value.trim(); };
+    var emit={ name:g('coName'), legalForm:g('coForm'), capital:g('coCapital'), rcs:g('coRcs'), addr:g('coAddr'),
+      siret:g('coSiret'), tva:g('coTva'), email:g('coEmail'), phone:g('coPhone'), iban:g('coIban'), bic:g('coBic'),
+      decAssureur:'', decContrat:'', decZone:'' };
+    try{ localStorage.setItem('aem_fact_emit', JSON.stringify(emit)); }catch(_){}
+    // Miroir cloud (par compte) pour retrouver le profil sur tout appareil.
+    try{ if(sb&&enterApp._session){ sb.from('user_settings').upsert({user_id:enterApp._session.user.id, emit:emit, updated_at:new Date().toISOString()}).then(function(){},function(){}); } }catch(_){}
+  }
+  document.getElementById('companyForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    if(!document.getElementById('coName').value.trim()){ var m=document.getElementById('coMsg'); m.className='authmsg err'; m.textContent='Indiquez au moins la raison sociale.'; return; }
+    saveCompany();
+    document.getElementById('companyGate').hidden=true;
+    showApp(enterApp._session);
+  });
+  document.getElementById('coSkip').addEventListener('click', function(){
+    enterApp._skipped=true;
+    document.getElementById('companyGate').hidden=true;
+    showApp(enterApp._session);
+  });
   function showPending(session){
     elApp.hidden=true; elGate.hidden=true;
     document.getElementById('pendingGate').hidden=false;
@@ -384,6 +522,8 @@
   function showGate(){
     elApp.hidden=true; elGate.hidden=false;
     document.getElementById('pendingGate').hidden=true;
+    document.getElementById('verifyGate').hidden=true;
+    document.getElementById('companyGate').hidden=true;
     document.getElementById('sbUser').hidden=true;
     document.getElementById('logoutBtn').hidden=true;
     document.getElementById('changePwBtn').hidden=true;
@@ -409,7 +549,7 @@
     var planNames={free:'Aucune offre', essentiel:'Facturation', pro:'Pro', premium:'Premium'};
     document.getElementById('planSub').textContent = IS_ADMIN ? 'Accès complet' : ((USER_PLAN&&USER_PLAN!=='free') ? 'Offre '+planNames[USER_PLAN] : 'Choisir une offre');
     applyLocks();
-    if(acc.admin || acc.approved){ showApp(session); } else { showPending(session); }
+    if(acc.admin || acc.approved){ enterApp(session); } else { showPending(session); }
   }
   function applyLocks(){
     document.querySelectorAll('.snav .item[data-module]').forEach(function(b){
@@ -435,11 +575,17 @@
     var btn=document.getElementById('authSubmit'); btn.disabled=true; authMsg();
     try{
       if(authMode==='signup'){
+        var first=document.getElementById('authFirst').value.trim();
+        var last=document.getElementById('authLast').value.trim();
+        var phoneRaw=document.getElementById('authPhone').value.trim();
+        var phone=normPhone(phoneRaw);
+        if(!first || !last){ authMsg('err','Renseignez votre prénom et votre nom.'); btn.disabled=false; btn.textContent='Créer mon compte'; return; }
+        if(!phone){ authMsg('err','Renseignez un numéro de mobile valide (ex. 06 12 34 56 78).'); btn.disabled=false; btn.textContent='Créer mon compte'; return; }
         btn.textContent='Création…';
-        var r=await sb.auth.signUp({email:email,password:pass});
+        var r=await sb.auth.signUp({email:email,password:pass,options:{data:{first_name:first,last_name:last,full_name:(first+' '+last).trim(),phone:phone}}});
         if(r.error) throw r.error;
-        if(r.data && r.data.session){ /* onAuthStateChange gère l’ouverture */ }
-        else { authMsg('ok','Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.'); setAuthMode('login'); }
+        // Compte créé : on passe à l'étape de vérification d'identité (e-mail ou SMS).
+        openVerify({email:email,phone:phone,first:first});
       } else {
         btn.textContent='Connexion…';
         var r2=await sb.auth.signInWithPassword({email:email,password:pass});
@@ -454,6 +600,68 @@
     }finally{ btn.disabled=false; btn.textContent = authMode==='signup' ? 'Créer mon compte' : 'Se connecter'; }
   });
   document.getElementById('logoutBtn').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
+
+  /* ===== Vérification d'identité à l'inscription (e-mail ou SMS) ===== */
+  var _verify=null;
+  function vMsg(id,kind,text){ var m=document.getElementById(id); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+  function vShow(panel){ ['vChoose','vEmail','vSms'].forEach(function(p){ document.getElementById(p).hidden = p!==panel; }); }
+  function openVerify(info){
+    _verify=info;
+    elGate.hidden=true; document.getElementById('verifyGate').hidden=false;
+    document.getElementById('vName').textContent=info.first||'';
+    document.getElementById('vEmailAddr').textContent=info.email;
+    document.getElementById('vSmsNum').textContent=info.phone;
+    vMsg('vMsg'); vShow('vChoose');
+  }
+  function closeVerify(){ document.getElementById('verifyGate').hidden=true; }
+  document.getElementById('vBackLogin').addEventListener('click', function(){ closeVerify(); setAuthMode('login'); showGate(); });
+  document.getElementById('vEmailChange').addEventListener('click', function(){ vShow('vChoose'); });
+  document.getElementById('vSmsChange').addEventListener('click', function(){ vShow('vChoose'); });
+  // Choix : e-mail (le lien de confirmation part automatiquement à l'inscription)
+  document.getElementById('vOptEmail').addEventListener('click', function(){
+    document.getElementById('vEmailShown').textContent=_verify.email; vMsg('vEmailMsg'); vShow('vEmail');
+  });
+  document.getElementById('vEmailResend').addEventListener('click', async function(){
+    if(!sb||!_verify) return; var b=this; b.disabled=true;
+    try{ var r=await sb.auth.resend({type:'signup', email:_verify.email}); if(r.error) throw r.error; vMsg('vEmailMsg','ok','E-mail renvoyé.'); }
+    catch(e){ vMsg('vEmailMsg','err',(e&&e.message)||'Envoi impossible.'); }
+    finally{ b.disabled=false; }
+  });
+  document.getElementById('vEmailDone').addEventListener('click', function(){ closeVerify(); setAuthMode('login'); showGate(); authMsg('ok','Une fois votre e-mail confirmé, connectez-vous pour compléter votre profil.'); });
+  // Choix : SMS (envoi d'un code au mobile — nécessite un fournisseur SMS configuré)
+  async function sendSms(){
+    if(!sb||!_verify) return;
+    vMsg('vSmsMsg','ok','Envoi du code…');
+    try{
+      var r=await sb.auth.signInWithOtp({phone:_verify.phone});
+      if(r.error) throw r.error;
+      vMsg('vSmsMsg');
+    }catch(e){
+      var m=(e&&e.message)||'';
+      if(/sms|provider|not enabled|unsupported|configur/i.test(m)) vMsg('vSmsMsg','err','La vérification par SMS n’est pas encore activée sur votre espace. Utilisez l’e-mail pour le moment.');
+      else vMsg('vSmsMsg','err',m||'Envoi du code impossible.');
+    }
+  }
+  document.getElementById('vOptSms').addEventListener('click', function(){
+    document.getElementById('vSmsShown').textContent=_verify.phone; document.getElementById('vCode').value=''; vShow('vSms'); sendSms();
+  });
+  document.getElementById('vSmsResend').addEventListener('click', sendSms);
+  document.getElementById('vSmsVerify').addEventListener('click', async function(){
+    if(!sb||!_verify) return;
+    var code=document.getElementById('vCode').value.replace(/\D/g,'');
+    if(code.length<6){ vMsg('vSmsMsg','err','Saisissez le code à 6 chiffres reçu par SMS.'); return; }
+    var b=this; b.disabled=true; vMsg('vSmsMsg','ok','Vérification…');
+    try{
+      var r=await sb.auth.verifyOtp({phone:_verify.phone, token:code, type:'sms'});
+      if(r.error) throw r.error;
+      // Numéro vérifié : une session est ouverte → onAuthStateChange enchaîne (profil société).
+      closeVerify();
+    }catch(e){
+      var m=(e&&e.message)||'';
+      if(/expired|invalid/i.test(m)) m='Code incorrect ou expiré. Renvoyez un nouveau code.';
+      vMsg('vSmsMsg','err',m||'Vérification impossible.'); b.disabled=false;
+    }
+  });
   // Changer de mot de passe (utilisateur connecté)
   function pwMsg(kind,text){ var m=document.getElementById('pwMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
   function openPw(){ document.getElementById('pwNew').value=''; document.getElementById('pwNew2').value=''; pwMsg(); document.getElementById('pwGate').hidden=false; document.getElementById('pwNew').focus(); }
