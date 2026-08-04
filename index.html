@@ -125,6 +125,17 @@
   .authcard .submit{width:100%;margin-top:20px;padding:12px;border:none;border-radius:11px;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff;font-family:'Inter Tight';font-weight:600;font-size:14px;cursor:pointer;transition:.16s}
   .authcard .submit:hover{filter:brightness(1.08)}
   .authcard .submit:disabled{opacity:.55;cursor:default}
+  .authcard-wide{max-width:520px;max-height:calc(100dvh - 48px);overflow:auto}
+  .su-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:460px){ .su-row{grid-template-columns:1fr} }
+  .vopt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin-top:12px;padding:13px 14px;border:1px solid var(--line-2);border-radius:12px;background:var(--glass);color:var(--txt);cursor:pointer;transition:.15s;font-family:inherit}
+  .vopt:hover{background:var(--glass-2);border-color:var(--azur)}
+  .vopt .vic{width:38px;height:38px;flex:none;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,rgba(109,134,255,.22),rgba(43,69,255,.18));border:1px solid var(--line-2);color:var(--peri)}
+  .vopt .vic svg{width:18px;height:18px}
+  .vopt .vtx{display:flex;flex-direction:column;line-height:1.25;min-width:0}
+  .vopt .vtx b{font-family:'Inter Tight';font-weight:600;font-size:14px}
+  .vopt .vtx small{font-size:11.5px;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vlink{background:none;border:none;color:var(--peri);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px}
   .authmsg{margin-top:14px;font-size:12.5px;line-height:1.5;padding:10px 12px;border-radius:10px;display:none}
   .authmsg.err{display:block;background:rgba(255,90,90,.1);border:1px solid rgba(255,90,90,.32);color:#ff9a9a}
   .authmsg.ok{display:block;background:rgba(62,233,164,.09);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
@@ -142,6 +153,38 @@
     .mtop{display:flex}
   }
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* Assistant IA */
+  .ai-fab{position:fixed;right:22px;bottom:22px;z-index:150;width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));color:#fff;display:grid;place-items:center;
+    box-shadow:0 10px 28px rgba(43,69,255,.45);transition:transform .18s, box-shadow .18s}
+  .ai-fab:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(43,69,255,.55)}
+  .ai-fab svg{width:24px;height:24px}
+  .ai-fab.hide{display:none}
+  .ai-panel{position:fixed;right:22px;bottom:22px;z-index:151;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100dvh - 44px));
+    display:flex;flex-direction:column;background:var(--noir3,#0b0e1a);border:1px solid var(--line-2);border-radius:16px;overflow:hidden;
+    box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .ai-panel[hidden]{display:none}
+  .ai-ph{flex:none;display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(43,69,255,.16),transparent)}
+  .ai-ph-t{display:inline-flex;align-items:center;gap:8px;font-family:'Inter Tight',sans-serif;font-weight:700;font-size:14px}
+  .ai-ph-t svg{width:16px;height:16px;color:var(--peri)}
+  .ai-ph-x{width:30px;height:30px;border-radius:8px;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+  .ai-ph-x svg{width:15px;height:15px}
+  .ai-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+  .ai-b{max-width:86%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+  .ai-b.me{align-self:flex-end;background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));color:#fff;border-bottom-right-radius:4px}
+  .ai-b.bot{align-self:flex-start;background:var(--glass-2);border:1px solid var(--line-2);color:var(--txt);border-bottom-left-radius:4px}
+  .ai-b.warn{align-self:flex-start;background:rgba(255,207,109,.1);border:1px solid rgba(255,207,109,.28);color:#f0c072}
+  .ai-b.typing{color:var(--txt2);font-style:italic}
+  .ai-hint{align-self:center;text-align:center;color:var(--txt2);font-size:12px;line-height:1.5;padding:8px 12px;max-width:92%}
+  .ai-compose{flex:none;display:flex;gap:8px;padding:11px;border-top:1px solid var(--line);align-items:flex-end}
+  .ai-compose textarea{flex:1;resize:none;max-height:120px;font:inherit;font-size:13px;line-height:1.4;padding:9px 11px;border:1px solid var(--line-2);border-radius:11px;background:var(--glass);color:var(--txt)}
+  .ai-compose textarea:focus{outline:none;border-color:var(--peri)}
+  .ai-send{flex:none;width:40px;height:40px;border-radius:11px;border:none;cursor:pointer;background:linear-gradient(135deg,var(--outremer,#2b45ff),var(--azur,#6d86ff));color:#fff;display:grid;place-items:center}
+  .ai-send:disabled{opacity:.55;cursor:progress}
+  .ai-send svg{width:17px;height:17px}
+  @media(max-width:560px){ .ai-panel{right:8px;bottom:8px;height:calc(100dvh - 16px)} .ai-fab{right:14px;bottom:14px} }
 </style>
 </head>
 <body>
@@ -153,13 +196,120 @@
       <button type="button" data-mode="login" class="active">Se connecter</button>
       <button type="button" data-mode="signup">Créer un compte</button>
     </div>
+    <div id="suName" hidden>
+      <div class="su-row">
+        <div><label for="authFirst">Prénom</label><input id="authFirst" type="text" autocomplete="given-name" placeholder="Prénom"></div>
+        <div><label for="authLast">Nom</label><input id="authLast" type="text" autocomplete="family-name" placeholder="Nom"></div>
+      </div>
+    </div>
     <label for="authEmail">Adresse e-mail</label>
     <input id="authEmail" type="email" required autocomplete="email" placeholder="vous@exemple.fr">
+    <div id="suPhone" hidden>
+      <label for="authPhone">Téléphone mobile</label>
+      <input id="authPhone" type="tel" autocomplete="tel" placeholder="06 12 34 56 78">
+    </div>
     <label for="authPass">Mot de passe</label>
     <input id="authPass" type="password" required autocomplete="current-password" minlength="6" placeholder="••••••••">
     <button class="submit" type="submit" id="authSubmit">Se connecter</button>
+    <div style="text-align:center;margin-top:10px"><button type="button" id="authForgot" style="background:none;border:none;color:var(--peri);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px">Mot de passe oublié ?</button></div>
     <div class="authmsg" id="authMsg" role="status"></div>
     <p style="text-align:center;margin-top:16px;font-size:11.5px;color:var(--txt2)">En continuant, vous acceptez les <a href="legal/index.html#cgu" style="color:var(--peri)">conditions d'utilisation</a> et la <a href="legal/index.html#confidentialite" style="color:var(--peri)">politique de confidentialité</a>.</p>
+  </form>
+</div>
+<div class="authgate" id="recoverGate" hidden>
+  <form class="authcard" id="recoverForm" novalidate>
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM-CONSEIL</small></span></div>
+    <p class="lead">Choisissez un nouveau mot de passe pour votre compte.</p>
+    <label for="recPass">Nouveau mot de passe</label>
+    <input id="recPass" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <label for="recPass2">Confirmer le mot de passe</label>
+    <input id="recPass2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <button class="submit" type="submit" id="recSubmit">Enregistrer le mot de passe</button>
+    <div class="authmsg" id="recMsg" role="status"></div>
+  </form>
+</div>
+<div class="authgate" id="verifyGate" hidden>
+  <div class="authcard">
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM-CONSEIL</small></span></div>
+    <!-- Étape 1 : choix du mode de vérification -->
+    <div id="vChoose">
+      <p class="lead">Bienvenue <span id="vName"></span> ! Vérifiez votre identité pour activer votre compte.</p>
+      <button class="vopt" type="button" id="vOptEmail">
+        <span class="vic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z"/><path d="m4 6 8 6 8-6"/></svg></span>
+        <span class="vtx"><b>Par e-mail</b><small id="vEmailAddr">Un lien de confirmation</small></span>
+      </button>
+      <button class="vopt" type="button" id="vOptSms">
+        <span class="vic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2h14a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M11 18h2"/></svg></span>
+        <span class="vtx"><b>Par SMS</b><small id="vSmsNum">Un code sur votre mobile</small></span>
+      </button>
+      <div class="authmsg" id="vMsg" role="status"></div>
+      <div style="text-align:center;margin-top:14px"><button type="button" id="vBackLogin" class="vlink">Retour à la connexion</button></div>
+    </div>
+    <!-- Étape 2a : e-mail envoyé -->
+    <div id="vEmail" hidden>
+      <p class="lead">Un lien de confirmation a été envoyé à <b id="vEmailShown"></b>. Ouvrez-le pour activer votre compte, puis connectez-vous.</p>
+      <button class="submit" type="button" id="vEmailDone">J’ai confirmé — me connecter</button>
+      <div style="text-align:center;margin-top:12px"><button type="button" id="vEmailResend" class="vlink">Renvoyer l’e-mail</button> · <button type="button" id="vEmailChange" class="vlink">Autre méthode</button></div>
+      <div class="authmsg" id="vEmailMsg" role="status"></div>
+    </div>
+    <!-- Étape 2b : code SMS -->
+    <div id="vSms" hidden>
+      <p class="lead">Saisissez le code à 6 chiffres envoyé au <b id="vSmsShown"></b>.</p>
+      <label for="vCode">Code de vérification</label>
+      <input id="vCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" style="letter-spacing:.35em;text-align:center;font-size:18px">
+      <button class="submit" type="button" id="vSmsVerify">Valider mon numéro</button>
+      <div style="text-align:center;margin-top:12px"><button type="button" id="vSmsResend" class="vlink">Renvoyer le code</button> · <button type="button" id="vSmsChange" class="vlink">Autre méthode</button></div>
+      <div class="authmsg" id="vSmsMsg" role="status"></div>
+    </div>
+  </div>
+</div>
+<div class="authgate" id="companyGate" hidden>
+  <form class="authcard authcard-wide" id="companyForm" novalidate>
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace<small>AEM-CONSEIL</small></span></div>
+    <p class="lead">Dernière étape : les informations de votre société. Elles figureront sur vos factures et devis.</p>
+    <div class="su-row">
+      <div><label for="coName">Raison sociale / Nom</label><input id="coName" type="text" placeholder="Ma Société SARL"></div>
+      <div><label for="coForm">Forme juridique</label><input id="coForm" type="text" placeholder="SARL, SAS, EI…"></div>
+    </div>
+    <div class="su-row">
+      <div><label for="coSiret">SIRET</label><input id="coSiret" type="text" placeholder="000 000 000 00000"></div>
+      <div><label for="coTva">N° TVA intracom.</label><input id="coTva" type="text" placeholder="FR00000000000"></div>
+    </div>
+    <div class="su-row">
+      <div><label for="coRcs">RCS / RM</label><input id="coRcs" type="text" placeholder="RCS Ville 000 000 000"></div>
+      <div><label for="coCapital">Capital social</label><input id="coCapital" type="text" placeholder="1 000 €"></div>
+    </div>
+    <label for="coAddr">Adresse</label>
+    <input id="coAddr" type="text" placeholder="1 rue de l’Exemple, 75000 Paris">
+    <div class="su-row">
+      <div><label for="coEmail">E-mail de facturation</label><input id="coEmail" type="email" placeholder="contact@masociete.fr"></div>
+      <div><label for="coPhone">Téléphone</label><input id="coPhone" type="tel" placeholder="01 00 00 00 00"></div>
+    </div>
+    <div class="su-row">
+      <div><label for="coIban">IBAN</label><input id="coIban" type="text" placeholder="FR76 …"></div>
+      <div><label for="coBic">BIC</label><input id="coBic" type="text" placeholder="XXXXFRPPXXX"></div>
+    </div>
+    <button class="submit" type="submit" id="coSubmit">Enregistrer et accéder à mon espace</button>
+    <div style="text-align:center;margin-top:10px"><button type="button" id="coSkip" class="vlink">Compléter plus tard</button></div>
+    <div class="authmsg" id="coMsg" role="status"></div>
+  </form>
+</div>
+<div class="authgate" id="pwGate" hidden style="background:rgba(4,5,11,.72)">
+  <form class="authcard" id="pwForm" novalidate style="position:relative">
+    <button type="button" id="pwClose" aria-label="Fermer" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--txt2);font-size:22px;line-height:1;cursor:pointer">&times;</button>
+    <div class="brand"><img src="assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Mot de passe<small>AEM-CONSEIL</small></span></div>
+    <p class="lead">Choisissez un nouveau mot de passe pour votre compte.</p>
+    <label for="pwNew">Nouveau mot de passe</label>
+    <input id="pwNew" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <label for="pwNew2">Confirmer le mot de passe</label>
+    <input id="pwNew2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <button class="submit" type="submit" id="pwSubmit">Enregistrer</button>
+    <div class="authmsg" id="pwMsg" role="status"></div>
+    <button type="button" id="exportDataBtn" style="width:100%;margin-top:14px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt);font-family:inherit;font-weight:600;font-size:13px;padding:10px;border-radius:11px;cursor:pointer">Exporter mes données (JSON)</button>
+    <p style="text-align:center;margin-top:8px;font-size:10.5px;color:var(--txt2)">Télécharge l'ensemble de vos données (droit à la portabilité, RGPD).</p>
+    <div style="border-top:1px solid var(--line);margin:18px 0 0"></div>
+    <button type="button" id="delAccountBtn" style="width:100%;margin-top:14px;background:rgba(255,107,125,.08);border:1px solid rgba(255,107,125,.28);color:var(--danger);font-family:inherit;font-weight:600;font-size:13px;padding:10px;border-radius:11px;cursor:pointer">Supprimer mon compte</button>
+    <p style="text-align:center;margin-top:8px;font-size:10.5px;color:var(--txt2)">Suppression définitive du compte et de toutes ses données (droit à l'effacement, RGPD).</p>
   </form>
 </div>
 <div class="authgate" id="pendingGate" hidden>
@@ -186,6 +336,21 @@
         <span class="lbl"><span class="l1">Facturation</span><span class="l2">Factures &amp; devis</span></span>
         <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
       </button>
+      <button class="item" data-module="clients">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span class="lbl"><span class="l1">Clients</span><span class="l2">Fiches &amp; coordonnées</span></span>
+        <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+      </button>
+      <button class="item" data-module="fournisseurs">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18M3 15h18M9 3v18"/></svg></span>
+        <span class="lbl"><span class="l1">Fournisseurs</span><span class="l2">Factures reçues &amp; dépenses</span></span>
+        <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+      </button>
+      <button class="item" data-module="soustraitants">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a6 6 0 0 1 12 0M8 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM17 11l2 2 4-4"/></svg></span>
+        <span class="lbl"><span class="l1">Sous-traitants</span><span class="l2">Contrats BTP &amp; paiements</span></span>
+        <span class="lockbadge" aria-label="Verrouillé"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+      </button>
       <button class="item" data-module="efacture">
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg></span>
         <span class="lbl"><span class="l1">Facturation électronique</span><span class="l2">Factur-X · émission &amp; réception</span></span>
@@ -210,6 +375,10 @@
         <span class="av" id="userAv">A</span>
         <span class="uinfo"><span class="ue" id="userEmail"></span><span class="ur">Connecté</span></span>
       </div>
+      <button class="item" type="button" id="changePwBtn" hidden>
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg></span>
+        <span class="lbl">Changer de mot de passe</span>
+      </button>
       <button class="item logout" type="button" id="logoutBtn" hidden>
         <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
         <span class="lbl">Déconnexion</span>
@@ -244,6 +413,22 @@
       <iframe class="module" id="moduleFrame" title="Module" src="about:blank"></iframe>
     </div>
   </div>
+
+  <!-- Assistant IA -->
+  <button class="ai-fab" id="aiFab" type="button" aria-label="Assistant" title="Assistant">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg>
+  </button>
+  <section class="ai-panel" id="aiPanel" hidden aria-label="Assistant IA">
+    <header class="ai-ph">
+      <span class="ai-ph-t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg> Assistant</span>
+      <button class="ai-ph-x" id="aiPanelX" type="button" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </header>
+    <div class="ai-log" id="aiLog"></div>
+    <form class="ai-compose" id="aiForm">
+      <textarea id="aiQ" rows="1" placeholder="Posez votre question (facturation, BTP, e-facture…)"></textarea>
+      <button class="ai-send" id="aiSend" type="submit" aria-label="Envoyer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </form>
+  </section>
 </div>
 <div class="ov" id="ov" onclick="toggleNav(false)"></div>
 <div class="toast" id="toast"><span class="d"></span><span id="toastMsg"></span></div>
@@ -261,10 +446,22 @@
   function setAuthMode(mode){
     authMode=mode;
     document.querySelectorAll('#authTabs button').forEach(function(b){ b.classList.toggle('active', b.dataset.mode===mode); });
-    document.getElementById('authSubmit').textContent = mode==='signup' ? 'Créer mon compte' : 'Se connecter';
-    document.getElementById('authLead').textContent = mode==='signup' ? 'Créez votre compte pour accéder à votre espace.' : 'Connectez-vous pour accéder à votre espace.';
-    document.getElementById('authPass').setAttribute('autocomplete', mode==='signup' ? 'new-password' : 'current-password');
+    var isSignup = mode==='signup';
+    document.getElementById('authSubmit').textContent = isSignup ? 'Créer mon compte' : 'Se connecter';
+    document.getElementById('authLead').textContent = isSignup ? 'Créez votre compte pour accéder à votre espace.' : 'Connectez-vous pour accéder à votre espace.';
+    document.getElementById('authPass').setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
+    document.getElementById('suName').hidden = !isSignup;
+    document.getElementById('suPhone').hidden = !isSignup;
+    document.getElementById('authForgot').parentNode.hidden = isSignup;
     authMsg();
+  }
+  // Normalise un numéro FR en E.164 (+33…). Renvoie '' si invalide.
+  function normPhone(v){
+    var s=String(v||'').replace(/[\s.\-()]/g,'');
+    if(/^\+\d{8,15}$/.test(s)) return s;
+    if(/^0\d{9}$/.test(s)) return '+33'+s.slice(1);
+    if(/^33\d{9}$/.test(s)) return '+'+s;
+    return '';
   }
   function showApp(session){
     document.getElementById('pendingGate').hidden=true;
@@ -274,8 +471,48 @@
     document.getElementById('userAv').textContent=(em.charAt(0)||'A');
     document.getElementById('sbUser').hidden=false;
     document.getElementById('logoutBtn').hidden=false;
+    document.getElementById('changePwBtn').hidden=false;
     if(!showApp._routed){ showApp._routed=true; route(); }
   }
+  /* Profil société : présent si une raison sociale est enregistrée. */
+  function hasCompany(){ try{ var e=JSON.parse(localStorage.getItem('aem_fact_emit')||'null'); return !!(e&&String(e.name||'').trim()); }catch(_){ return false; } }
+  /* Après authentification : profil société d'abord s'il manque, sinon l'espace. */
+  function enterApp(session){
+    if(!hasCompany() && !enterApp._skipped){ showCompany(session); return; }
+    document.getElementById('companyGate').hidden=true;
+    showApp(session);
+  }
+  function showCompany(session){
+    elApp.hidden=true; elGate.hidden=true; document.getElementById('pendingGate').hidden=true;
+    document.getElementById('verifyGate').hidden=true;
+    var u=(session&&session.user)||{}, meta=u.user_metadata||{};
+    if(!document.getElementById('coEmail').value) document.getElementById('coEmail').value=u.email||'';
+    if(!document.getElementById('coPhone').value && meta.phone) document.getElementById('coPhone').value=meta.phone;
+    document.getElementById('companyGate').hidden=false;
+    document.getElementById('coName').focus();
+    enterApp._session=session;
+  }
+  function saveCompany(){
+    var g=function(id){ return document.getElementById(id).value.trim(); };
+    var emit={ name:g('coName'), legalForm:g('coForm'), capital:g('coCapital'), rcs:g('coRcs'), addr:g('coAddr'),
+      siret:g('coSiret'), tva:g('coTva'), email:g('coEmail'), phone:g('coPhone'), iban:g('coIban'), bic:g('coBic'),
+      decAssureur:'', decContrat:'', decZone:'' };
+    try{ localStorage.setItem('aem_fact_emit', JSON.stringify(emit)); }catch(_){}
+    // Miroir cloud (par compte) pour retrouver le profil sur tout appareil.
+    try{ if(sb&&enterApp._session){ sb.from('user_settings').upsert({user_id:enterApp._session.user.id, emit:emit, updated_at:new Date().toISOString()}).then(function(){},function(){}); } }catch(_){}
+  }
+  document.getElementById('companyForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    if(!document.getElementById('coName').value.trim()){ var m=document.getElementById('coMsg'); m.className='authmsg err'; m.textContent='Indiquez au moins la raison sociale.'; return; }
+    saveCompany();
+    document.getElementById('companyGate').hidden=true;
+    showApp(enterApp._session);
+  });
+  document.getElementById('coSkip').addEventListener('click', function(){
+    enterApp._skipped=true;
+    document.getElementById('companyGate').hidden=true;
+    showApp(enterApp._session);
+  });
   function showPending(session){
     elApp.hidden=true; elGate.hidden=true;
     document.getElementById('pendingGate').hidden=false;
@@ -285,8 +522,11 @@
   function showGate(){
     elApp.hidden=true; elGate.hidden=false;
     document.getElementById('pendingGate').hidden=true;
+    document.getElementById('verifyGate').hidden=true;
+    document.getElementById('companyGate').hidden=true;
     document.getElementById('sbUser').hidden=true;
     document.getElementById('logoutBtn').hidden=true;
+    document.getElementById('changePwBtn').hidden=true;
     IS_ADMIN=false; document.getElementById('admItem').hidden=true;
   }
   /* Décide de l'accès : admin / approuvé / offre. Tant que le SQL n'est
@@ -306,10 +546,10 @@
     }
     IS_ADMIN=acc.admin; USER_PLAN = acc.plan || 'free';
     document.getElementById('admItem').hidden = !IS_ADMIN;
-    var planNames={free:'Aucune offre', essentiel:'Essentiel', pro:'Pro', premium:'Premium'};
+    var planNames={free:'Aucune offre', essentiel:'Facturation', pro:'Pro', premium:'Premium'};
     document.getElementById('planSub').textContent = IS_ADMIN ? 'Accès complet' : ((USER_PLAN&&USER_PLAN!=='free') ? 'Offre '+planNames[USER_PLAN] : 'Choisir une offre');
     applyLocks();
-    if(acc.admin || acc.approved){ showApp(session); } else { showPending(session); }
+    if(acc.admin || acc.approved){ enterApp(session); } else { showPending(session); }
   }
   function applyLocks(){
     document.querySelectorAll('.snav .item[data-module]').forEach(function(b){
@@ -335,11 +575,17 @@
     var btn=document.getElementById('authSubmit'); btn.disabled=true; authMsg();
     try{
       if(authMode==='signup'){
+        var first=document.getElementById('authFirst').value.trim();
+        var last=document.getElementById('authLast').value.trim();
+        var phoneRaw=document.getElementById('authPhone').value.trim();
+        var phone=normPhone(phoneRaw);
+        if(!first || !last){ authMsg('err','Renseignez votre prénom et votre nom.'); btn.disabled=false; btn.textContent='Créer mon compte'; return; }
+        if(!phone){ authMsg('err','Renseignez un numéro de mobile valide (ex. 06 12 34 56 78).'); btn.disabled=false; btn.textContent='Créer mon compte'; return; }
         btn.textContent='Création…';
-        var r=await sb.auth.signUp({email:email,password:pass});
+        var r=await sb.auth.signUp({email:email,password:pass,options:{data:{first_name:first,last_name:last,full_name:(first+' '+last).trim(),phone:phone}}});
         if(r.error) throw r.error;
-        if(r.data && r.data.session){ /* onAuthStateChange gère l’ouverture */ }
-        else { authMsg('ok','Compte créé. Vérifiez votre boîte mail pour confirmer votre adresse, puis connectez-vous.'); setAuthMode('login'); }
+        // Compte créé : on passe à l'étape de vérification d'identité (e-mail ou SMS).
+        openVerify({email:email,phone:phone,first:first});
       } else {
         btn.textContent='Connexion…';
         var r2=await sb.auth.signInWithPassword({email:email,password:pass});
@@ -354,22 +600,191 @@
     }finally{ btn.disabled=false; btn.textContent = authMode==='signup' ? 'Créer mon compte' : 'Se connecter'; }
   });
   document.getElementById('logoutBtn').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
+
+  /* ===== Vérification d'identité à l'inscription (e-mail ou SMS) ===== */
+  var _verify=null;
+  function vMsg(id,kind,text){ var m=document.getElementById(id); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+  function vShow(panel){ ['vChoose','vEmail','vSms'].forEach(function(p){ document.getElementById(p).hidden = p!==panel; }); }
+  function openVerify(info){
+    _verify=info;
+    elGate.hidden=true; document.getElementById('verifyGate').hidden=false;
+    document.getElementById('vName').textContent=info.first||'';
+    document.getElementById('vEmailAddr').textContent=info.email;
+    document.getElementById('vSmsNum').textContent=info.phone;
+    vMsg('vMsg'); vShow('vChoose');
+  }
+  function closeVerify(){ document.getElementById('verifyGate').hidden=true; }
+  document.getElementById('vBackLogin').addEventListener('click', function(){ closeVerify(); setAuthMode('login'); showGate(); });
+  document.getElementById('vEmailChange').addEventListener('click', function(){ vShow('vChoose'); });
+  document.getElementById('vSmsChange').addEventListener('click', function(){ vShow('vChoose'); });
+  // Choix : e-mail (le lien de confirmation part automatiquement à l'inscription)
+  document.getElementById('vOptEmail').addEventListener('click', function(){
+    document.getElementById('vEmailShown').textContent=_verify.email; vMsg('vEmailMsg'); vShow('vEmail');
+  });
+  document.getElementById('vEmailResend').addEventListener('click', async function(){
+    if(!sb||!_verify) return; var b=this; b.disabled=true;
+    try{ var r=await sb.auth.resend({type:'signup', email:_verify.email}); if(r.error) throw r.error; vMsg('vEmailMsg','ok','E-mail renvoyé.'); }
+    catch(e){ vMsg('vEmailMsg','err',(e&&e.message)||'Envoi impossible.'); }
+    finally{ b.disabled=false; }
+  });
+  document.getElementById('vEmailDone').addEventListener('click', function(){ closeVerify(); setAuthMode('login'); showGate(); authMsg('ok','Une fois votre e-mail confirmé, connectez-vous pour compléter votre profil.'); });
+  // Choix : SMS (envoi d'un code au mobile — nécessite un fournisseur SMS configuré)
+  async function sendSms(){
+    if(!sb||!_verify) return;
+    vMsg('vSmsMsg','ok','Envoi du code…');
+    try{
+      var r=await sb.auth.signInWithOtp({phone:_verify.phone});
+      if(r.error) throw r.error;
+      vMsg('vSmsMsg');
+    }catch(e){
+      var m=(e&&e.message)||'';
+      if(/sms|provider|not enabled|unsupported|configur/i.test(m)) vMsg('vSmsMsg','err','La vérification par SMS n’est pas encore activée sur votre espace. Utilisez l’e-mail pour le moment.');
+      else vMsg('vSmsMsg','err',m||'Envoi du code impossible.');
+    }
+  }
+  document.getElementById('vOptSms').addEventListener('click', function(){
+    document.getElementById('vSmsShown').textContent=_verify.phone; document.getElementById('vCode').value=''; vShow('vSms'); sendSms();
+  });
+  document.getElementById('vSmsResend').addEventListener('click', sendSms);
+  document.getElementById('vSmsVerify').addEventListener('click', async function(){
+    if(!sb||!_verify) return;
+    var code=document.getElementById('vCode').value.replace(/\D/g,'');
+    if(code.length<6){ vMsg('vSmsMsg','err','Saisissez le code à 6 chiffres reçu par SMS.'); return; }
+    var b=this; b.disabled=true; vMsg('vSmsMsg','ok','Vérification…');
+    try{
+      var r=await sb.auth.verifyOtp({phone:_verify.phone, token:code, type:'sms'});
+      if(r.error) throw r.error;
+      // Numéro vérifié : une session est ouverte → onAuthStateChange enchaîne (profil société).
+      closeVerify();
+    }catch(e){
+      var m=(e&&e.message)||'';
+      if(/expired|invalid/i.test(m)) m='Code incorrect ou expiré. Renvoyez un nouveau code.';
+      vMsg('vSmsMsg','err',m||'Vérification impossible.'); b.disabled=false;
+    }
+  });
+  // Changer de mot de passe (utilisateur connecté)
+  function pwMsg(kind,text){ var m=document.getElementById('pwMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+  function openPw(){ document.getElementById('pwNew').value=''; document.getElementById('pwNew2').value=''; pwMsg(); document.getElementById('pwGate').hidden=false; document.getElementById('pwNew').focus(); }
+  function closePw(){ document.getElementById('pwGate').hidden=true; }
+  document.getElementById('changePwBtn').addEventListener('click', openPw);
+  document.getElementById('pwClose').addEventListener('click', closePw);
+  document.getElementById('pwGate').addEventListener('click', function(e){ if(e.target===this) closePw(); });
+  document.getElementById('pwForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    if(!sb){ pwMsg('err','Service indisponible.'); return; }
+    var p1=document.getElementById('pwNew').value, p2=document.getElementById('pwNew2').value;
+    if(p1.length<6){ pwMsg('err','Mot de passe d’au moins 6 caractères.'); return; }
+    if(p1!==p2){ pwMsg('err','Les deux mots de passe ne correspondent pas.'); return; }
+    var btn=document.getElementById('pwSubmit'); btn.disabled=true; pwMsg();
+    try{
+      var r=await sb.auth.updateUser({password:p1});
+      if(r&&r.error) throw r.error;
+      pwMsg('ok','Mot de passe mis à jour.');
+      setTimeout(closePw, 1200);
+    }catch(err){ pwMsg('err',(err&&err.message)||'Mise à jour impossible.'); }
+    finally{ btn.disabled=false; }
+  });
+  // Export des données du compte (droit à la portabilité, RGPD)
+  document.getElementById('exportDataBtn').addEventListener('click', function(){
+    function ls(k){ try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch(e){ return null; } }
+    var email=(document.getElementById('userEmail')||{}).textContent||'';
+    var data={
+      export:'AEM-CONSEIL — données du compte',
+      compte:email,
+      exporte_le:new Date().toISOString(),
+      documents:ls('aem_fact_docs')||[],
+      emetteur:ls('aem_fact_emit'),
+      numerotation:ls('aem_fact_seq'),
+      clients:ls('aem_fact_clients')||[],
+      sous_traitants:ls('aem_fact_soustraitants')||[],
+      accuses_reception:ls('aem_fact_acks')||[]
+    };
+    var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    var url=URL.createObjectURL(blob), a=document.createElement('a');
+    a.href=url; a.download='mes-donnees-aem-conseil.json'; document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },100);
+    pwMsg('ok','Export téléchargé ('+(data.documents.length)+' document'+(data.documents.length>1?'s':'')+').');
+  });
+  // Suppression du compte (droit à l'effacement, RGPD)
+  document.getElementById('delAccountBtn').addEventListener('click', async function(){
+    if(!sb){ pwMsg('err','Service indisponible.'); return; }
+    if(!confirm('Supprimer définitivement votre compte et TOUTES vos données (factures, clients, sous-traitants, réglages) ?\n\nCette action est irréversible.')) return;
+    if(!confirm('Dernière confirmation : la suppression est définitive et conforme à votre droit à l’effacement (RGPD). Continuer ?')) return;
+    var db=this; db.disabled=true; pwMsg();
+    try{
+      var r=await sb.rpc('delete_my_account');
+      if(r&&r.error) throw r.error;
+      try{ await sb.auth.signOut(); }catch(e){}
+      try{ ['aem_fact_docs','aem_fact_emit','aem_fact_seq','aem_fact_current','aem_fact_clients','aem_fact_soustraitants','aem_fact_acks','aem_fact_owner'].forEach(function(k){ localStorage.removeItem(k); }); }catch(e){}
+      closePw(); showGate(); authMsg('ok','Votre compte a été supprimé.');
+    }catch(err){ db.disabled=false; pwMsg('err',(err&&err.message)||'Suppression impossible. Réessayez.'); }
+  });
   document.getElementById('pendLogout').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
+
+  // Mot de passe oublié : envoie un e-mail de réinitialisation.
+  document.getElementById('authForgot').addEventListener('click', async function(){
+    if(!sb){ authMsg('err',"Service indisponible."); return; }
+    var email=document.getElementById('authEmail').value.trim();
+    if(!/.+@.+\..+/.test(email)){ authMsg('err','Saisissez votre adresse e-mail, puis cliquez à nouveau sur « Mot de passe oublié ? ».'); return; }
+    try{
+      var redirect=location.origin+location.pathname;
+      var r=await sb.auth.resetPasswordForEmail(email, {redirectTo:redirect});
+      if(r&&r.error) throw r.error;
+      authMsg('ok','E-mail de réinitialisation envoyé à '+email+'. Suivez le lien pour choisir un nouveau mot de passe.');
+    }catch(err){ authMsg('err',(err&&err.message)||'Envoi impossible. Réessayez.'); }
+  });
+  // Retour depuis le lien de réinitialisation : Supabase ouvre une session « recovery ».
+  function showRecover(){
+    document.getElementById('authGate').hidden=true;
+    document.getElementById('pendingGate').hidden=true;
+    elApp.hidden=true;
+    document.getElementById('recoverGate').hidden=false;
+  }
+  function recMsg(kind,text){ var m=document.getElementById('recMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+  var _recovering=false;
+  document.getElementById('recoverForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    if(!sb){ recMsg('err','Service indisponible.'); return; }
+    var p1=document.getElementById('recPass').value, p2=document.getElementById('recPass2').value;
+    if(p1.length<6){ recMsg('err','Mot de passe d’au moins 6 caractères.'); return; }
+    if(p1!==p2){ recMsg('err','Les deux mots de passe ne correspondent pas.'); return; }
+    var btn=document.getElementById('recSubmit'); btn.disabled=true; recMsg();
+    try{
+      var r=await sb.auth.updateUser({password:p1});
+      if(r&&r.error) throw r.error;
+      _recovering=false;
+      recMsg('ok','Mot de passe mis à jour. Redirection…');
+      var s=await sb.auth.getSession();
+      if(s&&s.data&&s.data.session){ document.getElementById('recoverGate').hidden=true; resolveAccess(s.data.session); }
+      else { document.getElementById('recoverGate').hidden=true; showGate(); }
+    }catch(err){ recMsg('err',(err&&err.message)||'Mise à jour impossible.'); }
+    finally{ btn.disabled=false; }
+  });
 
   async function initAuth(){
     trackVisit();
     if(!sb){ showGate(); authMsg('err',"Service d'authentification indisponible. Vérifiez votre connexion et réessayez."); return; }
+    // Retour depuis un lien de réinitialisation de mot de passe (#type=recovery)
+    if(/type=recovery/.test(location.hash||'')){ _recovering=true; showRecover(); }
     try{
       var res=await sb.auth.getSession();
-      if(res.data && res.data.session){ resolveAccess(res.data.session); } else { showGate(); }
-    }catch(e){ showGate(); }
-    sb.auth.onAuthStateChange(function(_evt,session){ if(session){ authMsg(); resolveAccess(session); } else { showGate(); } });
+      if(_recovering){ showRecover(); }
+      else if(res.data && res.data.session){ resolveAccess(res.data.session); } else { showGate(); }
+    }catch(e){ if(!_recovering) showGate(); }
+    sb.auth.onAuthStateChange(function(_evt,session){
+      if(_evt==='PASSWORD_RECOVERY'){ _recovering=true; showRecover(); return; }
+      if(_recovering) return;                       // on reste sur l'écran « nouveau mot de passe »
+      if(session){ authMsg(); resolveAccess(session); } else { showGate(); }
+    });
     authReady=true;
   }
 
   var PLAN_RANK = { free:0, essentiel:1, pro:2, premium:3 };
   var MODULES = {
     facturation: { title:'Facturation', url:'facturation/?embed=1', enabled:true, min:'essentiel' },
+    clients:     { title:'Clients', url:'clients/?embed=1', enabled:true, min:'essentiel' },
+    fournisseurs:{ title:'Fournisseurs', url:'fournisseurs/?embed=1', enabled:true, min:'essentiel' },
+    soustraitants:{ title:'Sous-traitants', url:'sous-traitants/?embed=1', enabled:true, min:'pro' },
     efacture:    { title:'Facturation électronique', url:'efacture/?embed=1', enabled:true, min:'pro' },
     documents:   { title:'Mes documents', url:'documents/?embed=1', enabled:true, min:'premium' },
     abonnement:  { title:'Abonnement', url:'abonnement/?embed=1', enabled:true },
@@ -378,7 +793,7 @@
   var current=null, IS_ADMIN=false, USER_PLAN='free';
   function userRank(){ return IS_ADMIN ? 99 : (PLAN_RANK[USER_PLAN]||0); }
   function moduleLocked(m){ if(!m) return false; if(m.admin) return !IS_ADMIN; if(m.min) return userRank() < PLAN_RANK[m.min]; return false; }
-  function firstAccessible(){ var order=['facturation','efacture','documents','admin']; for(var i=0;i<order.length;i++){ if(!moduleLocked(MODULES[order[i]])) return order[i]; } return 'abonnement'; }
+  function firstAccessible(){ var order=['facturation','clients','fournisseurs','soustraitants','efacture','documents','admin']; for(var i=0;i<order.length;i++){ if(!moduleLocked(MODULES[order[i]])) return order[i]; } return 'abonnement'; }
   var frame=document.getElementById('moduleFrame'), frameLoad=document.getElementById('frameLoad');
   function currentKey(){ var h=(location.hash||'').replace(/^#/,''); var m=MODULES[h]; var ok=m&&m.enabled&&!moduleLocked(m); return ok?h:firstAccessible(); }
   function route(){
@@ -438,6 +853,50 @@
       if(has || chas) history.replaceState(null,'',location.pathname+location.hash);
     }catch(e){}
   })();
+
+  /* ---- Assistant IA (③) ---- */
+  (function(){
+    var fab=document.getElementById('aiFab'), panel=document.getElementById('aiPanel'),
+        log=document.getElementById('aiLog'), form=document.getElementById('aiForm'),
+        input=document.getElementById('aiQ'), send=document.getElementById('aiSend');
+    if(!fab) return;
+    var convo=[], greeted=false;
+    function bubble(text, cls){ var d=document.createElement('div'); d.className='ai-b '+(cls||'bot'); d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+    function hint(text){ var d=document.createElement('div'); d.className='ai-hint'; d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; }
+    function openPanel(){
+      panel.hidden=false; fab.classList.add('hide');
+      if(!greeted){ greeted=true; hint('Assistant AEM-CONSEIL — posez vos questions sur la facturation, le BTP (situations, DGD, retenue, sous-traitance), la TVA ou l’e-facture. Les réponses sont indicatives, non contractuelles.'); }
+      setTimeout(function(){ input.focus(); }, 60);
+    }
+    function closePanel(){ panel.hidden=true; fab.classList.remove('hide'); }
+    fab.addEventListener('click', openPanel);
+    document.getElementById('aiPanelX').addEventListener('click', closePanel);
+    input.addEventListener('input', function(){ this.style.height='auto'; this.style.height=Math.min(120,this.scrollHeight)+'px'; });
+    input.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); form.requestSubmit(); } });
+    async function ask(q){
+      bubble(q, 'me'); convo.push({role:'user', text:q});
+      var typing=bubble('L’assistant réfléchit…', 'bot typing');
+      send.disabled=true;
+      try{
+        if(!sb) throw new Error('Connexion requise.');
+        var ctx=convo.slice(-6,-1).map(function(m){ return (m.role==='user'?'Q: ':'R: ')+m.text; }).join('\n');
+        var r=await sb.functions.invoke('ai-assistant', { body:{ task:'assistant', text:q, context:ctx } });
+        if(r && r.error){ var msg='Assistant indisponible.'; try{ var j=await r.error.context.json(); if(j&&j.error) msg=j.error; }catch(e){} var er=new Error(msg); er.nc=/non configur/i.test(msg); throw er; }
+        if(r && r.data && r.data.error) throw new Error(r.data.error);
+        var ans=(r && r.data && r.data.answer) || 'Je n’ai pas de réponse pour le moment.';
+        typing.remove(); bubble(ans, 'bot'); convo.push({role:'bot', text:ans});
+      }catch(e){
+        typing.remove();
+        if(e && e.nc) bubble('L’assistant IA n’est pas encore activé sur votre espace. Contactez-nous pour l’activer (clé ANTHROPIC_API_KEY côté serveur).', 'warn');
+        else bubble('Assistant momentanément indisponible : '+String(e&&e.message||e), 'warn');
+      }finally{ send.disabled=false; input.focus(); }
+    }
+    form.addEventListener('submit', function(e){
+      e.preventDefault(); var q=(input.value||'').trim(); if(!q) return;
+      input.value=''; input.style.height='auto'; ask(q);
+    });
+  })();
+
   initAuth();
 </script>
 <script>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Espace client — AEM-CONSEIL</title>
+<meta name="description" content="Consultez et téléchargez vos factures — Espace client AEM-CONSEIL.">
+<meta name="theme-color" content="#04050b">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/png" sizes="512x512" href="../assets/favicon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --noir:#04050b; --noir2:#070912; --noir3:#0b0e1a;
+    --outremer:#2b45ff; --azur:#6d86ff; --peri:#a9b8ff;
+    --line:rgba(150,168,255,.11); --line-2:rgba(150,168,255,.18);
+    --glass:rgba(255,255,255,.035); --glass-2:rgba(255,255,255,.06);
+    --txt:#f2f4ff; --txt2:#8b98bd; --pos:#3ee9a4; --warn:#ffcf6d; --danger:#ff6b7d;
+  }
+  *{box-sizing:border-box;margin:0}
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--txt);background:var(--noir);-webkit-font-smoothing:antialiased;line-height:1.5;
+    display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+  body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:radial-gradient(820px 600px at 50% -10%, rgba(43,69,255,.18), transparent 60%),linear-gradient(180deg,#05060e,#04050b)}
+  a{color:inherit;text-decoration:none}
+  button{font-family:inherit}
+
+  /* Connexion */
+  .authgate{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:20px;background:rgba(4,5,11,.6)}
+  .authcard{width:100%;max-width:400px;background:linear-gradient(180deg,rgba(15,19,32,.98),rgba(9,11,20,.99));border:1px solid var(--line-2);border-radius:18px;padding:26px 24px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+  .authcard .brand{display:flex;align-items:center;gap:11px;margin-bottom:6px}
+  .authcard .brand img{height:28px}
+  .authcard .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
+  .authcard .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
+  .authcard .lead{font-size:12.5px;color:var(--txt2);margin:8px 0 18px;line-height:1.5}
+  .authtabs{display:flex;gap:4px;margin-bottom:16px;background:var(--noir2);border:1px solid var(--line-2);border-radius:11px;padding:4px}
+  .authtabs button{flex:1;border:none;background:none;color:var(--txt2);font-family:'Inter Tight';font-weight:600;font-size:13px;padding:8px;border-radius:8px;cursor:pointer;transition:.15s}
+  .authtabs button.active{background:linear-gradient(135deg,rgba(109,134,255,.32),rgba(43,69,255,.28));color:#fff}
+  .authcard label{display:block;font-size:11px;color:var(--txt2);font-weight:600;margin:0 0 5px}
+  .authcard input{width:100%;background:var(--glass);border:1px solid var(--line-2);border-radius:10px;color:var(--txt);padding:11px 12px;font-size:14px;margin-bottom:13px;font-family:inherit}
+  .authcard input:focus{outline:none;border-color:var(--azur);box-shadow:0 0 0 3px rgba(109,134,255,.16)}
+  .authcard .submit{width:100%;border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff;font-family:'Inter Tight';font-weight:700;font-size:14px;padding:12px;border-radius:11px;cursor:pointer}
+  .authcard .submit:hover{filter:brightness(1.08)}
+  .authcard .submit:disabled{opacity:.6;cursor:default}
+  .authmsg{display:none;margin-top:12px;font-size:12px;padding:9px 11px;border-radius:9px;line-height:1.45}
+  .authmsg.err{display:block;background:rgba(255,107,125,.09);border:1px solid rgba(255,107,125,.28);color:#ff9fab}
+  .authmsg.ok{display:block;background:rgba(62,233,164,.09);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:12px clamp(14px,3vw,26px);border-bottom:1px solid var(--line);flex:none;
+    background:linear-gradient(180deg,rgba(12,16,30,.9),rgba(7,9,18,.7))}
+  .topbar .brand{display:flex;align-items:center;gap:12px}
+  .topbar .brand img{height:30px;filter:brightness(1.14) drop-shadow(0 0 8px rgba(169,184,255,.4))}
+  .topbar .brand .t{font-family:'Inter Tight';font-weight:700;font-size:16px;line-height:1.1}
+  .topbar .brand .t small{display:block;font-weight:500;font-size:11px;color:var(--txt2)}
+  .tb-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .tb-user{font-size:12px;color:var(--txt2)}
+  .tb-user b{color:var(--txt);font-weight:600}
+  .tb-logout{display:inline-flex;align-items:center;gap:6px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;color:var(--txt);background:var(--glass);border:1px solid var(--line-2);padding:7px 12px;border-radius:9px}
+  .tb-logout:hover{background:var(--glass-2)}
+  .tb-logout svg{width:14px;height:14px}
+
+  .wrap{flex:1;max-width:960px;width:100%;margin:0 auto;padding:22px clamp(14px,3vw,26px) 60px}
+  .head h1{font-family:'Inter Tight';font-weight:700;font-size:22px;letter-spacing:-.01em}
+  .head p{font-size:13px;color:var(--txt2);margin-top:3px}
+  .sumline{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 20px}
+  .sum{background:var(--glass);border:1px solid var(--line);border-radius:13px;padding:12px 15px;min-width:150px}
+  .sum .v{font-family:'Inter Tight';font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}
+  .sum .l{font-size:11px;color:var(--txt2);margin-top:1px}
+  .sum .v.warn{color:var(--warn)} .sum .v.pos{color:var(--pos)}
+
+  .list{display:flex;flex-direction:column;gap:9px}
+  .inv{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:13px;background:var(--noir2);cursor:pointer;transition:.15s}
+  .inv:hover{border-color:var(--line-2);background:var(--noir3);transform:translateY(-1px)}
+  .inv .ic{width:42px;height:42px;flex:none;border-radius:11px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line-2);color:var(--peri)}
+  .inv .ic svg{width:19px;height:19px}
+  .inv .m{flex:1;min-width:0}
+  .inv .m .no{font-family:'Inter Tight';font-weight:600;font-size:14.5px}
+  .inv .m .d{font-size:12px;color:var(--txt2);margin-top:2px;display:flex;gap:12px;flex-wrap:wrap}
+  .inv .r{flex:none;text-align:right}
+  .inv .r .amt{font-family:'Inter Tight';font-weight:700;font-size:15.5px;font-variant-numeric:tabular-nums}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;padding:2px 9px;border-radius:999px;margin-top:4px}
+  .badge.paid{background:rgba(62,233,164,.12);border:1px solid rgba(62,233,164,.28);color:var(--pos)}
+  .badge.partial,.badge.pending{background:rgba(255,207,109,.12);border:1px solid rgba(255,207,109,.28);color:var(--warn)}
+  .badge.overdue{background:rgba(255,107,107,.12);border:1px solid rgba(255,107,107,.3);color:#ff8f8f}
+  .badge.info{background:rgba(109,134,255,.12);border:1px solid var(--line-2);color:var(--peri)}
+  .empty{text-align:center;color:var(--txt2);padding:60px 20px}
+  .empty .eic{width:60px;height:60px;margin:0 auto 16px;border-radius:16px;display:grid;place-items:center;background:var(--glass);border:1px solid var(--line-2);color:var(--peri)}
+  .empty .eic svg{width:28px;height:28px}
+  .empty h2{font-family:'Inter Tight';font-weight:600;font-size:18px;color:var(--txt);margin-bottom:6px}
+
+  /* Visionneuse document */
+  .viewer{position:fixed;inset:0;z-index:80;background:rgba(4,5,11,.9);display:none;flex-direction:column}
+  .viewer.open{display:flex}
+  .vbar{display:flex;align-items:center;gap:10px;padding:12px clamp(12px,3vw,22px);border-bottom:1px solid var(--line);flex:none;background:rgba(7,9,18,.9)}
+  .vbar .vt{font-family:'Inter Tight';font-weight:600;font-size:14px}
+  .vbar .sp{flex:1}
+  .vbar button{display:inline-flex;align-items:center;gap:7px;font-family:'Inter Tight';font-weight:600;font-size:12.5px;cursor:pointer;border-radius:9px;padding:9px 13px;border:1px solid var(--line-2);background:var(--glass);color:var(--txt)}
+  .vbar button:hover{background:var(--glass-2)}
+  .vbar .vack{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--pos);background:rgba(62,233,164,.1);border:1px solid rgba(62,233,164,.28);padding:6px 11px;border-radius:8px}
+  .vbar button[disabled]{opacity:.55;cursor:default}
+  .vbar button.primary{border:none;background:linear-gradient(135deg,var(--outremer),var(--azur));color:#fff}
+  .vbar button svg{width:15px;height:15px}
+  .vscroll{flex:1;overflow:auto;padding:20px;display:flex;justify-content:center;background:#3a3f52}
+  .doc{width:210mm;min-height:297mm;background:#fff;flex:none;box-shadow:0 20px 60px rgba(0,0,0,.5);transform-origin:top center}
+  @media(max-width:820px){ .doc{transform:scale(.52);margin:-70mm -50mm} }
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(16px);z-index:200;background:var(--noir3);border:1px solid var(--line-2);color:var(--txt);padding:11px 18px;border-radius:11px;font-size:13px;box-shadow:0 16px 40px rgba(0,0,0,.5);opacity:0;visibility:hidden;transition:.24s}
+  .toast.show{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+
+  @media print{
+    @page{size:A4;margin:0}
+    body::before{display:none}
+    body>*:not(.viewer){display:none!important}
+    .viewer{position:static;background:#fff;display:block!important}
+    .vbar,.toast{display:none!important}
+    .vscroll{padding:0;background:#fff;display:block;overflow:visible}
+    .doc{width:210mm;min-height:297mm;box-shadow:none;transform:none!important;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .doc *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<div class="authgate" id="authGate" hidden>
+  <form class="authcard" id="authForm" autocomplete="on" novalidate>
+    <div class="brand"><img src="../assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace client<small>AEM CONSEIL</small></span></div>
+    <p class="lead" id="authLead">Connectez-vous avec l'adresse e-mail à laquelle vos factures ont été envoyées.</p>
+    <div class="authtabs" id="authTabs">
+      <button type="button" data-mode="login" class="active">Se connecter</button>
+      <button type="button" data-mode="signup">Créer mon accès</button>
+    </div>
+    <label for="authEmail">Adresse e-mail</label>
+    <input id="authEmail" type="email" required autocomplete="email" placeholder="vous@exemple.fr">
+    <label for="authPass">Mot de passe</label>
+    <input id="authPass" type="password" required autocomplete="current-password" minlength="6" placeholder="••••••••">
+    <button class="submit" type="submit" id="authSubmit">Se connecter</button>
+    <div style="text-align:center;margin-top:10px"><button type="button" id="authForgot" style="background:none;border:none;color:var(--peri);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:2px">Mot de passe oublié ?</button></div>
+    <div class="authmsg" id="authMsg" role="status"></div>
+  </form>
+</div>
+<div class="authgate" id="recoverGate" hidden>
+  <form class="authcard" id="recoverForm" novalidate>
+    <div class="brand"><img src="../assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace client<small>AEM CONSEIL</small></span></div>
+    <p class="lead">Choisissez un nouveau mot de passe pour votre accès.</p>
+    <label for="recPass">Nouveau mot de passe</label>
+    <input id="recPass" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <label for="recPass2">Confirmer le mot de passe</label>
+    <input id="recPass2" type="password" required autocomplete="new-password" minlength="6" placeholder="••••••••">
+    <button class="submit" type="submit" id="recSubmit">Enregistrer le mot de passe</button>
+    <div class="authmsg" id="recMsg" role="status"></div>
+  </form>
+</div>
+
+<div class="topbar" id="topbar" hidden>
+  <div class="brand"><img src="../assets/logo-full.png" alt="AEM CONSEIL"><span class="t">Espace client<small>AEM CONSEIL</small></span></div>
+  <div class="tb-right">
+    <span class="tb-user" id="tbUser"></span>
+    <button class="tb-logout" id="btnLogout" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg> Déconnexion</button>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <div class="head">
+    <h1>Vos factures</h1>
+    <p>Consultez, téléchargez et imprimez les documents qui vous ont été adressés.</p>
+  </div>
+  <div class="sumline" id="sumline"></div>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="viewer" id="viewer" aria-hidden="true">
+  <div class="vbar">
+    <span class="vt" id="vTitle">Document</span>
+    <span class="vack" id="vAck" hidden></span>
+    <span class="sp"></span>
+    <button id="btnAck" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Accuser réception</button>
+    <button class="primary" id="btnPrint" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg> Imprimer / PDF</button>
+    <button id="btnClose" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg> Fermer</button>
+  </div>
+  <div class="vscroll"><div class="doc" id="doc"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= Utilitaires ================= */
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function fmtDate(iso){ if(!iso) return '—'; var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso)); return m? m[3]+'/'+m[2]+'/'+m[1] : '—'; }
+var euro=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:2});
+var nf2=new Intl.NumberFormat('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2});
+function moneyFmt(cur,lang){ try{ return new Intl.NumberFormat(lang==='en'?'en-US':'fr-FR',{style:'currency',currency:cur||'EUR',minimumFractionDigits:2}); }catch(e){ return euro; } }
+function lineHT(l){ return (Number(l.qty)||0)*(Number(l.pu)||0); }
+function keyOf(x){ return String(x||'').trim().toLowerCase(); }
+
+/* ================= Totaux (réplique de la facturation) ================= */
+function computeTotals(s){
+  var noVat=s.vatExempt||s.autoliq; var subHT=0, vatMap={};
+  (s.lines||[]).forEach(function(l){ var ht=lineHT(l); subHT+=ht; var rate=noVat?0:(Number(l.vat)||0); vatMap[rate]=(vatMap[rate]||0)+ht; });
+  var discAmt = s.discountType==='pct' ? subHT*(Number(s.discount)||0)/100 : Math.min(Number(s.discount)||0,subHT);
+  var factor = subHT>0 ? (subHT-discAmt)/subHT : 1; var netHT=subHT-discAmt;
+  var totalVAT=0, vatRows=[];
+  Object.keys(vatMap).map(Number).sort(function(a,b){return a-b;}).forEach(function(rate){ var baseAfter=vatMap[rate]*factor; var v=noVat?0:baseAfter*rate/100; totalVAT+=v; if(rate>0&&v>0) vatRows.push({rate:rate,amount:v}); });
+  var totalTTC=netHT+totalVAT;
+  var deposit=Math.min(Number(s.deposit)||0,totalTTC);
+  var retPct=(s.retenue&&s.retenue.active)?(Number(s.retenue.pct)||0):0;
+  var retenue=Math.round(totalTTC*retPct/100*100)/100;
+  var retenueHeld=(s.retenue&&s.retenue.active&&!s.retenue.released)?retenue:0;
+  var due=totalTTC-deposit-retenueHeld;
+  return {subHT:subHT,discAmt:discAmt,netHT:netHT,vatRows:vatRows,totalVAT:totalVAT,totalTTC:totalTTC,deposit:deposit,retenue:retenue,retenueHeld:retenueHeld,retPct:retPct,due:due};
+}
+function payStatus(d,t){
+  var extra=0; (d.payments||[]).forEach(function(p){ extra+=Number(p.amount)||0; });
+  var base=Math.max(0,t.totalTTC-(t.retenueHeld||0)); var paid=Math.min(base,(t.deposit||0)+extra); var due=Math.max(0,base-paid);
+  if(d.kind==='devis') return {c:'info',t:'Devis',due:due};
+  if(d.kind==='avoir') return {c:'info',t:'Avoir',due:0};
+  if(base>0 && due<=0.005) return {c:'paid',t:'Payée',due:0};
+  if(paid>0.005) return {c:'partial',t:'Partielle',due:due};
+  var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d.due||'')); if(m){ var dd=new Date(+m[1],+m[2]-1,+m[3]); var tt=new Date(); tt.setHours(0,0,0,0); if(dd<tt) return {c:'overdue',t:'En retard',due:due}; }
+  return {c:'pending',t:'En attente',due:due};
+}
+
+/* ================= Libellés (FR/EN) ================= */
+var LABELS={
+  fr:{kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'},
+    recip:'Facturé à',desc:'Désignation',qty:'Qté',unit:'P.U. HT',lineTotal:'Total HT',subtotal:'Sous-total HT',vat:'TVA',totalTTC:'Total TTC',totalNet:'Total net',remise:'Remise',
+    depositInvoiced:'Acompte facturé',retenue:'Retenue de garantie',balanceDue:'Net à payer',date:'Date',due:'Échéance',deliveryDate:'Prestation',number:'N°',payment:'Paiement',issuer:'Émetteur',linesEmpty:'—'},
+  en:{kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',dgd:'Final statement',commande:'Purchase order',livraison:'Delivery note'},
+    recip:'Bill to',desc:'Description',qty:'Qty',unit:'Unit price',lineTotal:'Total',subtotal:'Subtotal',vat:'VAT',totalTTC:'Total',totalNet:'Net total',remise:'Discount',
+    depositInvoiced:'Deposit invoiced',retenue:'Retention money',balanceDue:'Balance due',date:'Date',due:'Due date',deliveryDate:'Delivery',number:'No.',payment:'Payment',issuer:'From',linesEmpty:'—'}
+};
+function labelsFor(l){ return LABELS[l]||LABELS.fr; }
+function legalText(s){
+  var en=s.lang==='en'; var bits=[];
+  if(s.vatExempt) bits.push(en?'VAT not applicable, art. 293 B of the French Tax Code.':'TVA non applicable, art. 293 B du CGI.');
+  if(s.autoliq) bits.push(en?'Reverse charge — VAT to be accounted for by the customer.':'Autoliquidation — TVA due par le preneur (art. 283-2 du CGI).');
+  if(s.kind==='avoir'){ bits.push(en?'Credit note.':'Facture d’avoir.'); }
+  else if(s.kind==='devis'){ bits.push(en?'Quote valid for 30 days.':'Devis valable 30 jours.'); }
+  else {
+    if(s.retenue&&s.retenue.active){ var rp=nf2.format(Number(s.retenue.pct)||0); bits.push(en?('Retention money of '+rp+'% released upon final acceptance.'):('Retenue de garantie de '+rp+' % libérable à la réception définitive.')); }
+    bits.push(en?'Late-payment penalties: 3× the statutory interest rate · fixed recovery indemnity €40.':'Pénalités de retard : 3× le taux d’intérêt légal · indemnité forfaitaire de recouvrement 40 € (art. L441-10 et D441-5 du Code de commerce).');
+  }
+  return bits.join(' · ');
+}
+
+/* ================= Rendu du document (aperçu destinataire) ================= */
+function renderDoc(s){
+  var t=computeTotals(s), L=labelsFor(s.lang), money=moneyFmt(s.currency,s.lang);
+  var br=function(v){ return esc(v||'').replace(/\n/g,'<br>'); };
+  var noVat=s.vatExempt||s.autoliq;
+  var kind=(L.kind[s.kind]||L.kind.facture);
+  var emit=s.emit||{};
+  var regBits=[]; if(emit.siret) regBits.push('SIRET '+esc(emit.siret)); if(emit.rcs) regBits.push(esc(emit.rcs)); if(emit.tva) regBits.push('TVA '+esc(emit.tva));
+  var lines=(s.lines||[]).filter(function(l){ return l.desc||lineHT(l)>0; });
+  var rows = lines.length ? lines.map(function(l){
+    return '<tr><td style="padding:11px 14px;border-bottom:1px solid #eef1f7;font-weight:600;color:#0f172a;">'+esc(l.desc)+'</td>'+
+      '<td style="padding:11px 10px;border-bottom:1px solid #eef1f7;text-align:right;color:#475569;white-space:nowrap;">'+nf2.format(Number(l.qty)||0)+'</td>'+
+      '<td style="padding:11px 10px;border-bottom:1px solid #eef1f7;text-align:right;color:#475569;white-space:nowrap;">'+money.format(Number(l.pu)||0)+'</td>'+
+      '<td style="padding:11px 14px;border-bottom:1px solid #eef1f7;text-align:right;font-weight:700;color:#0f172a;white-space:nowrap;">'+money.format(lineHT(l))+'</td></tr>';
+  }).join('') : '<tr><td colspan="4" style="padding:24px;text-align:center;color:#c3cad9;font-style:italic;">'+L.linesEmpty+'</td></tr>';
+  var ttcLabel=noVat?L.totalNet:L.totalTTC;
+  var vatRate=(t.vatRows.length===1)?nf2.format(t.vatRows[0].rate):null;
+  var tot=[
+    '<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>'+L.subtotal+'</span><span>'+money.format(t.subHT)+'</span></div>',
+    t.discAmt>0?'<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>'+L.remise+'</span><span>− '+money.format(t.discAmt)+'</span></div>':'',
+    !noVat?'<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>'+L.vat+(vatRate?' '+vatRate+' %':'')+'</span><span>'+money.format(t.totalVAT)+'</span></div>':''
+  ].join('');
+  var dep=(t.deposit>0||t.retenueHeld>0)?(
+    (t.deposit>0?'<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#64748b;font-size:12px;"><span>'+L.depositInvoiced+'</span><span>− '+money.format(t.deposit)+'</span></div>':'')+
+    (t.retenueHeld>0?'<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#64748b;font-size:12px;"><span>'+L.retenue+' ('+nf2.format(t.retPct)+' %)</span><span>− '+money.format(t.retenueHeld)+'</span></div>':'')+
+    '<div style="display:flex;justify-content:space-between;padding:5px 2px 0;font-weight:700;color:#0f172a;"><span>'+L.balanceDue+'</span><span>'+money.format(t.due)+'</span></div>'
+  ):'';
+  return '<div style="width:100%;min-height:297mm;background:#fff;font-family:\'Inter\',sans-serif;color:#0f172a;display:flex;flex-direction:column;box-sizing:border-box;">'+
+    '<div style="height:8px;background:linear-gradient(90deg,#2b45ff,#6d86ff);"></div>'+
+    '<div style="padding:40px 46px;flex:1;display:flex;flex-direction:column;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'+
+        '<div><div style="font-size:20px;font-weight:800;letter-spacing:-.01em;">'+(esc(emit.name)||'Émetteur')+'</div>'+
+        (emit.addr?'<div style="font-size:11.5px;color:#64748b;margin-top:6px;line-height:1.6;">'+br(emit.addr)+'</div>':'')+
+        (regBits.length?'<div style="font-size:10.5px;color:#94a3b8;margin-top:6px;">'+regBits.join(' · ')+'</div>':'')+'</div>'+
+        '<div style="text-align:right;"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em;color:#2b45ff;text-transform:uppercase;">'+kind+'</div>'+
+        '<div style="font-size:12.5px;color:#64748b;margin-top:4px;">'+L.number+' '+(esc(s.number)||'—')+'</div></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;gap:24px;margin-top:26px;">'+
+        '<div style="background:#f5f7fb;border-radius:10px;padding:14px 16px;flex:1;">'+
+          '<div style="font-size:9px;letter-spacing:.14em;color:#94a3b8;text-transform:uppercase;">'+L.recip+'</div>'+
+          '<div style="font-size:14px;font-weight:700;margin-top:5px;">'+(esc(s.client&&s.client.name)||'—')+'</div>'+
+          '<div style="font-size:11.5px;color:#64748b;margin-top:3px;line-height:1.55;">'+[br(s.client&&s.client.addr),(s.client&&s.client.siret)?'SIRET '+esc(s.client.siret):'',(s.client&&s.client.email)?esc(s.client.email):''].filter(Boolean).join('<br>')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right;font-size:12px;color:#475569;line-height:1.9;min-width:150px;">'+
+          '<div><span style="color:#94a3b8;">'+L.date+' </span>'+fmtDate(s.date)+'</div>'+
+          (s.supplyDate?'<div><span style="color:#94a3b8;">'+L.deliveryDate+' </span>'+fmtDate(s.supplyDate)+'</div>':'')+
+          (s.due?'<div><span style="color:#94a3b8;">'+L.due+' </span>'+fmtDate(s.due)+'</div>':'')+
+        '</div>'+
+      '</div>'+
+      '<table style="width:100%;border-collapse:collapse;margin-top:26px;font-size:12.5px;">'+
+        '<thead><tr style="background:#0f172a;color:#fff;">'+
+          '<th style="padding:10px 14px;text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:7px 0 0 7px;">'+L.desc+'</th>'+
+          '<th style="padding:10px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;">'+L.qty+'</th>'+
+          '<th style="padding:10px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;">'+L.unit+'</th>'+
+          '<th style="padding:10px 14px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:0 7px 7px 0;">'+L.lineTotal+'</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody>'+
+      '</table>'+
+      '<div style="display:flex;justify-content:flex-end;margin-top:20px;">'+
+        '<div style="width:270px;font-size:13px;">'+tot+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#2b45ff;color:#fff;border-radius:9px;padding:12px 15px;"><span style="font-weight:600;">'+ttcLabel+'</span><span style="font-size:19px;font-weight:800;">'+money.format(t.totalTTC)+'</span></div>'+dep+
+        '</div>'+
+      '</div>'+
+      (s.notes?'<div style="margin-top:20px;font-size:11.5px;color:#64748b;line-height:1.6;">'+br(s.notes)+'</div>':'')+
+      '<div style="margin-top:auto;padding-top:26px;font-size:10.5px;color:#94a3b8;line-height:1.7;border-top:1px solid #eef1f7;">'+(emit.iban?'IBAN '+esc(emit.iban)+(emit.bic?' · BIC '+esc(emit.bic):'')+'<br>':'')+(s.terms?esc(s.terms)+' · ':'')+legalText(s)+'</div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* ================= Données ================= */
+var SB_URL='https://ammmyhtxnwyoopfxtans.supabase.co', SB_KEY='sb_publishable_VBYOMpnF3kv7kkcrMLczZQ_v2e4_RHo';
+var sb=null, myEmail='', myUid=null, DOCS=[], curDocId=null;
+try{ if(window.supabase) sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}); }catch(e){}
+
+async function fetchInvoices(email){
+  var list=[];
+  if(sb){ try{ var r=await sb.from('invoices').select('data').limit(1000); if(r&&r.data) list=r.data.map(function(x){return x.data;}).filter(Boolean); }catch(e){} }
+  if(!list.length){ try{ list=JSON.parse(localStorage.getItem('aem_fact_docs')||'[]'); }catch(e){} }   // repli local (démo)
+  var k=keyOf(email);
+  return list.filter(function(d){ return d && d.emitted && d.client && keyOf(d.client.email)===k &&
+    ['facture','situation','dgd','avoir','devis'].indexOf(d.kind)>=0; })
+    .sort(function(a,b){ return String(b.date||'').localeCompare(String(a.date||'')); });
+}
+
+var KIND_ICON={
+  avoir:'<path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 5 5v6"/>',
+  devis:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/>'
+};
+function iconFor(k){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(KIND_ICON[k]||'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>')+'</svg>'; }
+
+function renderList(){
+  var wrap=document.getElementById('list'), sum=document.getElementById('sumline');
+  if(!DOCS.length){
+    sum.innerHTML='';
+    wrap.innerHTML='<div class="empty"><div class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div><h2>Aucune facture pour le moment</h2><p>Les documents qui vous seront adressés à <b>'+esc(myEmail)+'</b> apparaîtront ici.</p></div>';
+    return;
+  }
+  var totTTC=0, totDue=0;
+  DOCS.forEach(function(d){ var t=computeTotals(d); if(d.kind==='avoir'){ totTTC-=t.totalTTC; } else if(d.kind!=='devis'){ totTTC+=t.totalTTC; totDue+=payStatus(d,t).due; } });
+  sum.innerHTML='<div class="sum"><div class="v">'+DOCS.length+'</div><div class="l">Document'+(DOCS.length>1?'s':'')+'</div></div>'+
+    '<div class="sum"><div class="v">'+euro.format(totTTC)+'</div><div class="l">Total TTC</div></div>'+
+    (totDue>0.005?'<div class="sum"><div class="v warn">'+euro.format(totDue)+'</div><div class="l">Reste à régler</div></div>':'<div class="sum"><div class="v pos">Soldé</div><div class="l">Tout est réglé</div></div>');
+  wrap.innerHTML=DOCS.map(function(d,i){
+    var t=computeTotals(d), st=payStatus(d,t), kn=labelsFor(d.lang).kind[d.kind]||'Facture';
+    return '<div class="inv" data-i="'+i+'">'+
+      '<span class="ic">'+iconFor(d.kind)+'</span>'+
+      '<div class="m"><div class="no">'+esc(kn)+' '+esc(d.number||'')+'</div>'+
+        '<div class="d"><span>'+fmtDate(d.date)+'</span>'+(d.due&&d.kind!=='devis'?'<span>Échéance '+fmtDate(d.due)+'</span>':'')+'</div></div>'+
+      '<div class="r"><div class="amt">'+moneyFmt(d.currency,'fr').format(t.totalTTC)+'</div><span class="badge '+st.c+'">'+st.t+'</span></div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ===== Accusés de réception (horodatés) ===== */
+function fmtDateTime(iso){ var d=new Date(iso); if(isNaN(d.getTime())) return fmtDate(iso); return fmtDate(iso)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function loadAcks(){ try{ return JSON.parse(localStorage.getItem('aem_fact_acks')||'[]'); }catch(e){ return []; } }
+function saveAcks(a){ try{ localStorage.setItem('aem_fact_acks', JSON.stringify(a)); }catch(e){} }
+function ackOf(id,kind){ return loadAcks().filter(function(a){ return a.invoiceId===id && a.kind===kind && keyOf(a.email)===keyOf(myEmail); }).map(function(a){return a.at;}).sort()[0]||null; }
+function recordAck(id,kind){
+  if(ackOf(id,kind)) return false;
+  var at=new Date().toISOString();
+  var ls=loadAcks(); ls.push({invoiceId:id, email:myEmail, kind:kind, at:at}); saveAcks(ls);
+  if(sb && myUid){ try{ sb.from('invoice_acks').insert({invoice_id:id, recipient_email:myEmail, kind:kind}).then(function(){},function(){}); }catch(e){} }
+  return true;
+}
+function refreshAckUI(){
+  var span=document.getElementById('vAck'), btn=document.getElementById('btnAck');
+  var rec=curDocId?ackOf(curDocId,'received'):null;
+  if(rec){ span.hidden=false; span.innerHTML='<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Réception accusée le '+fmtDateTime(rec);
+    btn.disabled=true; btn.innerHTML='Réception accusée'; }
+  else{ span.hidden=true; btn.disabled=false; btn.innerHTML='<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Accuser réception'; }
+}
+function openDoc(i){
+  var d=DOCS[i]; if(!d) return;
+  curDocId=d.id;
+  document.getElementById('vTitle').textContent=(labelsFor(d.lang).kind[d.kind]||'Facture')+' '+(d.number||'');
+  document.getElementById('doc').innerHTML=renderDoc(d);
+  recordAck(d.id,'viewed');   // consultation horodatée
+  refreshAckUI();
+  var v=document.getElementById('viewer'); v.classList.add('open'); v.setAttribute('aria-hidden','false');
+}
+function closeViewer(){ var v=document.getElementById('viewer'); v.classList.remove('open'); v.setAttribute('aria-hidden','true'); }
+document.getElementById('list').addEventListener('click', function(e){ var b=e.target.closest('.inv'); if(b) openDoc(+b.dataset.i); });
+document.getElementById('btnClose').addEventListener('click', closeViewer);
+document.getElementById('btnPrint').addEventListener('click', function(){ window.print(); });
+document.getElementById('btnAck').addEventListener('click', function(){ if(!curDocId) return; recordAck(curDocId,'received'); refreshAckUI(); toast('Réception accusée — merci.'); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeViewer(); });
+
+function toast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); clearTimeout(toast._t); toast._t=setTimeout(function(){ t.classList.remove('show'); },2600); }
+
+/* ================= Authentification ================= */
+var authMode='login';
+function authMsg(kind,text){ var m=document.getElementById('authMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+function setMode(mode){ authMode=mode;
+  document.querySelectorAll('#authTabs button').forEach(function(b){ b.classList.toggle('active', b.dataset.mode===mode); });
+  document.getElementById('authSubmit').textContent = mode==='signup'?'Créer mon accès':'Se connecter';
+  document.getElementById('authLead').textContent = mode==='signup'?'Créez un mot de passe pour l\'adresse e-mail à laquelle vos factures sont envoyées.':'Connectez-vous avec l\'adresse e-mail à laquelle vos factures ont été envoyées.';
+  document.getElementById('authPass').setAttribute('autocomplete', mode==='signup'?'new-password':'current-password'); authMsg();
+}
+document.getElementById('authTabs').addEventListener('click', function(e){ var b=e.target.closest('button'); if(b) setMode(b.dataset.mode); });
+
+function showGate(){ document.getElementById('authGate').hidden=false; document.getElementById('topbar').hidden=true; document.getElementById('wrap').hidden=true; }
+async function showPortal(session){
+  document.getElementById('authGate').hidden=true;
+  document.getElementById('topbar').hidden=false; document.getElementById('wrap').hidden=false;
+  myEmail=(session&&session.user&&session.user.email)||'';
+  myUid=(session&&session.user&&session.user.id)||null;
+  document.getElementById('tbUser').innerHTML='Connecté · <b>'+esc(myEmail)+'</b>';
+  DOCS=await fetchInvoices(myEmail); renderList();
+}
+
+document.getElementById('authForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(!sb){ authMsg('err','Service de connexion indisponible. Réessayez plus tard.'); return; }
+  var email=document.getElementById('authEmail').value.trim(), pass=document.getElementById('authPass').value;
+  if(!email || pass.length<6){ authMsg('err','Renseignez un e-mail valide et un mot de passe d’au moins 6 caractères.'); return; }
+  var btn=document.getElementById('authSubmit'); btn.disabled=true; authMsg();
+  try{
+    if(authMode==='signup'){
+      btn.textContent='Création…'; var r=await sb.auth.signUp({email:email,password:pass}); if(r.error) throw r.error;
+      if(!(r.data&&r.data.session)){ authMsg('ok','Accès créé. Vérifiez votre boîte mail pour confirmer, puis connectez-vous.'); setMode('login'); }
+    } else {
+      btn.textContent='Connexion…'; var r2=await sb.auth.signInWithPassword({email:email,password:pass}); if(r2.error) throw r2.error;
+    }
+  }catch(err){
+    var msg=(err&&err.message)||'Une erreur est survenue.';
+    if(/invalid login credentials/i.test(msg)) msg='E-mail ou mot de passe incorrect.';
+    else if(/already registered|already exists/i.test(msg)) msg='Un accès existe déjà pour cet e-mail. Connectez-vous.';
+    else if(/email not confirmed/i.test(msg)) msg='Adresse non confirmée. Vérifiez votre boîte mail.';
+    authMsg('err',msg);
+  }finally{ btn.disabled=false; btn.textContent=authMode==='signup'?'Créer mon accès':'Se connecter'; }
+});
+document.getElementById('btnLogout').addEventListener('click', async function(){ if(sb){ await sb.auth.signOut(); } showGate(); });
+
+// Mot de passe oublié : envoie un e-mail de réinitialisation.
+document.getElementById('authForgot').addEventListener('click', async function(){
+  if(!sb){ authMsg('err','Service indisponible.'); return; }
+  var email=document.getElementById('authEmail').value.trim();
+  if(!/.+@.+\..+/.test(email)){ authMsg('err','Saisissez votre adresse e-mail, puis cliquez à nouveau sur « Mot de passe oublié ? ».'); return; }
+  try{
+    var r=await sb.auth.resetPasswordForEmail(email, {redirectTo:location.origin+location.pathname});
+    if(r&&r.error) throw r.error;
+    authMsg('ok','E-mail de réinitialisation envoyé à '+email+'. Suivez le lien pour choisir un nouveau mot de passe.');
+  }catch(err){ authMsg('err',(err&&err.message)||'Envoi impossible. Réessayez.'); }
+});
+var _recovering=false;
+function showRecover(){ document.getElementById('authGate').hidden=true; document.getElementById('topbar').hidden=true; document.getElementById('wrap').hidden=true; document.getElementById('recoverGate').hidden=false; }
+function recMsg(kind,text){ var m=document.getElementById('recMsg'); if(!text){ m.className='authmsg'; m.textContent=''; return; } m.className='authmsg '+kind; m.textContent=text; }
+document.getElementById('recoverForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(!sb){ recMsg('err','Service indisponible.'); return; }
+  var p1=document.getElementById('recPass').value, p2=document.getElementById('recPass2').value;
+  if(p1.length<6){ recMsg('err','Mot de passe d’au moins 6 caractères.'); return; }
+  if(p1!==p2){ recMsg('err','Les deux mots de passe ne correspondent pas.'); return; }
+  var btn=document.getElementById('recSubmit'); btn.disabled=true; recMsg();
+  try{
+    var r=await sb.auth.updateUser({password:p1}); if(r&&r.error) throw r.error;
+    _recovering=false; recMsg('ok','Mot de passe mis à jour. Redirection…');
+    var s=await sb.auth.getSession();
+    document.getElementById('recoverGate').hidden=true;
+    if(s&&s.data&&s.data.session){ showPortal(s.data.session); } else { showGate(); }
+  }catch(err){ recMsg('err',(err&&err.message)||'Mise à jour impossible.'); }
+  finally{ btn.disabled=false; }
+});
+
+async function init(){
+  if(!sb){ showGate(); return; }
+  if(/type=recovery/.test(location.hash||'')){ _recovering=true; showRecover(); }
+  try{
+    var res=await sb.auth.getSession();
+    if(_recovering){ showRecover(); }
+    else if(res.data&&res.data.session){ showPortal(res.data.session); } else { showGate(); }
+  }catch(e){ if(!_recovering) showGate(); }
+  sb.auth.onAuthStateChange(function(_evt,session){
+    if(_evt==='PASSWORD_RECOVERY'){ _recovering=true; showRecover(); return; }
+    if(_recovering) return;
+    if(session){ authMsg(); showPortal(session); } else { showGate(); }
+  });
+}
+init();
+</script>
+</body>
+</html>

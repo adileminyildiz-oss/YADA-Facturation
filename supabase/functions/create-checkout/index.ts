@@ -23,6 +23,13 @@ const PRICES: Record<string, string | undefined> = {
   pro: Deno.env.get("PRICE_PRO"),
   premium: Deno.env.get("PRICE_PREMIUM"),
 };
+// Période d'essai gratuite (en jours) par offre. L'offre de base « Facturation »
+// bénéficie d'1 mois offert. Réglable par secret (TRIAL_DAYS_ESSENTIEL…), 30 par défaut.
+const TRIALS: Record<string, number> = {
+  essentiel: Number(Deno.env.get("TRIAL_DAYS_ESSENTIEL") ?? "30") || 0,
+  pro: Number(Deno.env.get("TRIAL_DAYS_PRO") ?? "0") || 0,
+  premium: Number(Deno.env.get("TRIAL_DAYS_PREMIUM") ?? "0") || 0,
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -46,13 +53,16 @@ Deno.serve(async (req) => {
     const base = (typeof origin === "string" && origin.startsWith("http")) ? origin : "https://yada.aemconseil.eu";
 
     // 3) Créer la session de paiement (abonnement mensuel)
+    const trialDays = TRIALS[plan as string] || 0;
+    const subscription_data: Record<string, unknown> = { metadata: { user_id: user.id, plan } };
+    if (trialDays > 0) subscription_data.trial_period_days = trialDays;
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price, quantity: 1 }],
       customer_email: user.email ?? undefined,
       client_reference_id: user.id,
       metadata: { user_id: user.id, plan },
-      subscription_data: { metadata: { user_id: user.id, plan } },
+      subscription_data,
       allow_promotion_codes: true,
       success_url: `${base}/?paid=1`,
       cancel_url: `${base}/#abonnement`,

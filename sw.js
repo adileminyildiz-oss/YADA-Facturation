@@ -2,11 +2,11 @@
    Stratégie sûre : réseau d'abord (jamais d'appli périmée quand on est en ligne),
    repli sur le cache hors-ligne. N'intercepte que le même domaine en GET :
    Supabase, Stripe, Resend et les CDN passent directement par le réseau. */
-const CACHE = 'aem-espace-v3';
+const CACHE = 'aem-espace-v4';
 const CORE = [
   './', './index.html',
-  './facturation/', './documents/', './efacture/', './abonnement/', './legal/',
-  './assets/favicon-192.png', './assets/favicon-512.png', './assets/logo-full.png', './assets/logo-round.png'
+  './facturation/', './clients/', './fournisseurs/', './sous-traitants/', './documents/', './efacture/', './portail/', './abonnement/', './legal/',
+  './assets/favicon-192.png', './assets/favicon-512.png', './assets/logo-full.png', './assets/logo-round.png', './assets/pdf-lib.min.js'
 ];
 
 self.addEventListener('install', (e) => {

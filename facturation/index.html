@@ -177,6 +177,22 @@
 
   .add-line{margin-top:4px;width:100%;justify-content:center;border:1px dashed var(--line-2);background:transparent;color:var(--peri)}
   .add-line:hover{background:var(--glass);border-style:solid}
+  .ai-bar{border:1px solid var(--line-2);border-radius:12px;padding:10px 11px;margin:2px 0 12px;background:linear-gradient(180deg,rgba(120,110,255,.10),rgba(120,110,255,.03))}
+  .ai-bar-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+  .ai-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--peri);letter-spacing:.02em}
+  .ai-badge svg{width:14px;height:14px}
+  .ai-input-row{display:flex;gap:8px;align-items:stretch}
+  .ai-input-row textarea{flex:1;resize:vertical;min-height:42px;font:inherit;font-size:12.5px;padding:9px 11px;border:1px solid var(--line-2);border-radius:10px;background:var(--glass);color:var(--txt);line-height:1.4}
+  .ai-input-row textarea:focus{outline:none;border-color:var(--peri)}
+  .ai-go{flex:none;align-self:stretch;display:inline-flex;align-items:center;gap:7px;background:var(--peri);color:#0b1020;border:none;font-weight:700;padding:0 15px;border-radius:10px;white-space:nowrap}
+  .ai-go svg{width:16px;height:16px}
+  .ai-go:hover{filter:brightness(1.06)}
+  .ai-go:disabled{opacity:.6;cursor:progress}
+  .ai-msg{margin-top:8px;font-size:11.5px;line-height:1.45;padding:8px 10px;border-radius:9px}
+  .ai-msg.info{background:rgba(120,110,255,.10);color:var(--txt);border:1px solid var(--line-2)}
+  .ai-msg.warn{background:rgba(255,180,60,.10);color:#f0c072;border:1px solid rgba(255,180,60,.28)}
+  .ai-msg.err{background:rgba(255,90,90,.10);color:#f2a0a0;border:1px solid rgba(255,90,90,.28)}
+  @media(max-width:560px){ .ai-input-row{flex-direction:column} .ai-go{padding:10px} }
   .line-actions{display:flex;gap:8px;margin-top:4px}
   .line-actions .add-line{margin-top:0;flex:1}
   .cat-toggle{flex:none;border:1px solid var(--line-2);background:var(--glass);color:var(--txt);padding:10px 14px}
@@ -212,6 +228,32 @@
   .sign-pad-wrap{position:relative;border:1px dashed var(--line-2);border-radius:12px;background:#fbfcff;overflow:hidden}
   #signPad{display:block;width:100%;height:200px;touch-action:none;cursor:crosshair}
   .sign-placeholder{position:absolute;inset:0;display:grid;place-items:center;color:#aab;font-size:14px;pointer-events:none}
+  /* Contrôle avant émission (IA) */
+  .chk-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;background:rgba(4,5,11,.72);backdrop-filter:blur(6px);padding:18px}
+  .chk-modal[hidden]{display:none}
+  .chk-card{width:100%;max-width:540px;max-height:90vh;display:flex;flex-direction:column;background:linear-gradient(180deg,rgba(15,19,32,.98),rgba(9,11,20,.99));
+    border:1px solid var(--line-2);border-radius:16px;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.55)}
+  .chk-head{display:flex;align-items:center;gap:10px;padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+  .chk-head h3{font-family:'Inter Tight';font-weight:700;font-size:16px;display:flex;align-items:center;gap:9px}
+  .chk-head .ic{width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;background:rgba(150,168,255,.12);border:1px solid var(--line-2);color:var(--peri)}
+  .chk-head .ic svg{width:16px;height:16px}
+  .chk-x{margin-left:auto;width:32px;height:32px;flex:none;border-radius:9px;background:var(--glass);border:1px solid var(--line-2);color:var(--txt);cursor:pointer;display:grid;place-items:center}
+  .chk-x svg{width:15px;height:15px}
+  .chk-body{padding:16px 20px;overflow-y:auto}
+  .chk-sum{font-size:13px;line-height:1.5;padding:10px 12px;border-radius:10px;margin-bottom:12px;background:var(--glass);border:1px solid var(--line-2)}
+  .chk-sum.ok{background:rgba(62,233,164,.1);border-color:rgba(62,233,164,.28);color:var(--pos)}
+  .chk-sum.ko{background:rgba(255,107,125,.1);border-color:rgba(255,107,125,.3);color:var(--danger)}
+  .chk-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+  .chk-item:first-child{border-top:none}
+  .chk-tag{flex:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:999px;margin-top:1px}
+  .chk-tag.bloquant{background:rgba(255,107,125,.14);color:var(--danger);border:1px solid rgba(255,107,125,.3)}
+  .chk-tag.attention{background:rgba(255,207,109,.12);color:#f0c072;border:1px solid rgba(255,207,109,.28)}
+  .chk-tag.info{background:rgba(150,168,255,.12);color:var(--peri);border:1px solid var(--line-2)}
+  .chk-item .msg{font-size:12.5px;line-height:1.5;color:var(--txt)}
+  .chk-loading{display:flex;align-items:center;gap:10px;color:var(--txt2);font-size:13px;padding:16px 4px}
+  .chk-loading .sp{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-2);border-top-color:var(--peri);animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .chk-foot{flex:none;display:flex;gap:9px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--line)}
   .sign-actions{display:flex;align-items:center;gap:8px;margin-top:14px}
 
   .row-split{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
@@ -299,6 +341,7 @@
   .doc-item .di-kind.devis{background:rgba(62,233,164,.14);color:var(--pos)}
   .doc-item .di-kind.avoir{background:rgba(255,159,90,.16);color:#ff9f5a}
   .doc-item .di-kind.situation{background:rgba(255,207,109,.14);color:#ffcf6d}
+  .doc-item .di-kind.dgd{background:rgba(62,233,164,.14);color:#3ee9a4}
   .doc-item .di-kind.commande{background:rgba(139,201,255,.14);color:#8bc9ff}
   .doc-item .di-kind.livraison{background:rgba(180,160,255,.14);color:#b4a0ff}
   .doc-item .di-main{flex:1;min-width:0}
@@ -364,6 +407,7 @@
     <button class="btn btn-ghost btn-sm" id="acompteBtn" onclick="createAcompteFromCurrent()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> Facture d'acompte</button>
     <button class="btn btn-ghost btn-sm" id="signBtn" onclick="openSignModal()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21s3-1 5-3 9-9 9-9M14 4l6 6M2 21l4-1"/></svg> Signer (accord)</button>
     <button class="btn btn-ghost btn-sm" id="recurBtn" onclick="generateNextRecurrence()" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/></svg> Générer l'échéance</button>
+    <button class="btn btn-ghost btn-sm" id="checkBtn" onclick="aiPreEmitCheck()" title="Contrôle IA des mentions et de la cohérence avant émission"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="m9 19 2 2 4-4"/></svg> Vérifier (IA)</button>
     <button class="btn btn-emit btn-sm" id="emitBtn" onclick="emitDoc()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Émettre</button>
     <button class="btn btn-pri btn-sm" onclick="exportPDF()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Exporter PDF</button>
   </div>
@@ -387,6 +431,7 @@
           <option value="devis">Devis</option>
           <option value="avoir">Avoir</option>
           <option value="situation">Facture de situation (BTP)</option>
+          <option value="dgd">Décompte général définitif (BTP)</option>
           <option value="commande">Bon de commande</option>
           <option value="livraison">Bon de livraison</option>
         </select>
@@ -451,8 +496,15 @@
         <div class="field col-2"><label for="c-name">Nom / Société</label><input id="c-name" list="clientList" autocomplete="off" placeholder="Société Cliente SARL"><datalist id="clientList"></datalist></div>
         <div class="field col-2"><label for="c-addr">Adresse</label><textarea id="c-addr" placeholder="3 avenue du Client&#10;69000 Lyon"></textarea></div>
         <div class="field"><label for="c-siret">SIRET (optionnel)</label><input id="c-siret" placeholder="000 000 000 00000"></div>
-        <div class="field"><label for="c-email">Email (optionnel)</label><input id="c-email" placeholder="client@exemple.fr"></div>
+        <div class="field"><label for="c-email">E-mail <span class="auto-tag" style="color:#ffcf6d;background:rgba(255,207,109,.14);border-color:rgba(255,207,109,.3)">requis</span></label><input id="c-email" type="email" placeholder="client@exemple.fr"></div>
       </div>
+    </div>
+
+    <!-- Chantier (rattachement BTP) -->
+    <div class="card" id="chantierCard" hidden>
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6"/></svg></span> Chantier / Marché</h3>
+      <p class="hint">Rattachez ce document à un chantier pour regrouper ses situations et établir le décompte général définitif.</p>
+      <div class="field"><label for="f-chantier">Nom / référence du chantier</label><input id="f-chantier" list="chantierList" autocomplete="off" placeholder="ex. Réhabilitation École Jean-Jaurès"><datalist id="chantierList"></datalist></div>
     </div>
 
     <!-- Marché (facture de situation BTP) -->
@@ -469,10 +521,36 @@
       </div>
     </div>
 
+    <!-- Décompte général définitif (BTP) -->
+    <div class="card" id="dgdCard" hidden>
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span> Décompte général définitif</h3>
+      <p class="hint">Solde de clôture du marché : montant final (révision comprise) − situations déjà facturées sur le chantier. Rattachez d'abord ce décompte à un chantier ci-dessus.</p>
+      <div class="grid3">
+        <div class="field col-2"><label for="f-dgd-final">Montant final du marché HT (€)</label><input id="f-dgd-final" type="number" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="f-dgd-vat">Taux de TVA (%)</label><input id="f-dgd-vat" type="number" min="0" step="0.1" value="20"></div>
+        <div class="field"><label for="f-dgd-rev">Révision de prix (%)</label><input id="f-dgd-rev" type="number" step="0.01" value="0"></div>
+      </div>
+      <div id="dgdSummary" style="margin-top:10px"></div>
+    </div>
+
     <!-- Lignes -->
     <div class="card" id="linesCard">
       <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span> Prestations &amp; produits</h3>
       <p class="hint">Ajoutez vos lignes. Les totaux se calculent automatiquement.</p>
+      <div class="ai-bar" id="aiBar">
+        <div class="ai-bar-head">
+          <span class="ai-badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/><path d="M19 14l.8 2 .2.1 2 .9-2 .9-.8 2-.9-2-2-.9 2-.9.8-2z"/></svg> Assistant</span>
+          <span class="hint" style="margin:0">Décrivez la facture en une phrase — l'IA propose les lignes.</span>
+        </div>
+        <div class="ai-input-row">
+          <textarea id="aiDesc" rows="2" placeholder="Ex. : 3 jours de main-d'œuvre à 350 €/j, fourniture de 12 m² de carrelage à 28 €, TVA 10 %"></textarea>
+          <button class="btn ai-go" type="button" id="aiGo" onclick="aiFillLines()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            <span>Proposer les lignes</span>
+          </button>
+        </div>
+        <div class="ai-msg" id="aiMsg" hidden></div>
+      </div>
       <div class="lines-head">
         <span>Désignation</span><span>Qté</span><span>P.U. HT</span><span>TVA %</span><span>Total HT</span><span></span>
       </div>
@@ -544,6 +622,9 @@
           <option value="2C">Corporate bleu</option>
           <option value="2B">Luxe noir &amp; or</option>
           <option value="1A">Épuré éditorial</option>
+          <option value="3M">Moderne compact</option>
+          <option value="4A">Classique administratif</option>
+          <option value="5C">Coloré émeraude</option>
         </select>
         <select id="langSel" onchange="setLang(this.value)" title="Langue du document" style="width:auto;font-size:12.5px;padding:6px 26px 6px 10px;border-radius:9px">
           <option value="fr">FR</option>
@@ -609,6 +690,20 @@
   </div>
 </div>
 
+<div class="chk-modal no-print" id="chkModal" hidden>
+  <div class="chk-card">
+    <div class="chk-head">
+      <h3><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5 13.9 11.4 12 16l-1.9-4.6L5.5 9.5l4.6-1.9L12 3z"/></svg></span> Contrôle avant émission</h3>
+      <button class="chk-x" type="button" id="chkX" aria-label="Fermer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="chk-body" id="chkBody"></div>
+    <div class="chk-foot">
+      <button class="btn btn-ghost btn-sm" type="button" id="chkClose">Fermer</button>
+      <button class="btn btn-emit btn-sm" type="button" id="chkEmit">Émettre quand même</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ============ État ============ */
 const LS_DOCS = 'aem_fact_docs';
@@ -642,7 +737,9 @@ function blankState(){
     acompteRef: '',
     accepted: false, acceptedAt: '', acceptedBy: '', signature: '',
     recur: {active:false, freq:'monthly', next:''},
+    chantier: '',
     marche: {total:'', progress:'', prev:'', num:'', vat:20},
+    dgd: {marcheFinal:'', revisionPct:0, vat:20},
     retenue: {active:false, pct:5, released:false, releasedAt:''},
     emitted: false, emittedAt: '',
     emit: {name:'',legalForm:'',capital:'',rcs:'',addr:'',siret:'',tva:'',email:'',phone:'',iban:'',bic:'',decAssureur:'',decContrat:'',decZone:''},
@@ -774,6 +871,7 @@ function render(){
   const tpl = TEMPLATES[s.template] || TEMPLATES['2C'];
   document.getElementById('doc').innerHTML = tpl(D);
   if(manualZoom==null) applyZoom();
+  updateEmitButton();
 }
 
 /* Données communes formatées pour tous les modèles */
@@ -846,7 +944,7 @@ function buildDocData(s,t){
     retenueAmt: t.retenueHeld>0?money.format(t.retenueHeld):'',
     retenuePct: nf2.format(t.retPct||0),
     acompteRef: esc(s.acompteRef||''),
-    situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : '',
+    situationRecap: (s.kind==='situation') ? buildSituationRecap(s, L) : (s.kind==='dgd' ? buildDgdRecap(s, L) : ''),
     signBlock: (s.accepted && s.kind==='devis')
       ? `<div style="margin-top:24px;display:flex;justify-content:flex-end;"><div style="border:1px solid rgba(120,130,160,.35);border-radius:9px;padding:11px 16px;min-width:210px;text-align:center;background:rgba(255,255,255,.04);">
            <div style="font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:#8a94ad;">${L.bonAccord}</div>
@@ -1050,6 +1148,165 @@ const TEMPLATES = {
         </div>
       </div>
     </div>`;
+  },
+
+  /* 3M · Moderne compact — bandeau accent, tableau épuré */
+  '3M': function(D){
+    const rows = D.lines.length ? D.lines.map(l=>`
+      <tr>
+        <td style="padding:12px 14px;border-bottom:1px solid #eef1f7;font-weight:600;color:#0f172a;">${l.desc||('<span style="color:#c3cad9;font-style:italic;">'+D.L.descPh+'</span>')}</td>
+        <td style="padding:12px 10px;border-bottom:1px solid #eef1f7;text-align:right;color:#475569;white-space:nowrap;">${l.qtyF}</td>
+        <td style="padding:12px 10px;border-bottom:1px solid #eef1f7;text-align:right;color:#475569;white-space:nowrap;">${l.puF}</td>
+        <td style="padding:12px 14px;border-bottom:1px solid #eef1f7;text-align:right;font-weight:700;color:#0f172a;white-space:nowrap;">${l.totalF}</td>
+      </tr>`).join('') : `<tr><td colspan="4" style="padding:26px;text-align:center;color:#c3cad9;font-style:italic;">${D.L.linesEmpty}</td></tr>`;
+    const tot=[
+      `<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>${D.L.subtotal}</span><span>${D.subHT}</span></div>`,
+      D.discAmt?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>${D.discLabel}</span><span>− ${D.discAmt}</span></div>`:'',
+      !D.noVat?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#64748b;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
+    ].join('');
+    const dep=(D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#64748b;font-size:12px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;padding:5px 2px 0;font-weight:700;color:#0f172a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    return `<div style="width:100%;min-height:297mm;background:#fff;font-family:'Inter',sans-serif;color:#0f172a;display:flex;flex-direction:column;box-sizing:border-box;">
+      <div style="height:8px;background:linear-gradient(90deg,#2b45ff,#6d86ff);"></div>
+      <div style="padding:40px 46px;flex:1;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div><div style="font-size:20px;font-weight:800;letter-spacing:-.01em;">${D.emitName}</div>
+          ${D.emitCapLine?`<div style="font-size:11px;color:#94a3b8;margin-top:3px;">${D.emitCapLine}</div>`:''}
+          ${D.emitAddr?`<div style="font-size:11.5px;color:#64748b;margin-top:6px;line-height:1.6;">${D.emitAddr}</div>`:''}</div>
+          <div style="text-align:right;"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em;color:#2b45ff;text-transform:uppercase;">${D.kind}</div>
+          <div style="font-size:12.5px;color:#64748b;margin-top:4px;">${D.L.number} ${D.number}</div></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:24px;margin-top:26px;">
+          <div style="background:#f5f7fb;border-radius:10px;padding:14px 16px;flex:1;">
+            <div style="font-size:9px;letter-spacing:.14em;color:#94a3b8;text-transform:uppercase;">${D.recipientLabel}</div>
+            <div style="font-size:14px;font-weight:700;margin-top:5px;">${D.clientName}</div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:#475569;line-height:1.9;min-width:150px;">
+            <div><span style="color:#94a3b8;">${D.L.date} </span>${D.dateEmis}</div>
+            ${D.supplyDate?`<div><span style="color:#94a3b8;">${D.L.deliveryDate} </span>${D.supplyDate}</div>`:''}
+            ${D.dueDate?`<div><span style="color:#94a3b8;">${D.dueLabel} </span>${D.dueDate}</div>`:''}
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;margin-top:26px;font-size:12.5px;">
+          <thead><tr style="background:#0f172a;color:#fff;">
+            <th style="padding:10px 14px;text-align:left;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:7px 0 0 7px;">${D.L.desc}</th>
+            <th style="padding:10px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;">${D.L.qty}</th>
+            <th style="padding:10px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;">${D.L.unitShort}</th>
+            <th style="padding:10px 14px;text-align:right;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;border-radius:0 7px 7px 0;">${D.L.lineTotalShort}</th>
+          </tr></thead><tbody>${rows}</tbody>
+        </table>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <div style="width:270px;font-size:13px;">${tot}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#2b45ff;color:#fff;border-radius:9px;padding:12px 15px;"><span style="font-weight:600;">${D.ttcLabel}</span><span style="font-size:19px;font-weight:800;">${D.totalTTC}</span></div>${dep}
+          </div>
+        </div>
+        ${D.notes?`<div style="margin-top:20px;font-size:11.5px;color:#64748b;line-height:1.6;"><b style="color:#475569;">Notes — </b>${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
+        <div style="margin-top:auto;padding-top:26px;font-size:10.5px;color:#94a3b8;line-height:1.7;border-top:1px solid #eef1f7;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
+      </div>
+    </div>`;
+  },
+
+  /* 4A · Classique administratif — sobre, encadré, esprit mairie / BTP */
+  '4A': function(D){
+    const rows = D.lines.length ? D.lines.map(l=>`
+      <tr>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;color:#1a1a1a;">${l.desc||('<span style="color:#aeb4bf;font-style:italic;">'+D.L.descPh+'</span>')}</td>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;color:#333;white-space:nowrap;">${l.qtyF}</td>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;color:#333;white-space:nowrap;">${l.puF}</td>
+        <td style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-weight:600;color:#1a1a1a;white-space:nowrap;">${l.totalF}</td>
+      </tr>`).join('') : `<tr><td colspan="4" style="padding:22px;border:1px solid #cbd0d8;text-align:center;color:#aeb4bf;font-style:italic;">${D.L.linesEmpty}</td></tr>`;
+    const totRow=(k,v,b)=>`<tr><td colspan="3" style="padding:7px 12px;border:1px solid #cbd0d8;text-align:right;${b?'font-weight:700;':''}color:#33393f;">${k}</td><td style="padding:7px 12px;border:1px solid #cbd0d8;text-align:right;${b?'font-weight:700;font-size:13px;':''}white-space:nowrap;">${v}</td></tr>`;
+    const totRows=[
+      totRow(D.L.subtotal, D.subHT),
+      D.discAmt?totRow(D.discLabel,'− '+D.discAmt):'',
+      !D.noVat?totRow(D.L.vat+(D.vatRate?' '+D.vatRate+' %':''), D.totalVAT):'',
+      totRow(D.ttcLabel, D.totalTTC, true),
+      D.deposit?totRow(D.L.depositInvoiced+(D.acompteRef?' ('+D.acompteRef+')':''),'− '+D.deposit):'',
+      D.retenueAmt?totRow(D.L.retenue+' ('+D.retenuePct+' %)','− '+D.retenueAmt):'',
+      (D.deposit||D.retenueAmt)?totRow(D.L.balanceDue, D.due, true):''
+    ].join('');
+    return `<div style="width:100%;min-height:297mm;background:#fff;padding:48px 52px;box-sizing:border-box;font-family:'Inter Tight',sans-serif;color:#1f2937;display:flex;flex-direction:column;">
+      <div style="text-align:center;border-bottom:3px double #1f2937;padding-bottom:16px;">
+        <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:600;letter-spacing:.02em;">${D.emitName}</div>
+        ${D.emitAddr?`<div style="font-size:11px;color:#6b7280;margin-top:5px;">${D.emitAddr.replace(/<br>/g,' · ')}</div>`:''}
+        ${D.emitRegLine?`<div style="font-size:10.5px;color:#6b7280;margin-top:3px;">${D.emitRegLine}</div>`:''}
+      </div>
+      <div style="text-align:center;margin-top:20px;"><span style="font-family:'Fraunces',serif;font-size:19px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;border-bottom:2px solid #1f2937;padding:0 14px 4px;">${D.kind} N° ${D.number}</span></div>
+      <div style="display:flex;justify-content:space-between;gap:24px;margin-top:22px;font-size:12px;">
+        <div style="border:1px solid #cbd0d8;border-radius:4px;padding:11px 14px;flex:1;">
+          <div style="font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#6b7280;margin-bottom:4px;">${D.recipientLabel}</div>
+          <div style="font-weight:700;font-size:13px;">${D.clientName}</div>
+          <div style="color:#4b5563;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div>
+        </div>
+        <div style="font-size:12px;color:#374151;line-height:1.9;text-align:right;min-width:160px;">
+          <div><span style="color:#6b7280;">${D.L.date} : </span>${D.dateEmis}</div>
+          ${D.supplyDate?`<div><span style="color:#6b7280;">${D.L.deliveryDate} : </span>${D.supplyDate}</div>`:''}
+          ${D.dueDate?`<div><span style="color:#6b7280;">${D.dueLabel} : </span>${D.dueDate}</div>`:''}
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-top:22px;font-size:12px;">
+        <thead><tr style="background:#eef1f5;">
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:left;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.desc}</th>
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.qty}</th>
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.unitShort}</th>
+          <th style="padding:9px 12px;border:1px solid #cbd0d8;text-align:right;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#374151;">${D.L.lineTotalShort}</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot>${totRows}</tfoot>
+      </table>
+      ${D.notes?`<div style="margin-top:18px;font-size:11.5px;color:#4b5563;line-height:1.6;">${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
+      <div style="margin-top:auto;padding-top:26px;font-size:10px;color:#6b7280;line-height:1.7;border-top:1px solid #cbd0d8;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
+    </div>`;
+  },
+
+  /* 5C · Coloré émeraude — en-tête dégradé, esprit moderne & chaleureux */
+  '5C': function(D){
+    const rows = D.lines.length ? D.lines.map(l=>`
+      <div style="display:grid;grid-template-columns:1fr 50px 92px 108px;gap:10px;padding:12px 0;border-bottom:1px solid #e8f2f1;font-size:12.5px;align-items:baseline;">
+        <div style="font-weight:600;color:#134e4a;">${l.desc||('<span style="color:#a7c4c1;font-style:italic;">'+D.L.descPh+'</span>')}</div>
+        <div style="text-align:right;color:#4b6360;">${l.qtyF}</div>
+        <div style="text-align:right;color:#4b6360;">${l.puF}</div>
+        <div style="text-align:right;font-weight:700;color:#134e4a;">${l.totalF}</div>
+      </div>`).join('') : `<div style="padding:26px;text-align:center;color:#a7c4c1;font-style:italic;">${D.L.linesEmpty}</div>`;
+    const tot=[
+      `<div style="display:flex;justify-content:space-between;padding:5px 0;color:#5b716e;"><span>${D.L.subtotal}</span><span>${D.subHT}</span></div>`,
+      D.discAmt?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#5b716e;"><span>${D.discLabel}</span><span>− ${D.discAmt}</span></div>`:'',
+      !D.noVat?`<div style="display:flex;justify-content:space-between;padding:5px 0;color:#5b716e;"><span>${D.L.vat}${D.vatRate?' '+D.vatRate+' %':''}</span><span>${D.totalVAT}</span></div>`:''
+    ].join('');
+    const dep=(D.deposit||D.retenueAmt)?`${D.deposit?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#5b716e;font-size:12px;"><span>${D.L.depositInvoiced}${D.acompteRef?' ('+D.acompteRef+')':''}</span><span>− ${D.deposit}</span></div>`:''}${D.retenueAmt?`<div style="display:flex;justify-content:space-between;padding:7px 2px 0;color:#5b716e;font-size:12px;"><span>${D.L.retenue} (${D.retenuePct} %)</span><span>− ${D.retenueAmt}</span></div>`:''}<div style="display:flex;justify-content:space-between;padding:5px 2px 0;font-weight:700;color:#134e4a;"><span>${D.L.balanceDue}</span><span>${D.due}</span></div>`:'';
+    return `<div style="width:100%;min-height:297mm;background:#fff;font-family:'Inter',sans-serif;color:#134e4a;display:flex;flex-direction:column;box-sizing:border-box;">
+      <div style="background:linear-gradient(120deg,#0ea5a4,#14b8a6);color:#fff;padding:38px 46px;display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div style="font-size:21px;font-weight:800;letter-spacing:-.01em;">${D.emitName}</div>
+        ${D.emitCapLine?`<div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:3px;">${D.emitCapLine}</div>`:''}
+        ${D.emitAddr?`<div style="font-size:11.5px;color:rgba(255,255,255,.85);margin-top:7px;line-height:1.6;">${D.emitAddr}</div>`:''}</div>
+        <div style="text-align:right;"><div style="font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;">${D.kind}</div>
+        <div style="font-size:12.5px;color:rgba(255,255,255,.85);margin-top:4px;">${D.L.number} ${D.number}</div></div>
+      </div>
+      <div style="padding:34px 46px;flex:1;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;gap:24px;">
+          <div><div style="font-size:9px;letter-spacing:.14em;color:#0ea5a4;text-transform:uppercase;">${D.recipientLabel}</div>
+          <div style="font-size:14px;font-weight:700;margin-top:5px;">${D.clientName}</div>
+          <div style="font-size:11.5px;color:#5b716e;margin-top:3px;line-height:1.55;">${[D.clientAddr,D.clientSiret&&'SIRET '+D.clientSiret,D.clientEmail].filter(Boolean).join('<br>')}</div></div>
+          <div style="text-align:right;font-size:12px;color:#4b6360;line-height:1.9;">
+            <div><span style="color:#9bb3b0;">${D.L.date} </span>${D.dateEmis}</div>
+            ${D.supplyDate?`<div><span style="color:#9bb3b0;">${D.L.deliveryDate} </span>${D.supplyDate}</div>`:''}
+            ${D.dueDate?`<div><span style="color:#9bb3b0;">${D.dueLabel} </span>${D.dueDate}</div>`:''}
+          </div>
+        </div>
+        <div style="margin-top:26px;">
+          <div style="display:grid;grid-template-columns:1fr 50px 92px 108px;gap:10px;padding-bottom:10px;border-bottom:2px solid #0ea5a4;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#0ea5a4;">
+            <div>${D.L.desc}</div><div style="text-align:right;">${D.L.qty}</div><div style="text-align:right;">${D.L.unitShort}</div><div style="text-align:right;">${D.L.lineTotalShort}</div>
+          </div>${rows}
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <div style="width:266px;font-size:13px;">${tot}
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;background:#0ea5a4;color:#fff;border-radius:10px;padding:12px 15px;"><span style="font-weight:600;">${D.ttcLabel}</span><span style="font-size:19px;font-weight:800;">${D.totalTTC}</span></div>${dep}
+          </div>
+        </div>
+        ${D.notes?`<div style="margin-top:20px;font-size:11.5px;color:#5b716e;line-height:1.6;"><b style="color:#0ea5a4;">Notes — </b>${D.notes}</div>`:''}${D.situationRecap}${D.signBlock}
+        <div style="margin-top:auto;padding-top:26px;font-size:10.5px;color:#9bb3b0;line-height:1.7;border-top:1px solid #e8f2f1;">${D.iban?`IBAN ${D.iban}${D.bic?' · BIC '+D.bic:''}<br>`:''}${D.terms?esc(D.terms)+' · ':''}${legalText(D)}${D.decennale?'<br>'+D.decennale:''}</div>
+      </div>
+    </div>`;
   }
 };
 
@@ -1126,12 +1383,21 @@ function saveLinesToCatalog(){
   toast(added?('Catalogue : '+added+' article'+(added>1?'s':'')+' ajouté'+(added>1?'s':'')):'Aucun nouvel article à enregistrer');
 }
 /* ============ Annuaire client (mini-CRM) ============ */
+function loadClientStore(){ try{ return JSON.parse(localStorage.getItem('aem_fact_clients')||'[]'); }catch(e){ return []; } }
 function clientDir(){
   const map={};
   loadDocs().forEach(d=>{
     const c=d.client||{}; const name=String(c.name||'').trim(); if(!name) return;
     const key=name.toLowerCase(); const cur=map[key];
     if(!cur || (d.updated||0)>=(cur.updated||0)) map[key]={name:name, addr:c.addr||'', email:c.email||'', siret:c.siret||'', updated:d.updated||0};
+  });
+  // Fiches du module Clients : source de référence des coordonnées.
+  loadClientStore().forEach(c=>{
+    const name=String(c.name||'').trim(); if(!name) return;
+    const key=name.toLowerCase(); const cur=map[key];
+    map[key]={ name:name,
+      addr:c.addr||(cur&&cur.addr)||'', email:c.email||(cur&&cur.email)||'', siret:c.siret||(cur&&cur.siret)||'',
+      updated:Math.max(Number(c.updated)||0, (cur&&cur.updated)||0) };
   });
   return Object.keys(map).map(k=>map[k]).sort((a,b)=>b.updated-a.updated);
 }
@@ -1151,6 +1417,50 @@ function autofillClient(name){
 }
 function addLine(){ state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
 function removeLine(i){ state.lines.splice(i,1); if(!state.lines.length) state.lines.push(newLine()); renderLines(); render(); scheduleSave(); }
+
+/* ============ IA ① : lignes depuis une description ============ */
+function aiMsg(text, kind){
+  const el=document.getElementById('aiMsg'); if(!el) return;
+  if(!text){ el.hidden=true; el.textContent=''; return; }
+  el.hidden=false; el.className='ai-msg '+(kind||'info'); el.textContent=text;
+}
+function lineBlank(l){ return !String(l&&l.desc||'').trim() && !(Number(l&&l.qty)>0 && Number(l&&l.pu)>0); }
+async function aiFillLines(){
+  if(state.emitted){ toast('Pièce émise : non modifiable.'); return; }
+  const ta=document.getElementById('aiDesc'); const desc=String(ta&&ta.value||'').trim();
+  if(!desc){ aiMsg('Décrivez d’abord la prestation dans le champ ci-dessus.', 'warn'); if(ta) ta.focus(); return; }
+  const btn=document.getElementById('aiGo');
+  const vatDefault=(state.lines&&state.lines[0]&&Number(state.lines[0].vat))||20;
+  if(btn){ btn.disabled=true; btn.querySelector('span').textContent='Analyse…'; }
+  aiMsg('L’assistant analyse votre description…', 'info');
+  try{
+    const r=await CLOUD.ai('invoice_from_text', { text: desc, vatDefault: vatDefault });
+    const lines=(r.lines||[]).map(function(l){
+      var d=String(l.desc||'').trim(); var u=String(l.unit||'').trim();
+      if(u && !/[€%]/.test(u)) d = d ? d+' ('+u+')' : d;
+      return { desc:d, qty:(Number(l.qty)||1), pu:(Number(l.pu)||0), vat:(Number(l.vat)||vatDefault) };
+    }).filter(function(l){ return l.desc || l.pu>0; });
+    if(!lines.length){ aiMsg('L’assistant n’a pas pu déduire de lignes. Reformulez avec des quantités et des prix.', 'warn'); return; }
+    // Remplace la première ligne vide, sinon ajoute à la suite.
+    if(state.lines.length===1 && lineBlank(state.lines[0])) state.lines=[];
+    lines.forEach(function(l){ state.lines.push(l); });
+    if(!state.lines.length) state.lines.push(newLine());
+    renderLines(); render(); scheduleSave();
+    if(ta) ta.value='';
+    var missingPrice=lines.some(function(l){ return !(l.pu>0); });
+    var msg='✓ '+lines.length+' ligne'+(lines.length>1?'s':'')+' ajoutée'+(lines.length>1?'s':'')+'. Vérifiez avant d’émettre.';
+    if(r.note) msg+=' '+r.note;
+    aiMsg(msg, missingPrice ? 'warn' : 'info');
+  }catch(e){
+    if(e && e.notConfigured){
+      aiMsg('Assistant IA non configuré. Ajoutez vos lignes manuellement, ou demandez l’activation de l’IA (clé ANTHROPIC_API_KEY côté serveur).', 'warn');
+    }else{
+      aiMsg('Assistant indisponible : '+String(e&&e.message||e)+'. Vous pouvez saisir les lignes manuellement.', 'err');
+    }
+  }finally{
+    if(btn){ btn.disabled=false; btn.querySelector('span').textContent='Proposer les lignes'; }
+  }
+}
 
 /* ============ Binding formulaire ============ */
 function bind(id, path){
@@ -1194,12 +1504,17 @@ function fillForm(){
   document.getElementById('f-discount-type').value=s.discountType;
   document.getElementById('f-deposit').value=s.deposit;
   document.getElementById('f-acompte-ref').value=s.acompteRef||'';
+  document.getElementById('f-chantier').value=s.chantier||'';
   s.marche=s.marche||{total:'',progress:'',prev:'',num:'',vat:20};
   document.getElementById('m-num').value=s.marche.num||'';
   document.getElementById('m-total').value=s.marche.total||'';
   document.getElementById('m-prev').value=s.marche.prev||'';
   document.getElementById('m-progress').value=s.marche.progress||'';
   document.getElementById('m-vat').value=(s.marche.vat!=null?s.marche.vat:20);
+  s.dgd=s.dgd||{marcheFinal:'',revisionPct:0,vat:20};
+  document.getElementById('f-dgd-final').value=s.dgd.marcheFinal||'';
+  document.getElementById('f-dgd-vat').value=(s.dgd.vat!=null?s.dgd.vat:20);
+  document.getElementById('f-dgd-rev').value=(s.dgd.revisionPct!=null?s.dgd.revisionPct:0);
   s.retenue=s.retenue||{active:false,pct:5,released:false,releasedAt:''};
   document.getElementById('f-retenue-active').checked=!!s.retenue.active;
   document.getElementById('f-retenue-pct').value=(s.retenue.pct!=null?s.retenue.pct:5);
@@ -1220,6 +1535,13 @@ function fillForm(){
   applyLockUI();
   renderCatalog();
   renderClientList();
+  renderChantierList();
+}
+/* Liste des chantiers déjà utilisés (auto-complétion du champ chantier). */
+function renderChantierList(){
+  const dl=document.getElementById('chantierList'); if(!dl) return;
+  const set={}; loadDocs().forEach(function(d){ const c=String(d.chantier||'').trim(); if(c) set[c.toLowerCase()]=c; });
+  dl.innerHTML=Object.keys(set).map(function(k){ return '<option value="'+esc(set[k])+'">'; }).join('');
 }
 /* ===== Émission / verrouillage (conformité : une pièce émise est inaltérable) ===== */
 function applyLockUI(){
@@ -1237,15 +1559,88 @@ function applyLockUI(){
     ? (state.accepted ? ('Devis accepté et signé'+(state.acceptedBy?' par '+state.acceptedBy:'')+'. Verrouillé.') : 'Devis validé et verrouillé. Pour le modifier, dupliquez-le en brouillon.')
     : 'Document émis et verrouillé. Il ne peut plus être modifié ni supprimé. Pour le corriger, créez un avoir.';
 }
+/* Conditions à réunir avant de pouvoir émettre : client, e-mail, numéro, au moins une ligne. */
+function emitRequirements(s){
+  s=s||state; const miss=[];
+  if(!clientKeyOf(s.client&&s.client.name)) miss.push('le nom du client');
+  if(!/.+@.+\..+/.test(String((s.client&&s.client.email)||'').trim())) miss.push('l’e-mail du client');
+  if(!s.number) miss.push('le numéro');
+  const hasLine=(s.lines||[]).some(l=>String(l.desc||'').trim() || lineHT(l)>0);
+  if(!hasLine) miss.push('au moins une ligne');
+  return miss;
+}
+/* Active/désactive le bouton « Émettre » selon les informations renseignées. */
+function updateEmitButton(){
+  const btn=document.getElementById('emitBtn'); if(!btn) return;
+  if(state.emitted){ return; }
+  const miss=emitRequirements();
+  btn.disabled=miss.length>0;
+  btn.title=miss.length ? ('À renseigner avant d’émettre : '+miss.join(', ')+'.') : 'Émettre le document';
+}
 function emitDoc(){
   if(state.emitted) return;
-  if(!state.number || !clientKeyOf(state.client&&state.client.name)){ toast('Renseignez le client avant d\'émettre.'); return; }
+  const miss=emitRequirements();
+  if(miss.length){ toast('Avant d’émettre, renseignez : '+miss.join(', ')+'.'); return; }
   const quoi=state.kind==='devis'?'ce devis':(state.kind==='avoir'?'cet avoir':'cette facture');
   if(!confirm('Émettre '+quoi+' définitivement ?\n\nUne fois émis, le document ne pourra plus être modifié ni supprimé (obligation de conformité). Les corrections se font uniquement par un avoir.')) return;
   state.emitted=true; state.emittedAt=todayISO();
   persist(); render(); applyLockUI();
   toast('Document émis · '+esc(state.number));
 }
+
+/* ============ IA ④ : contrôle avant émission ============ */
+function chkDocPayload(){
+  const s=state;
+  const lines=(s.lines||[]).map(function(l){ return {desc:l.desc||'',qty:Number(l.qty)||0,pu:Number(l.pu)||0,vat:Number(l.vat)||0,ht:lineHT(l)}; });
+  return {
+    kind:s.kind, number:s.number||'', date:s.date||'', dueDate:s.due||'',
+    emit:{ name:(s.emit&&s.emit.name)||'', siret:(s.emit&&s.emit.siret)||'', tva:(s.emit&&s.emit.tva)||'', addr:(s.emit&&s.emit.addr)||'', email:(s.emit&&s.emit.email)||'' },
+    client:{ name:(s.client&&s.client.name)||'', addr:(s.client&&s.client.addr)||'', siret:(s.client&&s.client.siret)||'', email:(s.client&&s.client.email)||'' },
+    lines:lines, currency:s.currency||'EUR', vatExempt:!!s.vatExempt, autoliq:!!s.autoliq,
+    discount:s.discount||0, discountType:s.discountType||'pct', chantier:s.chantier||'',
+    retenue:(s.retenue&&s.retenue.active)?{pct:s.retenue.pct}:null, terms:s.terms||''
+  };
+}
+function chkOpen(){ document.getElementById('chkModal').hidden=false; }
+function chkClose(){ document.getElementById('chkModal').hidden=true; }
+function chkRender(report){
+  const body=document.getElementById('chkBody');
+  const issues=(report.issues||[]).slice().sort(function(a,b){ var o={bloquant:0,attention:1,info:2}; var av=(a.severity in o)?o[a.severity]:3, bv=(b.severity in o)?o[b.severity]:3; return av-bv; });
+  const blk=issues.filter(function(i){return i.severity==='bloquant';}).length;
+  var html='';
+  html+='<div class="chk-sum '+(blk?'ko':(issues.length?'':'ok'))+'">'+esc(report.summary||(issues.length?'Vérifications à examiner.':'Aucune anomalie détectée.'))+'</div>';
+  if(!issues.length){ html+='<div class="chk-item"><span class="chk-tag info">OK</span><span class="msg">La facture semble complète et cohérente. Relisez tout de même avant l’émission définitive.</span></div>'; }
+  issues.forEach(function(i){
+    var sev=(['bloquant','attention','info'].indexOf(i.severity)>=0)?i.severity:'info';
+    html+='<div class="chk-item"><span class="chk-tag '+sev+'">'+sev+'</span><span class="msg">'+esc(i.message||'')+'</span></div>';
+  });
+  body.innerHTML=html;
+  document.getElementById('chkEmit').textContent = blk ? 'Émettre malgré les alertes' : 'Émettre';
+}
+async function aiPreEmitCheck(){
+  if(state.emitted){ toast('Document déjà émis.'); return; }
+  const miss=emitRequirements();
+  const body=document.getElementById('chkBody');
+  chkOpen();
+  body.innerHTML='<div class="chk-loading"><span class="sp"></span> L’assistant vérifie la facture…</div>';
+  // Contrôles locaux d'abord (immédiats)
+  const baseIssues=miss.map(function(m){ return {severity:'bloquant', message:'Information obligatoire manquante : '+m+'.'}; });
+  try{
+    const r=await CLOUD.ai('pre_emit_check', { doc: chkDocPayload() });
+    var issues=baseIssues.concat(Array.isArray(r.issues)?r.issues:[]);
+    chkRender({ ok:r.ok!==false && !baseIssues.length, issues:issues, summary:r.summary });
+  }catch(e){
+    if(e && e.notConfigured){
+      chkRender({ ok:!baseIssues.length, issues:baseIssues, summary:baseIssues.length?'Contrôles de base — l’IA n’est pas activée.':'Contrôles de base OK — l’assistant IA n’est pas activé sur votre espace.' });
+    }else{
+      chkRender({ ok:!baseIssues.length, issues:baseIssues, summary:'Contrôle IA indisponible ('+String(e&&e.message||e)+'). Seuls les contrôles de base ont été appliqués.' });
+    }
+  }
+}
+document.getElementById('chkX').addEventListener('click', chkClose);
+document.getElementById('chkClose').addEventListener('click', chkClose);
+document.getElementById('chkModal').addEventListener('click', function(e){ if(e.target===this) chkClose(); });
+document.getElementById('chkEmit').addEventListener('click', function(){ chkClose(); emitDoc(); });
 /* Crée un avoir en brouillon à partir de la facture émise en cours. */
 function createAvoirFromCurrent(){
   if(dirty) persist();
@@ -1337,6 +1732,64 @@ function buildSituationRecap(s, L){
     ${row(en?'Cumulative progress':'Avancement cumulé', nf2.format(prog)+' % · '+money.format(total*prog/100))}
     ${row('<b>'+(en?'This progress payment':'Présente situation')+'</b>', '<b>'+nf2.format(Math.max(0,prog-prev))+' % · '+money.format(total*Math.max(0,prog-prev)/100)+'</b>')}
   </div>`;
+}
+/* ===== Décompte général définitif (clôture de marché BTP) ===== */
+/* Situations et factures ÉMISES rattachées au même chantier (hors document courant). */
+function dgdRattached(s){
+  const key=String(s.chantier||'').trim().toLowerCase();
+  if(!key) return [];
+  return loadDocs().filter(function(d){
+    return d.id!==s.id && d.emitted && (d.kind==='situation'||d.kind==='facture')
+      && String(d.chantier||'').trim().toLowerCase()===key;
+  }).sort(function(a,b){ return String(a.number||'').localeCompare(String(b.number||'')); });
+}
+/* Le solde du DGD = montant final du marché (+ révision) − cumul déjà facturé. */
+function recomputeDGD(){
+  const s=state; const D=s.dgd||(s.dgd={marcheFinal:'',revisionPct:0,vat:20});
+  const marche=Number(D.marcheFinal)||0, revPct=Number(D.revisionPct)||0, vat=Number(D.vat!=null?D.vat:20)||0;
+  const docs=dgdRattached(s);
+  let cumulHT=0; docs.forEach(function(d){ cumulHT+=computeTotals(d).netHT; });
+  const revAmt=Math.round(marche*revPct/100*100)/100;
+  const soldeTravaux=Math.round((marche-cumulHT)*100)/100;
+  const en=s.lang==='en';
+  const lines=[{desc:(en?'Contract balance — final statement (DGD)':'Solde du marché — décompte général définitif'), qty:1, pu:soldeTravaux, vat:vat}];
+  if(Math.abs(revAmt)>0.005) lines.push({desc:(en?'Price revision':'Révision de prix')+' ('+nf2.format(revPct)+' %)', qty:1, pu:revAmt, vat:vat});
+  s.lines=lines;
+  const sum=document.getElementById('dgdSummary');
+  if(sum){
+    const money=moneyFmt(s.currency,s.lang);
+    const row=function(k,v,b){ return '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11.5px;">'+(b?'<b>'+k+'</b><b>'+v+'</b>':'<span style="color:var(--txt2)">'+k+'</span><span style="font-weight:600">'+v+'</span>')+'</div>'; };
+    sum.innerHTML='<div style="border:1px solid var(--line-2);border-radius:9px;padding:10px 12px;background:rgba(9,12,22,.4)">'
+      +row('Situations rattachées', docs.length+' pièce'+(docs.length>1?'s':''))
+      +row('Déjà facturé HT', money.format(cumulHT))
+      +row('Montant final du marché HT', money.format(marche))
+      +(Math.abs(revAmt)>0.005?row('Révision de prix', money.format(revAmt)):'')
+      +row('Solde HT (présent décompte)', money.format(soldeTravaux+revAmt), true)
+      +'</div>';
+  }
+}
+/* Récapitulatif imprimé du DGD : liste des situations rattachées + solde final. */
+function buildDgdRecap(s, L){
+  const en=s.lang==='en'; const money=moneyFmt(s.currency,s.lang);
+  const docs=dgdRattached(s);
+  const D=s.dgd||{}; const marche=Number(D.marcheFinal)||0, revPct=Number(D.revisionPct)||0;
+  const revAmt=Math.round(marche*revPct/100*100)/100;
+  let cumul=0;
+  const rows=docs.map(function(d){
+    const ht=computeTotals(d).netHT; cumul+=ht;
+    return '<div style="display:grid;grid-template-columns:1fr auto auto;gap:14px;padding:4px 0;border-bottom:1px solid #eef0f4;"><span>'+esc(d.number||'—')+'</span><span style="color:#94a3b8;">'+fmtDate(d.date)+'</span><span style="font-weight:600;font-variant-numeric:tabular-nums;">'+money.format(ht)+'</span></div>';
+  }).join('');
+  const solde=marche+revAmt-cumul;
+  const tot=function(k,v,b){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;">'+(b?'<b>'+k+'</b><b>'+v+'</b>':'<span style="color:#94a3b8;">'+k+'</span><span style="font-weight:600;">'+v+'</span>')+'</div>'; };
+  return '<div style="margin-top:22px;border:1px solid rgba(120,130,160,.3);border-radius:9px;padding:13px 16px;font-size:12px;color:#334155;">'
+    +'<div style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin-bottom:8px;">'+(en?'Final contract statement':'Récapitulatif du marché')+(s.chantier?' — '+esc(s.chantier):'')+'</div>'
+    +(rows?'<div style="margin-bottom:8px;">'+rows+'</div>':'<div style="color:#94a3b8;margin-bottom:8px;">'+(en?'No linked progress invoices.':'Aucune situation rattachée à ce chantier.')+'</div>')
+    +tot(en?'Total previously invoiced (excl. tax)':'Total déjà facturé HT', money.format(cumul))
+    +tot(en?'Final contract amount (excl. tax)':'Montant final du marché HT', money.format(marche))
+    +(Math.abs(revAmt)>0.005?tot(en?'Price revision':'Révision de prix', money.format(revAmt)):'')
+    +'<div style="border-top:1px solid #dfe3ea;margin:4px 0;"></div>'
+    +tot(en?'Balance — this statement':'Solde du présent décompte', money.format(solde), true)
+    +'</div>';
 }
 /* ===== Signature du devis (bon pour accord) ===== */
 let _signCtx=null, _signing=false, _signHasInk=false;
@@ -1430,9 +1883,12 @@ function updateKindUI(){
   if(avoirWrap){ avoirWrap.style.display = k==='avoir' ? '' : 'none'; if(k==='avoir') populateAvoirRef(); }
   const convertBtn=document.getElementById('convertBtn'); if(convertBtn) convertBtn.hidden = (k!=='devis');
   const isSit=k==='situation';
+  const isDgd=k==='dgd';
   const mc=document.getElementById('marcheCard'); if(mc) mc.hidden=!isSit;
-  const lc=document.getElementById('linesCard'); if(lc) lc.hidden=isSit;
+  const dc=document.getElementById('dgdCard'); if(dc) dc.hidden=!isDgd;
+  const lc=document.getElementById('linesCard'); if(lc) lc.hidden=isSit||isDgd;
   if(isSit) recomputeSituation();
+  if(isDgd) recomputeDGD();
   const acompteBtn=document.getElementById('acompteBtn'); if(acompteBtn) acompteBtn.hidden = (k!=='devis' && k!=='facture');
   const signBtn=document.getElementById('signBtn'); if(signBtn) signBtn.hidden = !(k==='devis' && !state.accepted);
   // Formulaire dédié : n'afficher que les champs pertinents pour ce type de document.
@@ -1440,9 +1896,10 @@ function updateKindUI(){
   showEl('supplyWrap', k!=='avoir');                                  // pas de date de prestation sur un avoir
   showEl('dueWrap', k!=='avoir' && k!=='livraison');                  // échéance/validité : ni avoir ni BL
   showEl('reglCard', k!=='livraison');                               // un bon de livraison n'a pas de règlement
-  showEl('acompteWrap', k==='facture' || k==='situation');          // acompte : docs fiscaux payables
-  showEl('retenueWrap', k==='facture' || k==='situation');          // retenue de garantie : BTP
-  showEl('discountWrap', k!=='livraison');
+  showEl('chantierCard', k==='facture' || k==='situation' || k==='dgd'); // rattachement chantier : BTP
+  showEl('acompteWrap', k==='facture' || k==='situation' || k==='dgd'); // acompte : docs fiscaux payables
+  showEl('retenueWrap', k==='facture' || k==='situation' || k==='dgd'); // retenue de garantie : BTP
+  showEl('discountWrap', k!=='livraison' && k!=='dgd');
   showEl('recurWrap', k==='facture');                               // récurrence : facture seule
   applyRecurUI(); applyRetenueUI();
   const ph=document.getElementById('f-number');
@@ -1486,14 +1943,14 @@ function clientCodeFor(seq, key, name){
   seq.codes[key]=code;
   return code;
 }
-function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL',situation:'FS'}[kind]||'F'; }
-const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'};
-const PAYABLE_KINDS={facture:1,situation:1};   // documents fiscaux suivis en paiement / comptés en CA
+function kindCode(kind){ return {devis:'D',avoir:'AV',commande:'BC',livraison:'BL',situation:'FS',dgd:'DGD'}[kind]||'F'; }
+const KIND_LABEL={facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'};
+const PAYABLE_KINDS={facture:1,situation:1,dgd:1};   // documents fiscaux suivis en paiement / comptés en CA
 /* Traductions des libellés fixes des modèles (multi-langue FR/EN). */
 const LABELS={
   fr:{
-    kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',commande:'Bon de commande',livraison:'Bon de livraison'},
-    recip:{facture:'Facturé à',devis:'Devis pour',avoir:'Avoir pour',situation:'Facturé à',commande:'Commande de',livraison:'Livré à'},
+    kind:{facture:'Facture',devis:'Devis',avoir:'Avoir',situation:'Facture de situation',dgd:'Décompte général définitif',commande:'Bon de commande',livraison:'Bon de livraison'},
+    recip:{facture:'Facturé à',devis:'Devis pour',avoir:'Avoir pour',situation:'Facturé à',dgd:'Facturé à',commande:'Commande de',livraison:'Livré à'},
     desc:'Désignation', item:'Prestation', qty:'Qté', unit:'P.U. HT', unitShort:'P.U.', lineTotal:'Total HT', lineTotalShort:'Total',
     subtotal:'Sous-total HT', vat:'TVA', totalTTC:'Total TTC', totalNet:'Total net', remise:'Remise',
     depositInvoiced:'Acompte facturé', balanceDue:'Net à payer',
@@ -1505,8 +1962,8 @@ const LABELS={
     retenue:'Retenue de garantie'
   },
   en:{
-    kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',commande:'Purchase order',livraison:'Delivery note'},
-    recip:{facture:'Bill to',devis:'Quote for',avoir:'Credit to',situation:'Bill to',commande:'Order for',livraison:'Deliver to'},
+    kind:{facture:'Invoice',devis:'Quote',avoir:'Credit note',situation:'Progress invoice',dgd:'Final statement',commande:'Purchase order',livraison:'Delivery note'},
+    recip:{facture:'Bill to',devis:'Quote for',avoir:'Credit to',situation:'Bill to',dgd:'Bill to',commande:'Order for',livraison:'Deliver to'},
     desc:'Description', item:'Item', qty:'Qty', unit:'Unit price', unitShort:'Unit', lineTotal:'Total', lineTotalShort:'Total',
     subtotal:'Subtotal', vat:'VAT', totalTTC:'Total', totalNet:'Net total', remise:'Discount',
     depositInvoiced:'Deposit invoiced', balanceDue:'Balance due',
@@ -1628,7 +2085,7 @@ function renderDrawer(){
     const t=computeTotals(d); const isPayable=!!PAYABLE_KINDS[d.kind]; const info=payInfo(d,t); const st=PAY_LABEL[info.status];
     const chip = (isPayable && st) ? `<span class="di-status ${st[1]}">${st[0]}</span>` : '';
     const payBtn = (isPayable && info.due>0.005) ? `<button class="di-pay" title="Marquer payée" onclick="markPaidQuick('${d.id}',event)"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></button>` : '';
-    const kindLabel = {devis:'Devis',avoir:'Avoir',situation:'Situation',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
+    const kindLabel = {devis:'Devis',avoir:'Avoir',situation:'Situation',dgd:'DGD',commande:'B. commande',livraison:'B. livraison'}[d.kind]||'Facture';
     return `<div class="doc-item" onclick="loadDoc('${d.id}')">
       <span class="di-kind ${d.kind}">${kindLabel}</span>
       <div class="di-main">
@@ -1697,8 +2154,8 @@ function zoomStep(d){
 }
 function zoomFit(){ manualZoom=null; applyZoom(); }
 function setTemplate(v){ if(state.emitted){ document.getElementById('tplSel').value=state.template; toast('Pièce émise : non modifiable.'); return; } state.template=v; const sel=document.getElementById('tplSel'); if(sel) sel.value=v; render(); scheduleSave(); }
-function setLang(v){ if(state.emitted){ document.getElementById('langSel').value=state.lang; toast('Pièce émise : non modifiable.'); return; } state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
-function setCurrency(v){ if(state.emitted){ document.getElementById('curSel').value=state.currency; toast('Pièce émise : non modifiable.'); return; } state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); render(); scheduleSave(); }
+function setLang(v){ if(state.emitted){ document.getElementById('langSel').value=state.lang; toast('Pièce émise : non modifiable.'); return; } state.lang=(v==='en'?'en':'fr'); const sel=document.getElementById('langSel'); if(sel) sel.value=state.lang; if(state.kind==='situation') recomputeSituation(); if(state.kind==='dgd') recomputeDGD(); render(); scheduleSave(); }
+function setCurrency(v){ if(state.emitted){ document.getElementById('curSel').value=state.currency; toast('Pièce émise : non modifiable.'); return; } state.currency=(CURRENCIES.indexOf(v)>=0?v:'EUR'); const sel=document.getElementById('curSel'); if(sel) sel.value=state.currency; if(state.kind==='situation') recomputeSituation(); if(state.kind==='dgd') recomputeDGD(); render(); scheduleSave(); }
 window.addEventListener('resize', function(){ if(manualZoom==null) applyZoom(); });
 
 /* ============ Toast ============ */
@@ -1739,7 +2196,18 @@ var CLOUD=(function(){
   function pushDoc(doc){ if(!ready()||!doc||!doc.id) return; try{ sb.from('invoices').upsert({id:doc.id,user_id:uid,data:doc,updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
   function remove(id){ if(!ready()) return; try{ sb.from('invoices').delete().eq('id',id).then(function(){},function(){}); }catch(e){} }
   function pushSettings(){ if(!ready()) return; try{ sb.from('user_settings').upsert({user_id:uid,emit:loadEmit(),seq:loadSeq(),updated_at:new Date().toISOString()}).then(function(){},function(){}); }catch(e){} }
-  return {initAndPull:initAndPull, pushDoc:pushDoc, remove:remove, pushSettings:pushSettings, ready:ready};
+  async function ai(task, payload){
+    if(!sb) throw new Error('Connexion requise pour l’assistant IA.');
+    var r=await sb.functions.invoke('ai-assistant', { body: Object.assign({ task: task }, payload||{}) });
+    if(r && r.error){
+      var msg='Assistant IA indisponible.';
+      try{ var ctx=await r.error.context.json(); if(ctx && ctx.error) msg=ctx.error; }catch(e){}
+      var err=new Error(msg); err.notConfigured=/non configur/i.test(msg); throw err;
+    }
+    if(r && r.data && r.data.error) throw new Error(r.data.error);
+    return (r && r.data) || {};
+  }
+  return {initAndPull:initAndPull, pushDoc:pushDoc, remove:remove, pushSettings:pushSettings, ready:ready, ai:ai};
 })();
 
 async function init(){
@@ -1767,6 +2235,15 @@ async function init(){
       state.marche[pair[1]]=this.value; recomputeSituation(); render(); scheduleSave();
     });
   });
+  document.getElementById('f-chantier').addEventListener('input',function(){
+    state.chantier=this.value; if(state.kind==='dgd') recomputeDGD(); render(); scheduleSave();
+  });
+  [['f-dgd-final','marcheFinal'],['f-dgd-rev','revisionPct'],['f-dgd-vat','vat']].forEach(function(pair){
+    document.getElementById(pair[0]).addEventListener('input',function(){
+      state.dgd=state.dgd||{marcheFinal:'',revisionPct:0,vat:20};
+      state.dgd[pair[1]]=this.value; recomputeDGD(); render(); scheduleSave();
+    });
+  });
   document.getElementById('f-recur-active').addEventListener('change',function(){
     state.recur=state.recur||{active:false,freq:'monthly',next:''};
     state.recur.active=this.checked;
@@ -1785,8 +2262,16 @@ async function init(){
   // charger le doc courant ou en créer un
   const docs=loadDocs();
   const curId=localStorage.getItem(LS_CUR);
-  const cur = curId && docs.find(d=>d.id===curId);
-  if(cur){ state=JSON.parse(JSON.stringify(cur)); if(!state.lines||!state.lines.length) state.lines=[newLine()]; }
+  let cur = curId && docs.find(d=>d.id===curId);
+  // Pré-remplissage client depuis le module Clients (bouton « Nouvelle facture »)
+  let prefill=null; try{ prefill=JSON.parse(localStorage.getItem('aem_fact_prefill_client')||'null'); }catch(e){}
+  if(prefill && prefill.name){
+    localStorage.removeItem('aem_fact_prefill_client');
+    state=blankState();
+    const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em);
+    state.client.name=prefill.name; state.client.addr=prefill.addr||''; state.client.siret=prefill.siret||''; state.client.email=prefill.email||'';
+    assignNumberFor(state); cur=null;
+  } else if(cur){ state=JSON.parse(JSON.stringify(cur)); if(!state.lines||!state.lines.length) state.lines=[newLine()]; }
   else{
     state=blankState();
     const em=loadEmit(); if(em) state.emit=Object.assign(state.emit,em);

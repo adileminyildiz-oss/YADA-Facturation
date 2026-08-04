@@ -41,6 +41,7 @@ function email(d: any, montant: number){
     <p style="font-size:14px">Bonjour ${esc(d.client?.name||"")},</p>
     <p style="font-size:14px;color:#3a4661">Sauf erreur de notre part, la facture <b>${esc(d.number||"")}</b>${d.due?` (échéance du <b>${fmt(d.due)}</b>)`:""} reste impayée. Nous vous remercions de bien vouloir procéder à son règlement.</p>
     <p style="font-size:15px;font-weight:700;margin-top:14px">Montant dû : ${eur(montant)}</p>
+    <div style="margin-top:16px"><a href="https://yada.aemconseil.eu/portail/" style="display:inline-block;background:#0b1020;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:10px 20px;border-radius:10px">Voir &amp; télécharger en ligne</a></div>
     <p style="font-size:12px;color:#8891a8;margin-top:16px">${esc(d.emit?.name||"")}${d.emit?.email?" · "+esc(d.emit.email):""}</p>
   </div></div></body></html>`;
 }
